@@ -1068,7 +1068,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyBXW_OOW0Z71D-Z4fiAjXQg9g3dnN1fXCZkwzaexGtLfcPPWHAwji09F5yIdL-ILF7/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzuwUzYKLoGBE_vB-kP-Fc3IPHqbdxB-3SsIuvjHDk7oZo6dScalhIkakZByZl3QHo9/exec";
 
 function getSessionParams(){
 
@@ -2205,7 +2205,7 @@ async function searchSI() {
       #${idx + 1}<br>
       <b>${item.colO}</b><br>
       ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
-      ${item.barcode}
+      <small>📅 ${item.date || "No Date"}</small>
     </div>
   `).join("");
 }
