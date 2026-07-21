@@ -1477,7 +1477,7 @@ await scanner.start(
                     ✅ AVAILABLE<br><br>
                     <b>${colO}</b><br>
                     ${colJ ? `<small>${colJ}</small><br>` : ""}
-                    <b>${code}</b><br><br>
+                    
 
                     <button id="saveBtn"
                         class="btn-blue"
@@ -1951,7 +1951,7 @@ ${data.colJ}
 
 <br><br>
 
-${barcode}
+
 
 </div>
 
@@ -1995,7 +1995,7 @@ if (saveData.status === "NOT_FOUND") {
     <div class="no-results">
         ❌ ITEM NOT FOUND
         <br><br>
-        ${barcode}
+        
     </div>`;
 
     continue;
@@ -2007,7 +2007,7 @@ if (saveData.status === "ALREADY_AUDITED") {
     <div class="card red">
         🛑 ALREADY AUDITED
         <br><br>
-        ${barcode}
+        
     </div>`;
 
     continue;
@@ -2027,7 +2027,7 @@ if (saveData.status === "RECORDED") {
         <b>${saveData.colO}</b><br>
         ${saveData.colJ || ""}
         <br><br>
-        ${barcode}
+        
     </div>`;
 }
 
@@ -2039,7 +2039,7 @@ if (saveData.status === "RECORDED") {
             <div class="card red">
                 ❌ NETWORK ERROR
                 <br><br>
-                ${barcode}
+                
             </div>`;
         }
     }
@@ -2126,7 +2126,7 @@ if (saveBtn) {
 
     <br><br>
 
-    🏷️ ${tempCode}
+    
 
     </div>
     `;
@@ -2147,7 +2147,7 @@ document.getElementById("result").innerHTML = `
 
 ${colJ ? `<small>${colJ}</small><br>` : ""}
 
-🏷️ ${tempCode}
+
 
 </div>
 `;
