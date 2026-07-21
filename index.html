@@ -2009,7 +2009,7 @@ if (saveData.status === "ALREADY_AUDITED") {
     <div class="card red">
         🛑 ALREADY AUDITED
         <br><br>
-        <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
+        <small>🏷 Tag: <b>${saveData.tag || barcode}</b></small><br>
     </div>`;
 
     continue;
@@ -2034,18 +2034,19 @@ if (saveData.status === "RECORDED") {
     </div>`;
 }
 
-        }catch(err){
+        catch(err){
 
-            console.log("Audit queue error:", err);
+    console.error("Audit queue error:", err);
 
-            document.getElementById("result").innerHTML = `
-            <div class="card red">
-                ❌ NETWORK ERROR
-                <br><br>
-                
-            </div>`;
-        }
-    }
+    document.getElementById("result").innerHTML = `
+    <div class="card red">
+        ❌ ERROR
+        <br><br>
+        <small>${err.message}</small>
+    </div>`;
+}
+
+  }
 
     auditProcessing = false;
 }
