@@ -2009,7 +2009,7 @@ if (saveData.status === "ALREADY_AUDITED") {
     <div class="card red">
         🛑 ALREADY AUDITED
         <br><br>
-        
+        <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
     </div>`;
 
     continue;
@@ -2028,6 +2028,7 @@ if (saveData.status === "RECORDED") {
         <br><br>
         <b>${saveData.colO}</b><br>
         ${saveData.colJ || ""}
+        <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
         <br><br>
         
     </div>`;
