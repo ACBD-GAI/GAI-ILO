@@ -1068,7 +1068,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzuwUzYKLoGBE_vB-kP-Fc3IPHqbdxB-3SsIuvjHDk7oZo6dScalhIkakZByZl3QHo9/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzFyKqGlvwJ9rENlH6u0kiWhRA8Vdso4EfgJZPbCDkmWQCJJpOYUot-4juxKO23kwOj/exec";
 
 function getSessionParams(){
 
@@ -1477,6 +1477,7 @@ await scanner.start(
                     ✅ AVAILABLE<br><br>
                     <b>${colO}</b><br>
                     ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
                     
 
                     <button id="saveBtn"
@@ -1498,6 +1499,7 @@ await scanner.start(
                     🛑 ALREADY SOLD<br><br>
                     <b>${colO}</b><br>
                     ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
                     <b>${code}</b>
                 </div>
             `;
@@ -2146,6 +2148,7 @@ document.getElementById("result").innerHTML = `
 <b>${colO}</b><br>
 
 ${colJ ? `<small>${colJ}</small><br>` : ""}
+<small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
 
 
 
@@ -2205,6 +2208,7 @@ async function searchSI() {
       #${idx + 1}<br>
       <b>${item.colO}</b><br>
       ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
+      <small>🏷 Tag: <b>${item.tag}</b></small><br>
       <small>📅 ${item.date || "No Date"}</small>
     </div>
   `).join("");
