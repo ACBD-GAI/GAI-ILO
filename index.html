@@ -1950,7 +1950,7 @@ document.getElementById("result").innerHTML=`
 <b>${data.colO}</b><br>
 
 ${data.colJ}
-<small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
+<small>🏷 Tag: <b>${data.tag || ""}</b></small><br>
 <br><br>
 
 
@@ -2028,7 +2028,7 @@ if (saveData.status === "RECORDED") {
         <br><br>
         <b>${saveData.colO}</b><br>
         ${saveData.colJ || ""}
-        <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
+        <small>🏷 Tag: <b>${saveData.tag || ""}</b></small><br>
         <br><br>
         
     </div>`;
