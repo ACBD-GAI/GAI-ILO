@@ -2028,9 +2028,13 @@ if (saveData.status === "RECORDED") {
         <br><br>
         <b>${saveData.colO}</b><br>
         ${saveData.colJ || ""}<br>
-        <small>🏷 Tag: <b>${saveData.tag || ""}</b></small><br>
-      
-        
+        <small>🏷 Tag: <b>${saveData.tag || ""}</b></small>
+
+        <hr>
+
+        <b>Supabase HTTP:</b> ${saveData.httpCode}<br>
+        <b>Supabase Response:</b>
+        <pre>${saveData.response}</pre>
     </div>`;
 }
         }
