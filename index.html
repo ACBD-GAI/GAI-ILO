@@ -1068,7 +1068,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbw3mD3PvYYlN36tiKXP2jUA_V_an2LzJc9e5FDSuy29DNwp76K-oJHURIdZpIGaiq1c/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwAqI4IMAG-6YpRASnyGD2o8vHJiAwui-hR93pFvLVQF7CuTRlGAvFdHCIpmwe2dV_X/exec";
 
 function getSessionParams(){
 
@@ -1990,6 +1990,7 @@ async function processAuditQueue(){
 );
 
 const saveData = await saveRes.json();
+          console.log("AUDIT RESPONSE:", saveData);
 
 if (saveData.status === "NOT_FOUND") {
 
