@@ -1068,7 +1068,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwJrG_ONQvtJ9-yh5e_k5QfGQy9_mx60J6dmy_mWp6s6O6QDKQpyIqmoEUPLTUU69NU/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwEgZ0jMSE0TO19CyV-umZD1a8t6pbm2be9MjHvTBy1kapJ6SLjAu6AFLFXTxMgQBoE/exec";
 
 function getSessionParams(){
 
@@ -2029,6 +2029,12 @@ if (saveData.status === "RECORDED") {
         <b>${saveData.colO}</b><br>
         ${saveData.colJ || ""}<br>
         <small>🏷 Tag: <b>${saveData.tag || ""}</b></small>
+
+        <hr>
+
+        <b>Supabase HTTP:</b> ${saveData.httpCode}<br>
+        <b>Supabase Response:</b>
+        <pre>${saveData.response}</pre>
     </div>`;
 }
         }
