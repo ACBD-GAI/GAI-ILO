@@ -1068,7 +1068,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwAqI4IMAG-6YpRASnyGD2o8vHJiAwui-hR93pFvLVQF7CuTRlGAvFdHCIpmwe2dV_X/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxsCFiwhGgHOwzmsh4rmzYcuTRX-1drdOdiGD9wIm7XwN_dHCz8ijvylnXqDk7Ntpzx/exec";
 
 function getSessionParams(){
 
@@ -1475,8 +1475,9 @@ await scanner.start(
             document.getElementById("result").innerHTML = `
                 <div class="card green scan-animate">
                     ✅ AVAILABLE<br><br>
-                    <b>${data.colO}</b><br>
-<small>🏷 Tag: <b>${data.colM || ""}</b></small><br>
+                    <b>${colO}</b><br>
+                    ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
                     
 
                     <button id="saveBtn"
