@@ -1475,9 +1475,8 @@ await scanner.start(
             document.getElementById("result").innerHTML = `
                 <div class="card green scan-animate">
                     ✅ AVAILABLE<br><br>
-                    <b>${colO}</b><br>
-                    ${colJ ? `<small>${colJ}</small><br>` : ""}
-                    <small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
+                    <b>${data.colO}</b><br>
+<small>🏷 Tag: <b>${data.colM || ""}</b></small><br>
                     
 
                     <button id="saveBtn"
