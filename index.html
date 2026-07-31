@@ -1467,9 +1467,12 @@ await scanner.start(
 
         const data = await res.json();
 
-        let row = data.row || [];
-        let colJ = data.colJ || row?.[9] || "";
-        let colO = data.colO || row?.[14] || "";
+      let row = data.row || [];
+
+let colJ = data.colJ || row[9] || "";
+let colO = data.colO || row[14] || "";
+
+let tag = data.tag || row[12] || "";
 
         if (data.status === "FOUND") {
             document.getElementById("result").innerHTML = `
@@ -2114,9 +2117,12 @@ if (saveBtn) {
     const data = await res.json();
 
 
-    let row = data.row || [];
-    let colJ = data.colJ || row?.[9] || "";
-    let colO = data.colO || row?.[14] || "";
+   let row = data.row || [];
+
+let colJ = data.colJ || row[9] || "";
+let colO = data.colO || row[14] || "";
+
+let tag = data.tag || row[12] || "";
 
 
     if (data.status === "ERROR") {
