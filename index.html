@@ -1971,91 +1971,100 @@ alert(data.status);
 }
 
 }
-async function processAuditQueue(){
+async function processAuditQueue() {
 
-    // Already processing?
-    if(auditProcessing) return;
+    if (auditProcessing) return;
 
     auditProcessing = true;
 
-    while(auditQueue.length > 0 && auditScanning){
+    try {
 
-        const barcode = auditQueue.shift();
+        while (auditQueue.length > 0) {
 
-        try{
+            const barcode = auditQueue.shift();
 
-            // Check item
-           const saveRes = await fetch(
-    API_URL +
-    "?action=saveAudit" +
-    "&barcode=" + encodeURIComponent(barcode) +
-    getSessionParams()
-);
+            const res = await fetch(
+                API_URL +
+                "?action=saveAudit" +
+                "&barcode=" + encodeURIComponent(barcode) +
+                getSessionParams()
+            );
 
-const saveData = await saveRes.json();
-          console.log("AUDIT RESPONSE:", saveData);
+            const saveData = await res.json();
 
-if (saveData.status === "NOT_FOUND") {
+            console.log(saveData);
 
-    document.getElementById("result").innerHTML = `
-    <div class="no-results">
-        ❌ ITEM NOT FOUND
-        <br><br>
-        
-    </div>`;
+            switch (saveData.status) {
 
-    continue;
-}
+                case "RECORDED":
 
-if (saveData.status === "ALREADY_AUDITED") {
+                    auditCount++;
 
-    document.getElementById("result").innerHTML = `
-    <div class="card red">
-        🛑 ALREADY AUDITED
-        <br><br>
-        <small>🏷 Tag: <b>${saveData.tag || barcode}</b></small><br>
-    </div>`;
+                    document.getElementById("auditCounter").innerHTML =
+                        "Scanned : " + auditCount;
 
-    continue;
-}
+                    document.getElementById("result").innerHTML = `
+                        <div class="card green scan-animate">
+                            ✅ AUDIT RECORDED
+                            <br><br>
+                            <b>${saveData.colO}</b><br>
+                            ${saveData.colJ || ""}<br>
+                            <small>🏷 Tag: <b>${saveData.tag}</b></small>
+                        </div>
+                    `;
+                    break;
 
-if (saveData.status === "RECORDED") {
+                case "ALREADY_AUDITED":
 
-    auditCount++;
+                    document.getElementById("result").innerHTML = `
+                        <div class="card red">
+                            🛑 ALREADY AUDITED
+                            <br><br>
+                            <small>🏷 Tag: <b>${saveData.tag}</b></small>
+                        </div>
+                    `;
+                    break;
 
-    document.getElementById("auditCounter").innerHTML =
-        "Scanned : " + auditCount;
+                case "NOT_FOUND":
 
-    document.getElementById("result").innerHTML = `
-    <div class="card green scan-animate">
-        ✅ AUDIT RECORDED
-        <br><br>
-        <b>${saveData.colO}</b><br>
-        ${saveData.colJ || ""}<br>
-        <small>🏷 Tag: <b>${saveData.tag || ""}</b></small>
+                    document.getElementById("result").innerHTML = `
+                        <div class="card red">
+                            ❌ NOT FOUND
+                        </div>
+                    `;
+                    break;
 
-       
-    </div>`;
-}
+                default:
+
+                    console.log(saveData);
+
+                    document.getElementById("result").innerHTML = `
+                        <div class="card red">
+                            ❌ ${saveData.status}
+                        </div>
+                    `;
+            }
         }
-          
-        catch(err){
 
-    console.error("Audit queue error:", err);
+    } catch (err) {
 
-    document.getElementById("result").innerHTML = `
-    <div class="card red">
-        ❌ ERROR
-        <br><br>
-        <small>${err.message}</small>
-    </div>`;
+        console.error(err);
+
+        document.getElementById("result").innerHTML = `
+            <div class="card red">
+                ❌ ${err}
+            </div>
+        `;
+
+    } finally {
+
+        auditProcessing = false;
+
+        if (auditQueue.length > 0) {
+            processAuditQueue();
+        }
+    }
 }
-
-  }
-
-    auditProcessing = false;
-}
-
   
 
   
