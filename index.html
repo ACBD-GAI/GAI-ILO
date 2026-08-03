@@ -1990,80 +1990,138 @@ async function processAuditQueue() {
                 getSessionParams()
             );
 
-            const saveData = await res.json();
 
-            console.log(saveData);
+            const text = await res.text();
+
+            console.log("SAVE AUDIT RAW RESPONSE:");
+            console.log(text);
+
+
+            let saveData;
+
+            try {
+
+                saveData = JSON.parse(text);
+
+            } catch(e) {
+
+                document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ SERVER ERROR
+                    <br><br>
+                    <pre style="white-space:pre-wrap">
+                    ${text}
+                    </pre>
+                </div>
+                `;
+
+                continue;
+            }
+
+
 
             switch (saveData.status) {
+
 
                 case "RECORDED":
 
                     auditCount++;
 
                     document.getElementById("auditCounter").innerHTML =
-                        "Scanned : " + auditCount;
+                    "Scanned : " + auditCount;
+
 
                     document.getElementById("result").innerHTML = `
-                        <div class="card green scan-animate">
-                            ✅ AUDIT RECORDED
-                            <br><br>
-                            <b>${saveData.colO}</b><br>
-                            ${saveData.colJ || ""}<br>
-                            <small>🏷 Tag: <b>${saveData.tag}</b></small>
-                        </div>
+                    <div class="card green scan-animate">
+
+                    ✅ AUDIT RECORDED
+
+                    <br><br>
+
+                    <b>${saveData.colO || ""}</b><br>
+
+                    ${saveData.colJ || ""}
+
+                    <br>
+
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
                     `;
-                    break;
+
+                break;
+
+
 
                 case "ALREADY_AUDITED":
 
                     document.getElementById("result").innerHTML = `
-                        <div class="card red">
-                            🛑 ALREADY AUDITED
-                            <br><br>
-                            <small>🏷 Tag: <b>${saveData.tag}</b></small>
-                        </div>
+                    <div class="card red">
+
+                    🛑 ALREADY AUDITED
+
+                    <br><br>
+
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
                     `;
-                    break;
+
+                break;
+
+
 
                 case "NOT_FOUND":
 
                     document.getElementById("result").innerHTML = `
-                        <div class="card red">
-                            ❌ NOT FOUND
-                        </div>
+                    <div class="card red">
+                    ❌ NOT FOUND
+                    </div>
                     `;
-                    break;
+
+                break;
+
+
 
                 default:
 
-                    console.log(saveData);
-
                     document.getElementById("result").innerHTML = `
-                        <div class="card red">
-                            ❌ ${saveData.status}
-                        </div>
+                    <div class="card red">
+                    ❌ ${saveData.status || "UNKNOWN ERROR"}
+
+                    <br><br>
+
+                    ${JSON.stringify(saveData)}
+
+                    </div>
                     `;
+
             }
+
+
         }
 
-    } catch (err) {
+
+    }
+    catch(err){
 
         console.error(err);
 
         document.getElementById("result").innerHTML = `
-            <div class="card red">
-                ❌ ${err}
-            </div>
+        <div class="card red">
+        ❌ ${err.message}
+        </div>
         `;
 
-    } finally {
-
-        auditProcessing = false;
-
-        if (auditQueue.length > 0) {
-            processAuditQueue();
-        }
     }
+    finally{
+
+        auditProcessing=false;
+
+    }
+
 }
   
 
