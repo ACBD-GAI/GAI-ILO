@@ -3111,6 +3111,11 @@ async function clearReport(sheet){
             ) || "{}"
             );
 
+          console.log("SESSION OBJECT:", session);
+console.log("EMAIL:", session.email);
+console.log("SESSION ID:", session.sessionId);
+console.log("LOCAL STORAGE KEY:", "inventorySession_" + BRANCH);
+
 
             params.append(
                 "email",
