@@ -3212,18 +3212,16 @@ console.log("UPLOAD RESPONSE:", data);
 
 
                 document.getElementById("result").innerHTML = `
-
-                <div class="card red">
-
-                ❌ UPLOAD FAILED
-
-                <br><br>
-
-                ${data.status}
-
-                </div>
-
-                `;
+<div class="card red">
+❌ UPLOAD FAILED
+<br><br>
+<b>Status:</b> ${data.status}<br>
+<b>HTTP:</b> ${data.code || "-"}<br><br>
+<pre style="white-space:pre-wrap;font-size:12px;">
+${data.error || ""}
+</pre>
+</div>
+`;
 
 
             }
