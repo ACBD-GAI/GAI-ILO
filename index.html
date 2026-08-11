@@ -635,6 +635,109 @@ margin-top:10px;
   box-sizing:border-box;
 }
   
+
+/* ================= BRANCH SELECTOR ================= */
+#branchScreen{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg,#e3f2fd,#bbdefb);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+.branch-card{
+  width:340px;
+  max-width:90vw;
+  background:#fff;
+  border-radius:25px;
+  padding:28px 24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.18);
+  text-align:center;
+}
+
+.branch-card h2{
+  margin:0 0 8px;
+  color:#1976d2;
+  font-size:26px;
+}
+
+.branch-card p{
+  margin:0 0 20px;
+  color:#666;
+}
+
+.branch-option{
+  width:100%;
+  margin-top:10px;
+  padding:15px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#2196f3,#1565c0);
+  color:#fff;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 7px 16px rgba(25,118,210,.25);
+  transition:.2s;
+}
+
+.branch-option:hover{
+  transform:translateY(-2px);
+}
+
+.branch-option small{
+  display:block;
+  margin-top:3px;
+  opacity:.9;
+  font-weight:normal;
+}
+
+.branch-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  width:340px;
+  max-width:90vw;
+  margin:0 auto;
+}
+
+.branch-grid .branch-option{
+  margin-top:0;
+  padding:13px 8px;
+}
+
+.selected-branch-label{
+  width:280px;
+  max-width:80%;
+  padding:11px 14px;
+  margin:0 auto 5px;
+  box-sizing:border-box;
+  border-radius:12px;
+  background:#e3f2fd;
+  color:#1565c0;
+  text-align:center;
+  font-weight:bold;
+}
+
+.change-branch-btn{
+  width:auto !important;
+  padding:8px 12px !important;
+  margin:0 0 0 8px !important;
+  background:rgba(255,255,255,.18) !important;
+  color:#fff !important;
+  box-shadow:none !important;
+  font-size:12px !important;
+}
+
+#branchTitle{
+  text-transform:uppercase;
+}
+
 </style>
 </head>
 
@@ -642,6 +745,33 @@ margin-top:10px;
 
 
   
+
+<div id="branchScreen">
+  <div class="branch-card">
+    <h2>🏢 SELECT BRANCH</h2>
+    <p>Select the branch you want to access.</p>
+
+    <div class="branch-grid">
+      <button class="branch-option" onclick="selectBranch('GAI')">GAI</button>
+      <button class="branch-option" onclick="selectBranch('CAS')">CAS</button>
+      <button class="branch-option" onclick="selectBranch('BAC')">BAC</button>
+      <button class="branch-option" onclick="selectBranch('BIN')">BIN</button>
+      <button class="branch-option" onclick="selectBranch('BIS')">BIS</button>
+      <button class="branch-option" onclick="selectBranch('CAD')">CAD</button>
+      <button class="branch-option" onclick="selectBranch('DGT')">DGT</button>
+      <button class="branch-option" onclick="selectBranch('KAB')">KAB</button>
+      <button class="branch-option" onclick="selectBranch('KAL')">KAL</button>
+      <button class="branch-option" onclick="selectBranch('PAS')">PAS</button>
+      <button class="branch-option" onclick="selectBranch('POT')">POT</button>
+      <button class="branch-option" onclick="selectBranch('SAN')">SAN</button>
+      <button class="branch-option" onclick="selectBranch('TAB')">TAB</button>
+      <button class="branch-option" onclick="selectBranch('TAN')">TAN</button>
+      <button class="branch-option" onclick="selectBranch('TIS')">TIS</button>
+      <button class="branch-option" onclick="selectBranch('TOL')">TOL</button>
+    </div>
+  </div>
+</div>
+
 
 <div id="loginScreen" style="
   position: fixed;
@@ -656,6 +786,8 @@ margin-top:10px;
 ">
 
   <h2>🔐 SYSTEM LOGIN</h2>
+  <div id="loginBranchLabel" class="selected-branch-label">SELECT BRANCH</div>
+  <button class="cancel-report-btn" style="width:280px;max-width:80%;margin-top:8px;" onclick="changeBranch()">↩ CHANGE BRANCH</button>
   <p style="
 color:#666;
 margin-top:-15px;
@@ -692,10 +824,13 @@ VERIFY OTP
 
     <div class="header-left">
         <img src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&sz=w200">
-        <h3>GAISANO ILOILO BRANCH</h3>&nbsp;&nbsp;
+        <h3 id="branchTitle">SELECTED BRANCH</h3>&nbsp;&nbsp;
     </div>
 
-    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div style="display:flex;align-items:center;">
+      <button class="change-branch-btn" onclick="changeBranch()">CHANGE BRANCH</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 
 </div>
  <div class="container">
@@ -1046,7 +1181,26 @@ CANCEL
 let auditBusy = false;
 let auditCount = 0;
 
-const BRANCH="GAI";
+let BRANCH = localStorage.getItem("inventorySelectedBranch") || "";
+
+const BRANCH_NAMES = {
+  GAI: "GAI BRANCH",
+  CAS: "CAS BRANCH",
+  BAC: "BAC BRANCH",
+  BIN: "BIN BRANCH",
+  BIS: "BIS BRANCH",
+  CAD: "CAD BRANCH",
+  DGT: "DGT BRANCH",
+  KAB: "KAB BRANCH",
+  KAL: "KAL BRANCH",
+  PAS: "PAS BRANCH",
+  POT: "POT BRANCH",
+  SAN: "SAN BRANCH",
+  TAB: "TAB BRANCH",
+  TAN: "TAN BRANCH",
+  TIS: "TIS BRANCH",
+  TOL: "TOL BRANCH"
+};
 let auditMode = false;
 let scanner = null;
 let isScanning = false;
@@ -1068,7 +1222,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycby_fxWlHe9fXJt7DBHFIbdwQSHoRrCR9v5EZgZuLDfHEN_Jn67uELNRUV-xjTx-IFR1/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxTJzwoYDq-fqws3yEkggCo06b9yEYTxcBKrrwz5pAB_UQ4Xd0DKLnwMeB3XbUvss3F/exec";
 
 function getSessionParams(){
 
@@ -1080,6 +1234,7 @@ localStorage.getItem("inventorySession_"+BRANCH)
 
 
 return (
+"&branch=" + encodeURIComponent(BRANCH) +
 "&email=" + encodeURIComponent(session.email || "") +
 "&sessionId=" + encodeURIComponent(session.sessionId || "")
 );
@@ -1138,6 +1293,123 @@ function checkStockAccess(){
   
   
 
+
+/* ================= BRANCH SELECTION ================= */
+
+function updateBranchUI(){
+  if(!BRANCH || !BRANCH_NAMES[BRANCH]) return;
+
+  const label = document.getElementById("loginBranchLabel");
+  const title = document.getElementById("branchTitle");
+
+  if(label){
+    label.textContent = BRANCH + " — " + BRANCH_NAMES[BRANCH];
+  }
+
+  if(title){
+    title.textContent = BRANCH_NAMES[BRANCH];
+  }
+
+  document.title = "Inventory - " + BRANCH_NAMES[BRANCH];
+}
+
+function resetLoginForm(){
+  const otp = document.getElementById("otp");
+  const verify = document.getElementById("verifyBtn");
+  const status = document.getElementById("loginStatus");
+
+  if(otp){
+    otp.value = "";
+    otp.style.display = "none";
+  }
+
+  if(verify) verify.style.display = "none";
+  if(status) status.innerHTML = "";
+
+  const email = document.getElementById("email");
+  if(email) email.focus();
+}
+
+async function selectBranch(branch){
+  branch = String(branch || "").trim().toUpperCase();
+
+  if(!BRANCH_NAMES[branch]){
+    alert("Invalid branch.");
+    return;
+  }
+
+  BRANCH = branch;
+  localStorage.setItem("inventorySelectedBranch", BRANCH);
+
+  updateBranchUI();
+
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+
+  resetLoginForm();
+
+  const session = JSON.parse(
+    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+  );
+
+  if(!session.email || !session.sessionId){
+    return;
+  }
+
+  try{
+    const url =
+      API_URL +
+      "?action=checkSession" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(session.email) +
+      "&sessionId=" + encodeURIComponent(session.sessionId);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(data.status === "VALID"){
+      openApp();
+    }else{
+      localStorage.removeItem("inventorySession_" + BRANCH);
+    }
+  }catch(err){
+    openApp();
+  }
+}
+
+function openApp(){
+  updateBranchUI();
+
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  checkReportAccess();
+}
+
+async function changeBranch(){
+  if(scanner){
+    try{
+      await scanner.stop();
+      await scanner.clear();
+    }catch(e){}
+    scanner = null;
+    isScanning = false;
+  }
+
+  BRANCH = "";
+  localStorage.removeItem("inventorySelectedBranch");
+
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("branchScreen").style.display = "flex";
+
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("searchResult").innerHTML = "";
+}
+
+
 /* ================= LOGIN ================= */
 async function sendOTP(){
 
@@ -1152,7 +1424,9 @@ if(!email){
 
 const res = await fetch(
 API_URL +
-"?action=sendOTP&email=" + encodeURIComponent(email)
+"?action=sendOTP" +
+"&branch=" + encodeURIComponent(BRANCH) +
+"&email=" + encodeURIComponent(email)
 );
 
 // ===== DEBUG SERVER RESPONSE =====
@@ -1272,6 +1546,7 @@ async function verifyOTP() {
     const res = await fetch(
   API_URL +
   "?action=verifyOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
   "&email=" + encodeURIComponent(email) +
   "&otp=" + encodeURIComponent(otp)
 );
@@ -1303,13 +1578,9 @@ console.log(text);
         })
       );
 
-      localStorage.setItem("loginTime", Date.now());
+      localStorage.setItem("loginTime_" + BRANCH, Date.now());
 
-      document.getElementById("loginScreen").style.display = "none";
-      document.getElementById("app").style.display = "block";
-
-      checkReportAccess();
-
+      openApp();
       return;
     }
 
@@ -1354,6 +1625,7 @@ console.log(text);
   const res = await fetch(
     API_URL +
     "?action=forceLogin" +
+    "&branch=" + encodeURIComponent(BRANCH) +
     "&email=" + encodeURIComponent(email) +
     "&otp=" + encodeURIComponent(otp)
   );
@@ -1372,13 +1644,11 @@ time: Date.now()
 })
 );
     
-    localStorage.setItem("loginTime", Date.now());
+    localStorage.setItem("loginTime_" + BRANCH, Date.now());
     
     
 
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    checkReportAccess();
+    openApp();
 
   } else {
 
@@ -1525,6 +1795,15 @@ let tag = data.tag || row[12] || "";
                         onclick="cancelNo()">
                         CANCEL
                     </button>
+                </div>
+            `;
+        }
+        else if (data.status === "WRONG BRANCH") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ WRONG BRANCH<br><br>
+                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
+                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
                 </div>
             `;
         }
@@ -2619,7 +2898,8 @@ localStorage.removeItem(
 "inventorySession_"+BRANCH
 );
 
-localStorage.removeItem("loginTime");
+localStorage.removeItem("loginTime_" + BRANCH);
+localStorage.removeItem("inventorySelectedBranch");
 
 
 // STOP CAMERA
@@ -2642,6 +2922,7 @@ try{
 await fetch(
 API_URL+
 "?action=logout"+
+"&branch="+encodeURIComponent(BRANCH)+
 "&email="+encodeURIComponent(email)+
 "&sessionId="+encodeURIComponent(sessionId)
 );
@@ -2659,7 +2940,7 @@ location.reload();
 
 function checkLoginExpiry(){
 
-  const loginTime = localStorage.getItem("loginTime");
+  const loginTime = localStorage.getItem("loginTime_" + BRANCH);
 
   if(!loginTime){
     return;
@@ -2680,7 +2961,7 @@ localStorage.removeItem(key);
 }
 
 });
-    localStorage.removeItem("loginTime");
+    localStorage.removeItem("loginTime_" + BRANCH);
    
 
     alert("Session expired. Please login again.");
@@ -2702,99 +2983,76 @@ document.getElementById("otp").addEventListener("keydown",e=>{
 
 window.addEventListener("DOMContentLoaded", async function(){
 
-  
+  checkLoginExpiry();
 
+  const savedBranch =
+    localStorage.getItem("inventorySelectedBranch") || "";
 
-
-
-checkLoginExpiry();
-
-  const session =
-JSON.parse(
-localStorage.getItem("inventorySession_"+BRANCH)
-|| "{}"
-);
-
-
-const email = session.email || "";
-const sessionId = session.sessionId || "";
-
-
-  // NO SAVED LOGIN
-  if(!email || !sessionId){
-
-    document.getElementById("loginScreen").style.display="flex";
-    document.getElementById("app").style.display="none";
-
+  if(!BRANCH_NAMES[savedBranch]){
+    document.getElementById("branchScreen").style.display = "flex";
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "none";
     return;
   }
 
+  BRANCH = savedBranch;
+  updateBranchUI();
+
+  const session =
+    JSON.parse(
+      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+    );
+
+  const email = session.email || "";
+  const sessionId = session.sessionId || "";
+
+  if(!email || !sessionId){
+    document.getElementById("branchScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+    resetLoginForm();
+    return;
+  }
 
   try {
 
-   const url =
-  API_URL +
-  "?action=checkSession" +
-  "&email=" + encodeURIComponent(email) +
-  "&sessionId=" + encodeURIComponent(sessionId);
+    const url =
+      API_URL +
+      "?action=checkSession" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email) +
+      "&sessionId=" + encodeURIComponent(sessionId);
 
-const controller = new AbortController();
-const timeout = setTimeout(() => controller.abort(), 10000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-const res = await fetch(url, {
-  signal: controller.signal
-});
+    const res = await fetch(url, {
+      signal: controller.signal
+    });
 
-clearTimeout(timeout);
+    clearTimeout(timeout);
 
-const data = await res.json();
-
+    const data = await res.json();
 
     if(data.status === "VALID"){
-
-      // KEEP LOGIN
-      document.getElementById("loginScreen").style.display="none";
-      document.getElementById("app").style.display="block";
-      checkReportAccess();
-
+      openApp();
     }
     else {
-
-      // ONLY REMOVE IF SERVER REALLY SAYS INVALID
-      
-     Object.keys(localStorage).forEach(key=>{
-
-if(key.startsWith("inventorySession_")){
-
-localStorage.removeItem(key);
-
-}
-
-});
-      localStorage.removeItem("loginTime");
-      
-
-
-      document.getElementById("loginScreen").style.display="flex";
-      document.getElementById("app").style.display="none";
-
+      localStorage.removeItem("inventorySession_" + BRANCH);
+      document.getElementById("branchScreen").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("app").style.display = "none";
+      resetLoginForm();
     }
-
 
   } catch(error){
 
     console.log("Session check failed:", error);
 
-
-    // KEEP USER LOGGED IN IF INTERNET TEMPORARILY FAILS
-    document.getElementById("loginScreen").style.display="none";
-    document.getElementById("app").style.display="block";
-
+    openApp();
   }
 
-
 });
-
 
   const siInput = document.getElementById("siNo");
 
@@ -3091,6 +3349,12 @@ async function clearReport(sheet){
                 "uploadStock"
             );
 
+
+            
+            params.append(
+                "branch",
+                BRANCH
+            );
 
             params.append(
                 "file",
