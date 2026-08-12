@@ -1,3 +1,10 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 /* =========================================================
    ⚡ INVENTORY PRO — PREMIUM DARK GLASS UI
@@ -1957,3 +1964,2231 @@ input:focus-visible{
 
 }
 </style>
+</head>
+
+<body>
+
+
+  
+
+<div id="branchScreen">
+  <div class="branch-card">
+    <h2>🏢 SELECT BRANCH</h2>
+    <p>Select the branch you want to access.</p>
+
+    <div class="branch-grid">
+      <button class="branch-option" onclick="selectBranch('GAI')">GAI</button>
+      <button class="branch-option" onclick="selectBranch('CAS')">CAS</button>
+      <button class="branch-option" onclick="selectBranch('BAC')">BAC</button>
+      <button class="branch-option" onclick="selectBranch('BIN')">BIN</button>
+      <button class="branch-option" onclick="selectBranch('BIS')">BIS</button>
+      <button class="branch-option" onclick="selectBranch('CAD')">CAD</button>
+      <button class="branch-option" onclick="selectBranch('DGT')">DGT</button>
+      <button class="branch-option" onclick="selectBranch('KAB')">KAB</button>
+      <button class="branch-option" onclick="selectBranch('KAL')">KAL</button>
+      <button class="branch-option" onclick="selectBranch('PAS')">PAS</button>
+      <button class="branch-option" onclick="selectBranch('POT')">POT</button>
+      <button class="branch-option" onclick="selectBranch('SAN')">SAN</button>
+      <button class="branch-option" onclick="selectBranch('TAB')">TAB</button>
+      <button class="branch-option" onclick="selectBranch('TAN')">TAN</button>
+      <button class="branch-option" onclick="selectBranch('TIS')">TIS</button>
+      <button class="branch-option" onclick="selectBranch('TOL')">TOL</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="loginScreen" style="
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:#eef2f7;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  z-index:9999;
+">
+
+  <h2>🔐 SYSTEM LOGIN</h2>
+  <div id="loginBranchLabel" class="selected-branch-label">SELECT BRANCH</div>
+  <button class="cancel-report-btn" style="width:280px;max-width:80%;margin-top:8px;" onclick="changeBranch()">↩ CHANGE BRANCH</button>
+  <p style="
+color:#666;
+margin-top:-15px;
+margin-bottom:15px;
+">
+<BR><BR>Secure OTP Login
+</p>
+
+<input id="email" placeholder="Enter Gmail">
+
+<button class="btn-blue" onclick="sendOTP()">
+SEND OTP
+</button>
+
+
+<input id="otp" placeholder="Enter OTP"
+style="display:none">
+
+
+<button id="verifyBtn" 
+class="btn-blue"
+style="display:none"
+onclick="verifyOTP()">
+VERIFY OTP
+</button>
+
+  <p id="loginStatus"></p>
+</div>
+
+
+<div id="app" style="display:none;">
+
+  <div class="header">
+
+    <div class="header-left">
+        <img src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&sz=w200">
+        <h3 id="branchTitle">SELECTED BRANCH</h3>&nbsp;&nbsp;
+    </div>
+
+    <div style="display:flex;align-items:center;">
+      <button class="change-branch-btn" onclick="changeBranch()">CHANGE BRANCH</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+</div>
+ <div class="container">
+
+    <!-- RESULT AREA -->
+    <div id="result"></div>
+
+    
+
+    <!-- QR SCANNER -->
+    <div id="reader" style="display:none;"></div>
+
+    <!-- AUDIT SCANNER -->
+    <div id="auditReader"
+    style="
+    display:none;
+    width:100%;
+    max-width:360px;
+    margin:auto;
+    border-radius:15px;
+    overflow:hidden;
+    ">
+    </div>
+  <div id="auditCounter"
+style="
+display:none;
+text-align:center;
+font-weight:bold;
+margin:10px;
+font-size:16px;
+">
+Scanned : 0
+</div>
+
+    <input id="siNo" class="si-input" placeholder="Enter SI No">
+
+   <div class="button-grid">
+
+<button id="scanBtn" class="btn-blue" onclick="toggleScan()">
+📷 START SCAN
+</button>
+
+<button
+id="auditScanBtn"
+class="btn-orange"
+onclick="toggleAuditScan()">
+🔄 RE-INVENTORY
+</button>
+
+<button 
+id="tagBtn"
+class="btn-blue"
+onclick="showTagDialog()"
+disabled>
+🏷 ADD VIA TAG NUMBER
+</button>
+
+<button class="btn-blue" onclick="searchSI()">
+🔍 SEARCH SI
+</button>
+
+<button
+id="refreshBtn"
+class="btn-orange"
+onclick="refreshPage()">
+♻ REFRESH
+</button>
+
+
+</div>
+
+
+
+   <div id="searchResult"></div>
+
+   
+
+  </div>
+<div id="tagDialog" class="report-overlay">
+
+<div class="report-modal">
+
+<div class="report-title">
+🏷 Tag Number Search
+</div>
+
+<div class="report-subtitle">
+Enter Tag Number 
+</div>
+
+
+<input 
+id="tagNumberInput"
+placeholder="Enter Tag Number"
+>
+
+
+<button 
+class="send-report-btn"
+onclick="searchTagNumber()">
+SEARCH
+</button>
+
+
+<button 
+class="cancel-report-btn"
+onclick="closeTagDialog()">
+CANCEL
+</button>
+
+
+</div>
+
+</div>
+
+</div>
+  
+</div>
+  <div id="quitAuditDialog" class="report-overlay">
+
+<div class="report-modal">
+
+<div class="report-title">
+⚠ Stop Re-Inventory?
+</div>
+
+<div
+id="quitAuditMessage"
+class="report-subtitle"
+style="
+line-height:1.6;
+font-size:15px;
+margin-top:15px;
+">
+</div>
+
+<button
+class="btn-orange"
+onclick="confirmQuitAudit()">
+🛑 STOP RE-INVENTORY
+</button>
+
+<button
+class="cancel-report-btn"
+onclick="cancelQuitAudit()">
+CONTINUE SCANNING
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+
+let auditBusy = false;
+let auditCount = 0;
+
+let BRANCH = localStorage.getItem("inventorySelectedBranch") || "";
+
+const BRANCH_NAMES = {
+  GAI: "GAI BRANCH",
+  CAS: "CAS BRANCH",
+  BAC: "BAC BRANCH",
+  BIN: "BIN BRANCH",
+  BIS: "BIS BRANCH",
+  CAD: "CAD BRANCH",
+  DGT: "DGT BRANCH",
+  KAB: "KAB BRANCH",
+  KAL: "KAL BRANCH",
+  PAS: "PAS BRANCH",
+  POT: "POT BRANCH",
+  SAN: "SAN BRANCH",
+  TAB: "TAB BRANCH",
+  TAN: "TAN BRANCH",
+  TIS: "TIS BRANCH",
+  TOL: "TOL BRANCH"
+};
+let auditMode = false;
+let scanner = null;
+let isScanning = false;
+let isSaving = false;
+
+let lastAuditBarcode = "";
+let tempCode = "";
+let tempSi = "";
+
+/* ===== NEW FOR CONTINUOUS RE-INVENTORY ===== */
+let auditQueue = [];
+let auditProcessing = false;
+let auditRecent = new Map();
+/* =========================================== */
+
+const STOCK_ADMIN = [
+  "remnvill@gmail.com",
+  "fmfc_audit654@yahoo.com"
+];
+
+
+const API_URL = "https://script.google.com/macros/s/AKfycbxng8kMj4DViaX43Zy-SJG6Q_GWkusS9J-4hH1z5vc_I7ZeQjxrY0VlvuwxjlqQ1msU/exec";
+
+/* ================= DIRECT SUPABASE ================= */
+const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDg3NjE3MSwiZXhwIjoyMTAwNDUyMTcxfQ.RfKJxtV06KMMNGHAqG0BhrYsjtee_eUq0m2ktrgUcxA";
+
+const BRANCH_PREFIX = {
+  GAI:"gai", CAS:"cas", BAC:"bac", BIN:"bin", BIS:"bis", CAD:"cad", DGT:"dgt",
+  KAB:"kab", KAL:"kal", PAS:"pas", POT:"pot", SAN:"san", TAB:"tab", TAN:"tan",
+  TIS:"tis", TOL:"tol"
+};
+
+function sbHeaders(extra={}) {
+  return Object.assign({
+    apikey: SUPABASE_KEY,
+    Authorization: "Bearer " + SUPABASE_KEY,
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  }, extra);
+}
+
+async function sbRequest(path, options={}) {
+  const res = await fetch(SUPABASE_URL + path, Object.assign({}, options, {
+    headers: sbHeaders(options.headers || {})
+  }));
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : []; } catch(e) {
+    throw new Error("Supabase returned invalid JSON: " + text.slice(0,300));
+  }
+  if (!res.ok) {
+    const msg = data && (data.message || data.error || data.hint || data.details);
+    throw new Error("Supabase HTTP " + res.status + (msg ? ": " + msg : ""));
+  }
+  return data;
+}
+
+function branchTable(branch, type) {
+  const p = BRANCH_PREFIX[String(branch || "").trim().toUpperCase()];
+  if (!p) throw new Error("INVALID BRANCH");
+  return p + "_" + type;
+}
+
+function currentSession() {
+  return JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
+}
+
+async function requireSupabaseAccess() {
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  if (!BRANCH || !email || !session.sessionId) throw new Error("SESSION EXPIRED");
+
+  const rows = await sbRequest("/rest/v1/allowed_users?email=eq." + encodeURIComponent(email) + "&select=*");
+  if (!Array.isArray(rows) || !rows.length) throw new Error("EMAIL_DENIED");
+
+  const active = rows.some(r => {
+    const v = r.active ?? r.ACTIVE ?? r.enabled ?? r.ENABLED;
+    return v === undefined || v === true || String(v).toLowerCase() === "true" || String(v) === "1";
+  });
+  if (!active) throw new Error("EMAIL_DENIED");
+
+  const allowed = rows.some(r => {
+    const raw = r.branch ?? r.BRANCH ?? r.branch_code ?? r.BRANCH_CODE ?? r.branches ?? r.BRANCHES;
+    if (raw === undefined || raw === null || String(raw).trim() === "") return true;
+    if (Array.isArray(raw)) return raw.map(x=>String(x).trim().toUpperCase()).includes(BRANCH);
+    return String(raw).split(/[,|;]/).map(x=>x.trim().toUpperCase()).includes(BRANCH);
+  });
+  if (!allowed) throw new Error("EMAIL_DENIED");
+  return {email, branch:BRANCH};
+}
+
+function normalizeBarcode(value) {
+  return String(value || "").trim().replace(/\s+/g, "").toUpperCase();
+}
+
+/* EXACT ORIGINAL DECODE FIX — DO NOT CHANGE */
+function decodeBarcode(code){
+  code = String(code || "").trim().toUpperCase();
+  if(code.indexOf("-") > -1){ return normalizeBarcode(code); }
+  if(code.length % 2 !== 0){ return normalizeBarcode(code); }
+  let result = "";
+  try{
+    for(let i = 0; i < code.length; i += 2){
+      const value = parseInt(code.substr(i,2),16);
+      if(isNaN(value)){ return normalizeBarcode(code); }
+      result += String.fromCharCode(value ^ 91);
+    }
+    return normalizeBarcode(result);
+  }catch(err){ return normalizeBarcode(code); }
+}
+
+function getBranchFromBarcode(barcode){
+  const parts = normalizeBarcode(barcode).split("-");
+  return parts.length >= 2 ? parts[0] : "";
+}
+
+function validateBarcodeBranch(barcode, branch){
+  const parts = normalizeBarcode(barcode).split("-");
+  return parts.length >= 2 && parts[0] === String(branch).trim().toUpperCase();
+}
+
+function formatLens(value) {
+  if (value === null || value === undefined) return "";
+  let str = String(value).trim();
+  if (str.includes("#ERROR") || str.includes("#VALUE")) return "0.00";
+  str = str.replace(/^\++/, "");
+  const hadPlus = String(value).trim().startsWith("+");
+  if (!isNaN(str) && str !== "" && !str.includes("/")) {
+    const num = Number(str);
+    return hadPlus ? "+" + num.toFixed(2) : num.toFixed(2);
+  }
+  if (str.includes("/")) return hadPlus ? "+" + str : str;
+  return hadPlus ? "+" + str : str;
+}
+
+function stockRowArray(s){
+  return [s.SDATE,s.SUPPLIER,s.DR,s.COST,s.ASG,s.CB,s.FD,s.UNITS,s.POWER,s.LENSTYPE,s.PUNIT,s.BR,s.NTAGN,s.CATEGORY,s.DESCRIPTION,s.LENSCODE,s.SELLINGPRICE,s.DELIVERYDATE,s.ORNUMBER,s.ORDATE,s.REMARKS,s.TAGPRICE,s.QR];
+}
+
+function manilaNow(){
+  return new Intl.DateTimeFormat("en-US", {timeZone:"Asia/Manila", month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(new Date());
+}
+
+async function getStockByBarcodeDirect(barcode){
+  const parts = normalizeBarcode(barcode).split("-");
+  if(parts.length < 2) return null;
+  const br = parts[0], ntagn = parts.slice(1).join("-");
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
+  return rows[0] || null;
+}
+
+async function isAlreadySoldDirect(barcode){
+  const parts = normalizeBarcode(barcode).split("-");
+  if(parts.length < 2) return null;
+  const br = parts[0], ntagn = parts.slice(1).join("-");
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1");
+  return rows[0] || null;
+}
+
+async function directCheck(rawBarcode){
+  await requireSupabaseAccess();
+  const scannedBarcode = normalizeBarcode(rawBarcode);
+  const barcode = decodeBarcode(scannedBarcode);
+  if(!validateBarcodeBranch(barcode, BRANCH)){
+    return {status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode)};
+  }
+  const sold = await isAlreadySoldDirect(barcode);
+  if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
+  const stock = await getStockByBarcodeDirect(barcode);
+  if(stock){ return {status:"FOUND", row:stockRowArray(stock), colJ:String(stock.LENSTYPE||""), colO:String(stock.DESCRIPTION||""), tag:String(stock.NTAGN||"")}; }
+  return {status:"NOT FOUND"};
+}
+
+async function directSave(rawBarcode, siNo){
+  const access = await requireSupabaseAccess();
+  const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
+  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+  if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
+  const stock = await getStockByBarcodeDirect(barcode);
+  if(!stock) return {status:"NOT FOUND"};
+  const row = stockRowArray(stock);
+  while(row.length < 27) row.push("");
+  row[14] = formatLens(row[14]);
+  row[23] = String(siNo || "").trim();
+  row[24] = manilaNow();
+  row[25] = access.email;
+  row[26] = "";
+  const payload = [{SDATE:row[0],SUPPLIER:row[1],DR:row[2],COST:row[3],ASG:row[4],CB:row[5],FD:row[6],UNITS:row[7],POWER:row[8],LENSTYPE:row[9],PUNIT:row[10],BR:row[11],NTAGN:row[12],CATEGORY:row[13],DESCRIPTION:row[14],LENSCODE:row[15],SELLINGPRICE:row[16],DELIVERYDATE:row[17],ORNUMBER:row[18],ORDATE:row[19],REMARKS:row[20],TAGPRICE:row[21],QR:row[22],"SI NO.":row[23],"DATE AND TIME":row[24],"USER EMAIL":row[25],STATUS:row[26]}];
+  await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
+  return {status:"ADDED TO SOLD",row};
+}
+
+async function directSearchSI(siNo){
+  await requireSupabaseAccess();
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?%22SI%20NO.%22=eq." + encodeURIComponent(siNo) + "&select=LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22&limit=100");
+  return {status:"OK",items:rows.map(r=>({colJ:String(r.LENSTYPE||""),colO:formatLens(String(r.DESCRIPTION||"")),tag:String(r.NTAGN||""),siNo:String(r["SI NO."]||""),date:String(r["DATE AND TIME"]||"")}))};
+}
+
+async function directCheckTag(tag){
+  await requireSupabaseAccess();
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(String(tag).trim().toUpperCase()) + "&select=*&limit=1");
+  if(!rows.length) return {status:"NOT_FOUND"};
+  const s=rows[0], barcode=normalizeBarcode(s.BR+"-"+s.NTAGN);
+  const sold=await isAlreadySoldDirect(barcode);
+  if(sold) return {status:"DUPLICATE",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
+  return {status:"FOUND",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
+}
+
+async function directSaveAudit(rawBarcode){
+  const access=await requireSupabaseAccess();
+  const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
+  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+  const parts=barcode.split("-");
+  if(parts.length<2) return {status:"INVALID BARCODE"};
+  const br=parts[0], ntagn=parts.slice(1).join("-");
+  const auditTable=branchTable(BRANCH,"audit");
+  const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
+  if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
+  const stock=await getStockByBarcodeDirect(barcode);
+  if(!stock) return {status:"NOT_FOUND"};
+  const payload=[{SDATE:String(stock.SDATE||""),SUPPLIER:String(stock.SUPPLIER||""),DR:String(stock.DR||""),COST:String(stock.COST||""),ASG:String(stock.ASG||""),CB:String(stock.CB||""),FD:String(stock.FD||""),UNITS:String(stock.UNITS||""),POWER:String(stock.POWER||""),LENSTYPE:String(stock.LENSTYPE||""),PUNIT:String(stock.PUNIT||""),BR:String(stock.BR||""),NTAGN:String(stock.NTAGN||""),CATEGORY:String(stock.CATEGORY||""),DESCRIPTION:String(formatLens(stock.DESCRIPTION||"")),LENSCODE:String(stock.LENSCODE||""),SELLINGPRICE:String(stock.SELLINGPRICE||""),DELIVERYDATE:String(stock.DELIVERYDATE||""),ORNUMBER:String(stock.ORNUMBER||""),ORDATE:String(stock.ORDATE||""),REMARKS:String(stock.REMARKS||""),TAGPRICE:String(stock.TAGPRICE||""),QR:String(stock.QR||""),"SI NO.":"","DATE AND TIME":manilaNow(),"USER EMAIL":access.email,STATUS:"AUDITED"}];
+  await sbRequest("/rest/v1/"+auditTable,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
+  return {status:"RECORDED",colO:String(stock.DESCRIPTION||""),colJ:String(stock.LENSTYPE||""),tag:String(stock.NTAGN||"")};
+}
+
+
+  
+  
+
+
+/* ================= BRANCH SELECTION ================= */
+
+function updateBranchUI(){
+  if(!BRANCH || !BRANCH_NAMES[BRANCH]) return;
+
+  const label = document.getElementById("loginBranchLabel");
+  const title = document.getElementById("branchTitle");
+
+  if(label){
+    label.textContent = BRANCH + " — " + BRANCH_NAMES[BRANCH];
+  }
+
+  if(title){
+    title.textContent = BRANCH_NAMES[BRANCH];
+  }
+
+  document.title = "Inventory - " + BRANCH_NAMES[BRANCH];
+}
+
+function resetLoginForm(){
+  const otp = document.getElementById("otp");
+  const verify = document.getElementById("verifyBtn");
+  const status = document.getElementById("loginStatus");
+
+  if(otp){
+    otp.value = "";
+    otp.style.display = "none";
+  }
+
+  if(verify) verify.style.display = "none";
+  if(status) status.innerHTML = "";
+
+  const email = document.getElementById("email");
+  if(email) email.focus();
+}
+
+async function selectBranch(branch){
+  branch = String(branch || "").trim().toUpperCase();
+
+  if(!BRANCH_NAMES[branch]){
+    alert("Invalid branch.");
+    return;
+  }
+
+  BRANCH = branch;
+  localStorage.setItem("inventorySelectedBranch", BRANCH);
+
+  updateBranchUI();
+
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+
+  resetLoginForm();
+
+}
+
+function openApp(){
+  updateBranchUI();
+
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+}
+
+async function changeBranch(){
+  if(scanner){
+    try{
+      await scanner.stop();
+      await scanner.clear();
+    }catch(e){}
+    scanner = null;
+    isScanning = false;
+  }
+
+  BRANCH = "";
+  localStorage.removeItem("inventorySelectedBranch");
+
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("branchScreen").style.display = "flex";
+
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("searchResult").innerHTML = "";
+}
+
+
+/* ================= LOGIN ================= */
+async function sendOTP(){
+
+try {
+
+const email = document.getElementById("email").value.trim();
+
+if(!email){
+  alert("Enter Gmail");
+  return;
+}
+
+const res = await fetch(
+API_URL +
+"?action=sendOTP" +
+"&branch=" + encodeURIComponent(BRANCH) +
+"&email=" + encodeURIComponent(email)
+);
+
+// ===== DEBUG SERVER RESPONSE =====
+const text = await res.text();
+
+console.log("SEND OTP RAW RESPONSE:");
+console.log(text);
+
+let data;
+
+try{
+    data = JSON.parse(text);
+}
+catch(e){
+
+    document.getElementById("loginStatus").innerHTML = `
+    <div style="color:red">
+    ❌ SERVER RETURNED HTML
+    <br><br>
+    <pre style="
+        white-space:pre-wrap;
+        font-size:12px;
+        max-height:300px;
+        overflow:auto;
+        background:#f5f5f5;
+        padding:10px;
+        border-radius:8px;
+    ">
+${text.replace(/</g,"&lt;")}
+    </pre>
+    </div>
+    `;
+
+    console.log(text);
+    return;
+}
+// ================================
+
+if (data.status === "OTP_SENT") {
+
+    if (data.alreadyLoggedIn) {
+
+      document.getElementById("loginStatus").innerHTML =
+      `
+      <div class="login-warning">
+      ⚠ Account already logged in.<br><br>
+
+      <button
+      onclick="forceLogin()"
+      style="
+      background:#ff9800;
+      color:white;
+      padding:10px 20px;
+      border:none;
+      border-radius:10px;
+      font-weight:bold;
+      cursor:pointer;
+      ">
+      FORCE LOGOUT OTHER DEVICE
+      </button>
+
+      </div>
+      `;
+
+    } else {
+
+      document.getElementById("loginStatus").innerText =
+      "✅ OTP sent to Gmail";
+
+    }
+
+    const otpBox = document.getElementById("otp");
+
+    otpBox.style.display = "block";
+    document.getElementById("verifyBtn").style.display = "block";
+
+    otpBox.focus();
+    otpBox.select();
+
+}
+else if(data.status === "EMAIL_DENIED"){
+
+    document.getElementById("loginStatus").innerText =
+    "❌ Gmail not allowed.";
+
+}
+else{
+
+    document.getElementById("loginStatus").innerText =
+    "❌ Login error.";
+
+}
+
+}
+catch(err){
+
+document.getElementById("loginStatus").innerHTML =
+`
+<div style="color:red">
+❌ ERROR:<br>
+${err}
+</div>
+`;
+
+console.log(err);
+
+}
+
+}
+async function verifyOTP() {
+
+  try {
+
+    const email = document.getElementById("email").value.trim();
+    const otp = document.getElementById("otp").value.trim();
+
+    const res = await fetch(
+  API_URL +
+  "?action=verifyOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
+  "&email=" + encodeURIComponent(email) +
+  "&otp=" + encodeURIComponent(otp)
+);
+
+const text = await res.text();
+
+console.log(text);
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.log(text);
+
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Server returned invalid response.<br>Please try again.";
+
+      return;
+    }
+
+    if (data.status === "OK") {
+
+      localStorage.setItem(
+        "inventorySession_" + BRANCH,
+        JSON.stringify({
+          email,
+          sessionId: data.sessionId,
+          time: Date.now()
+        })
+      );
+
+      localStorage.setItem("loginTime_" + BRANCH, Date.now());
+
+      openApp();
+      return;
+    }
+
+    if (data.status === "ALREADY_LOGGED_IN") {
+
+      if (confirm("Already logged in.\nForce logout other device?")) {
+        forceLogin();
+      }
+
+      return;
+    }
+
+    if (data.status === "INVALID") {
+
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Wrong OTP.";
+
+      return;
+    }
+
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Login failed.";
+
+  }
+
+  catch(err){
+
+    console.error(err);
+
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Cannot connect to server.";
+
+  }
+
+}
+
+  async function forceLogin() {
+
+  const email = document.getElementById("email").value;
+  const otp = document.getElementById("otp").value;
+
+  const res = await fetch(
+    API_URL +
+    "?action=forceLogin" +
+    "&branch=" + encodeURIComponent(BRANCH) +
+    "&email=" + encodeURIComponent(email) +
+    "&otp=" + encodeURIComponent(otp)
+  );
+
+  const data = await res.json();
+
+  if (data.status === "OK") {
+
+    localStorage.setItem("inventoryLoggedIn", "true");
+localStorage.setItem(
+"inventorySession_"+BRANCH,
+JSON.stringify({
+email: email,
+sessionId: data.sessionId,
+time: Date.now()
+})
+);
+    
+    localStorage.setItem("loginTime_" + BRANCH, Date.now());
+    
+    
+
+    openApp();
+
+  } else {
+
+    alert("Force login failed. Please request a new OTP.");
+
+  }
+
+}
+
+
+  
+  
+
+
+function setUIScanning(state) {
+  const btn = document.getElementById("scanBtn");
+  const siBox = document.getElementById("siNo");
+  const reader = document.getElementById("reader");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  if (state) {
+    btn.innerHTML = "⛔ STOP SCANNING";
+    siBox.disabled = true;
+    reader.style.display = "block";
+    refreshBtn.disabled = true;
+    refreshBtn.style.opacity = "0.5";
+  } else {
+    btn.innerHTML = "📷 START SCAN";
+    siBox.disabled = false;
+    reader.style.display = "none";
+    refreshBtn.disabled = false;
+    refreshBtn.style.opacity = "1";
+  }
+}
+
+
+
+async function toggleScan() {
+  const siNo = document.getElementById("siNo").value;
+  if (!siNo) return alert("Enter SI No");
+
+  if (isScanning) {
+    isScanning = false;
+    setUIScanning(false);
+    if (scanner) {
+      await scanner.stop();
+      await scanner.clear();
+      scanner = null;
+    }
+    return;
+  }
+
+  clearUI();
+  isScanning = true;
+  setUIScanning(true);
+
+const devices = await Html5Qrcode.getCameras();
+
+if(!devices.length){
+  alert("No camera detected");
+  isScanning = false;
+  setUIScanning(false);
+  return;
+}
+
+let cameraId = devices[0].id;
+
+for (let d of devices) {
+  const label = (d.label || "").toLowerCase();
+
+  if (label.includes("back") || label.includes("rear")) {
+    cameraId = d.id;
+    break;
+  }
+}
+
+ scanner = new Html5Qrcode("reader");
+
+await scanner.start(
+    {
+        deviceId: { exact: cameraId }
+    },
+    {
+        fps: 20,
+        qrbox: {
+            width: 300,
+            height: 300
+        },
+        aspectRatio: 1.0,
+        videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+        }
+    },
+    async (code) => {
+
+        if (!isScanning) return;
+
+        isScanning = false;
+        await scanner.stop();
+        await scanner.clear();
+        scanner = null;
+        setUIScanning(false);
+
+        beep();
+        vibrate();
+
+        tempCode = code;
+        tempSi = siNo;
+
+        let data;
+        try {
+          data = await directCheck(code);
+        } catch (err) {
+          document.getElementById("result").innerHTML = `
+            <div class="card red">
+              ❌ ${err.message || err}
+            </div>`;
+          return;
+        }
+
+      let row = data.row || [];
+
+let colJ = data.colJ || row[9] || "";
+let colO = data.colO || row[14] || "";
+
+let tag = data.tag || row[12] || "";
+
+        if (data.status === "FOUND") {
+            document.getElementById("result").innerHTML = `
+                <div class="card green scan-animate">
+                    ✅ AVAILABLE<br><br>
+                    <b>${colO}</b><br>
+                    ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${tag}</b></small><br>
+                    
+
+                    <button id="saveBtn"
+                        class="btn-blue"
+                        onclick="saveYes()">
+                        ADD TO SOLD
+                    </button>
+
+                    <button class="btn-orange"
+                        onclick="cancelNo()">
+                        CANCEL
+                    </button>
+                </div>
+            `;
+        }
+        else if (data.status === "WRONG BRANCH") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ WRONG BRANCH<br><br>
+                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
+                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
+                </div>
+            `;
+        }
+        else if (data.status === "DUPLICATE") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    🛑 ALREADY SOLD<br><br>
+                    <b>${colO}</b><br>
+                    ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${tag || ""}</b></small><br>
+                   
+                </div>
+            `;
+        }
+        else {
+            document.getElementById("result").innerHTML = `
+                <div class="no-results">
+                    ❌ NOT FOUND
+                </div><br>
+                <b>${colO}</b><br>
+                ${colJ ? `<small>${colJ}</small>` : ""}
+            `;
+        }
+    }
+);
+
+// ================= CAMERA IMPROVEMENTS =================
+
+try {
+
+    const video = document.querySelector("#reader video");
+
+    if (video && video.srcObject) {
+
+        const track = video.srcObject.getVideoTracks()[0];
+
+        if (track) {
+
+            const capabilities = track.getCapabilities();
+
+            // Continuous autofocus
+            if (
+                capabilities.focusMode &&
+                capabilities.focusMode.includes("continuous")
+            ) {
+                await track.applyConstraints({
+                    advanced: [{
+                        focusMode: "continuous"
+                    }]
+                });
+
+                console.log("Continuous autofocus enabled");
+            }
+
+            // Auto zoom if supported
+       if (capabilities.zoom) {
+
+    const desiredZoom = 2.0;  
+
+    await track.applyConstraints({
+        advanced: [{
+            zoom: desiredZoom
+        }]
+    });
+
+                console.log("Camera zoom enabled");
+            }
+
+        }
+
+    }
+
+}
+catch (e) {
+
+    console.log("Camera features not supported:", e);
+
+}
+}
+
+  async function stopNormalScanner(){
+
+  if(scanner){
+
+    try{
+      await scanner.stop();
+      await scanner.clear();
+    }
+    catch(e){
+      console.log("Normal scanner stop:", e);
+    }
+
+    scanner=null;
+  }
+
+  isScanning=false;
+
+  setUIScanning(false);
+
+}
+
+  let auditScanner = null;
+let auditScanning = false;
+
+
+  
+
+async function toggleAuditScan() {
+
+  const btn = document.getElementById("auditScanBtn");
+  const scanBtn = document.getElementById("scanBtn");
+
+
+  // STOP NORMAL SCANNER FIRST
+  await stopNormalScanner();
+
+
+
+
+  // ================= STOP AUDIT =================
+
+if (auditScanning) {
+
+  // Warn if there are still queued items
+  if (auditQueue.length > 0 || auditProcessing) {
+
+    const pending = auditQueue.length + (auditProcessing ? 1 : 0);
+
+   const quit = await askQuitAudit(pending);
+
+if (!quit) {
+    return;
+}
+  }
+
+  auditScanning = false;
+
+  btn.innerHTML = "🔄 RE-INVENTORY";
+
+  scanBtn.disabled = false;
+  scanBtn.style.opacity = "1";
+  scanBtn.style.cursor = "pointer";
+
+  if (auditScanner) {
+    try {
+      await auditScanner.stop();
+      await auditScanner.clear();
+    } catch (e) {
+      console.log(e);
+    }
+
+    auditScanner = null;
+  }
+
+  document.getElementById("auditReader").style.display = "none";
+
+document.getElementById("auditCounter").style.display = "none";
+document.getElementById("auditCounter").innerHTML = "Scanned : 0";
+
+return;
+
+  return;
+}
+
+
+  // ================= START AUDIT =================
+
+
+  auditScanning = true;
+ auditQueue.length = 0;
+auditProcessing = false;
+auditRecent.clear();
+
+auditCount = 0;
+
+document.getElementById("auditCounter").style.display = "block";
+
+document.getElementById("auditCounter").innerHTML =
+"Scanned : 0";
+
+
+  btn.innerHTML = "⏹ STOP AUDIT";
+
+
+  scanBtn.disabled = true;
+  scanBtn.style.opacity = "0.5";
+  scanBtn.style.cursor = "not-allowed";
+
+
+  document.getElementById("auditReader").style.display="block";
+
+
+
+  const cameras = await Html5Qrcode.getCameras();
+
+
+  if(!cameras.length){
+
+    alert("No camera detected");
+
+    auditScanning=false;
+
+    btn.innerHTML="🔄 RE-INVENTORY";
+
+    return;
+
+  }
+
+
+
+  let cameraId = cameras[0].id;
+
+
+
+  for(let cam of cameras){
+
+    let label=(cam.label || "").toLowerCase();
+
+
+    if(label.includes("back") || label.includes("rear")){
+
+      cameraId=cam.id;
+      break;
+
+    }
+
+  }
+
+
+
+  auditScanner = new Html5Qrcode("auditReader");
+
+
+
+  try {
+
+
+    await auditScanner.start(
+
+      {
+        deviceId:{
+          exact:cameraId
+        }
+      },
+
+
+      {
+
+        fps:20,
+
+        qrbox:{
+          width:300,
+          height:300
+        },
+
+        aspectRatio:1,
+
+
+        videoConstraints:{
+
+          facingMode:"environment",
+
+          width:{
+            ideal:1920
+          },
+
+          height:{
+            ideal:1080
+          }
+
+        }
+
+      },
+
+
+     async (decodedText) => {
+
+    if (!auditScanning) return;
+
+    const barcode = decodedText.trim().toUpperCase();
+
+    // Ignore same barcode within 2 seconds
+    const now = Date.now();
+    const last = auditRecent.get(barcode) || 0;
+
+    if (now - last < 2000) return;
+
+    auditRecent.set(barcode, now);
+
+    // Cleanup old entries
+    for (const [k, t] of auditRecent) {
+        if (now - t > 10000) {
+            auditRecent.delete(k);
+        }
+    }
+
+    // Immediate feedback
+    beep();
+    vibrate();
+
+    // Don't queue the same barcode twice
+if (!auditQueue.includes(barcode)) {
+    auditQueue.push(barcode);
+    processAuditQueue();
+}
+
+}
+
+);      
+
+
+
+    // CAMERA AUTO FOCUS + ZOOM
+
+    try{
+
+
+      const video=document.querySelector("#auditReader video");
+
+
+      if(video && video.srcObject){
+
+
+        const track =
+        video.srcObject.getVideoTracks()[0];
+
+
+        if(track){
+
+
+          const capabilities =
+          track.getCapabilities();
+
+
+
+          if(
+            capabilities.focusMode &&
+            capabilities.focusMode.includes("continuous")
+          ){
+
+
+            await track.applyConstraints({
+
+              advanced:[
+                {
+                  focusMode:"continuous"
+                }
+              ]
+
+            });
+
+
+          }
+
+
+
+          if(capabilities.zoom){
+
+
+            await track.applyConstraints({
+
+              advanced:[
+                {
+                  zoom:2
+                }
+              ]
+
+            });
+
+
+          }
+
+
+        }
+
+      }
+
+
+    }
+
+    catch(e){
+
+      console.log(
+        "Audit camera enhancement:",
+        e
+      );
+
+    }
+
+
+
+  }
+
+  catch(e){
+
+
+    console.log(
+      "AUDIT CAMERA ERROR:",
+      e
+    );
+
+
+    alert(
+      "Cannot start audit camera:\n"+e
+    );
+
+
+    auditScanning=false;
+
+    btn.innerHTML="🔄 RE-INVENTORY";
+
+
+    document.getElementById("auditReader").style.display="none";
+    document.getElementById("auditCounter").style.display = "none";
+
+
+  }
+
+
+}
+  
+  
+
+  
+
+
+  async function saveAudit(barcode){
+
+const data = await directSaveAudit(barcode);
+
+
+if(data.status==="RECORDED"){
+
+
+auditCount++;
+
+
+document.getElementById("auditCounter").innerHTML =
+"Scanned : " + auditCount;
+
+
+
+document.getElementById("result").innerHTML=`
+<div class="card green scan-animate">
+
+✅ AUDIT RECORDED
+
+<br><br>
+
+<b>${data.colO}</b><br>
+
+${data.colJ}
+<small>🏷 Tag: <b>${data.tag || ""}</b></small><br>
+<br><br>
+
+
+
+</div>
+
+`;
+
+}
+
+else{
+
+alert(data.status);
+
+}
+
+}
+async function processAuditQueue() {
+
+    if (auditProcessing) return;
+
+    auditProcessing = true;
+
+    try {
+
+        while (auditQueue.length > 0) {
+
+            const barcode = auditQueue.shift();
+
+            let saveData;
+            try {
+                saveData = await directSaveAudit(barcode);
+            } catch(e) {
+                document.getElementById("result").innerHTML = `<div class="card red">❌ ${e.message}</div>`;
+                continue;
+            }
+
+
+
+            switch (saveData.status) {
+
+
+                case "RECORDED":
+
+                    auditCount++;
+
+                    document.getElementById("auditCounter").innerHTML =
+                    "Scanned : " + auditCount;
+
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card green scan-animate">
+
+                    ✅ AUDIT RECORDED
+
+                    <br><br>
+
+                    <b>${saveData.colO || ""}</b><br>
+
+                    ${saveData.colJ || ""}
+
+                    <br>
+
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                break;
+
+
+
+                case "ALREADY_AUDITED":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red">
+
+                    🛑 ALREADY AUDITED
+
+                    <br><br>
+
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                break;
+
+
+
+                case "NOT_FOUND":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red">
+                    ❌ NOT FOUND
+                    </div>
+                    `;
+
+                break;
+
+
+
+                default:
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red">
+                    ❌ ${saveData.status || "UNKNOWN ERROR"}
+
+                    <br><br>
+
+                    ${JSON.stringify(saveData)}
+
+                    </div>
+                    `;
+
+            }
+
+
+        }
+
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        document.getElementById("result").innerHTML = `
+        <div class="card red">
+        ❌ ${err.message}
+        </div>
+        `;
+
+    }
+    finally{
+
+        auditProcessing=false;
+
+    }
+
+}
+  
+
+  
+async function saveYes() {
+
+  console.log("========== saveYes() ==========");
+  console.log("tempCode:", tempCode);
+  console.log("tempSi:", tempSi);
+  console.log("isSaving:", isSaving);
+
+  if(!tempCode || !tempSi){
+
+  alert(
+    "Missing data\nBarcode: " + tempCode +
+    "\nSI: " + tempSi
+  );
+
+  return;
+
+}
+
+  
+
+if (isSaving) return;
+
+isSaving = true;
+
+const saveBtn = document.getElementById("saveBtn");
+
+if (saveBtn) {
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = "⏳ SAVING...";
+  saveBtn.style.opacity = "0.6";
+  saveBtn.style.cursor = "not-allowed";
+}
+
+
+  document.getElementById("result").innerHTML = `
+    <div class="card saving">
+      <div class="spinner"></div>
+      <div class="saving-text">
+        Saving data...
+      </div>
+    </div>
+  `;
+
+
+  try {
+
+    const data = await directSave(tempCode, tempSi);
+
+
+   let row = data.row || [];
+
+let colJ = data.colJ || row[9] || "";
+let colO = data.colO || row[14] || "";
+
+let tag = data.tag || row[12] || "";
+
+
+    if (data.status === "ERROR") {
+
+    document.getElementById("result").innerHTML = `
+    <div class="card red">
+
+    ❌ ERROR
+
+    <br><br>
+
+    ${data.error}
+
+    <br><br>
+
+    
+
+    </div>
+    `;
+
+    isSaving = false;
+    return;
+}
+
+// SUCCESS
+document.getElementById("result").innerHTML = `
+<div class="card green scan-animate">
+
+✅ ADDED TO SOLD
+
+<br><br>
+
+<b>${colO}</b><br>
+
+${colJ ? `<small>${colJ}</small><br>` : ""}
+<small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
+
+
+
+</div>
+`;
+
+tempCode = "";
+tempSi = "";
+
+}
+catch(err){
+
+    console.error(err);
+
+    document.getElementById("result").innerHTML = `
+    <div class="card red">
+        ❌ SAVE FAILED
+        <br><br>
+        ${err.message}
+    </div>
+    `;
+
+}
+finally{
+
+    isSaving = false;
+
+}
+}
+
+async function searchSI() {
+
+  clearUI();
+
+  const siNo = document.getElementById("siNo").value.trim();
+  const out = document.getElementById("searchResult");
+
+  if (!siNo) {
+    out.innerHTML = `
+      <div class="no-results">
+        ❌ ENTER SI NO.
+      </div>
+    `;
+    return;
+  }
+
+  out.innerHTML = `
+    <div class="card">
+      🔎 SEARCHING SOLD OUT SI: <b>${siNo}</b>...
+    </div>
+  `;
+
+  try {
+
+    const data = await directSearchSI(siNo);
+
+    console.log("SEARCH SI RESPONSE:", data);
+
+    if (data.status === "ERROR") {
+      out.innerHTML = `
+        <div class="card red">
+          ❌ SEARCH ERROR
+          <br><br>
+          ${data.error || "Unknown error"}
+          ${data.details ? `<br><br><small>${data.details}</small>` : ""}
+        </div>
+      `;
+      return;
+    }
+
+    if (!Array.isArray(data.items) || !data.items.length) {
+      out.innerHTML = `
+        <div class="no-results">
+          ❌ No results found
+          <br><br>
+          SI No: <b>${siNo}</b>
+          <br>
+          Branch: <b>${BRANCH}</b>
+        </div>
+      `;
+      return;
+    }
+
+    out.innerHTML = data.items.map((item, idx) => `
+      <div class="card">
+        #${idx + 1}<br>
+        <b>${item.colO || ""}</b><br>
+        ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
+        <small>🏷 Tag: <b>${item.tag || ""}</b></small><br>
+        <small>📄 SI No: <b>${item.siNo || siNo}</b></small><br>
+        <small>📅 ${item.date || "No Date"}</small>
+      </div>
+    `).join("");
+
+  } catch (err) {
+
+    console.error("SEARCH SI ERROR:", err);
+
+    out.innerHTML = `
+      <div class="card red">
+        ❌ SEARCH FAILED
+        <br><br>
+        ${err.message || err}
+      </div>
+    `;
+
+  }
+}
+
+/* ================= UTIL ================= */
+
+function clearUI() {
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("searchResult").innerHTML = "";
+}
+
+function cancelNo() {
+  document.getElementById("result").innerHTML = `
+  <div class="no-results">
+    ❌ CANCELLED
+  </div>
+`;
+}
+
+async function refreshPage() {
+
+ // STOP NORMAL CAMERA
+if(scanner){
+
+try{
+
+await scanner.stop();
+await scanner.clear();
+
+}catch(e){}
+
+scanner=null;
+
+}
+
+
+// STOP AUDIT CAMERA
+if(auditScanner){
+
+try{
+
+await auditScanner.stop();
+await auditScanner.clear();
+
+}catch(e){}
+
+auditScanner=null;
+
+}
+
+auditScanning=false;
+
+  auditCount=0;
+
+document.getElementById("auditCounter").style.display = "none";
+
+document.getElementById("auditCounter").innerHTML =
+"Scanned : 0";
+
+  isScanning = false;
+
+  setUIScanning(false);
+
+  // Stop audit scanner if running
+if(auditScanner){
+  try{
+    await auditScanner.stop();
+    await auditScanner.clear();
+  }
+  catch(e){
+    console.log(e);
+  }
+
+  auditScanner = null;
+}
+
+auditScanning = false;
+auditBusy = false;
+
+document.getElementById("auditReader").style.display = "none";
+document.getElementById("auditScanBtn").innerHTML = "🔄 RE-INVENTORY";
+
+  document.getElementById("scanBtn").disabled = false;
+document.getElementById("scanBtn").style.opacity = "1";
+document.getElementById("scanBtn").style.cursor = "pointer";
+
+
+  // Clear inputs
+  document.getElementById("tagNumberInput").value = "";
+
+  document.getElementById("siNo").value = "";
+
+
+  // Disable tag button
+  const tagBtn = document.getElementById("tagBtn");
+
+  if(tagBtn){
+    tagBtn.disabled = true;
+    tagBtn.style.opacity = "0.5";
+  }
+
+
+  // Clear results
+  clearUI();
+
+
+  // Put cursor back to SI
+  document.getElementById("siNo").focus();
+
+}
+function showTagDialog(){
+
+    document.getElementById("tagNumberInput").value = "";
+    document.getElementById("tagDialog").style.display = "flex";
+
+}
+
+
+function closeTagDialog(){
+
+document.getElementById("tagDialog").style.display="none";
+
+}
+
+
+async function searchTagNumber(){
+
+
+const tag =
+document.getElementById("tagNumberInput")
+.value.trim();
+
+const siNo =
+document.getElementById("siNo")
+.value.trim();
+
+if(!siNo){
+  alert("Enter SI No first");
+  return;
+}
+
+if(!tag){
+  alert("Enter Tag Number");
+  return;
+}
+
+const data = await directCheckTag(tag);
+
+
+// ================= DUPLICATE =================
+if(data.status==="DUPLICATE"){
+
+document.getElementById("result").innerHTML=`
+
+<div class="card red">
+
+🛑 ALREADY SOLD
+
+<br><br>
+
+<b>${data.colO}</b><br>
+
+${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
+
+🏷 TAG:
+<b>${tag}</b>
+
+</div>
+
+`;
+
+closeTagDialog();
+return;
+
+}
+
+
+// ================= FOUND =================
+if(data.status==="FOUND"){
+
+tempCode=data.barcode;
+tempSi=siNo;
+
+document.getElementById("result").innerHTML=`
+
+<div class="card green scan-animate">
+
+✅ AVAILABLE<br><br>
+
+<b>${data.colO}</b><br>
+
+${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
+
+🏷 TAG:
+<b>${tag}</b>
+
+<br><br>
+
+<button
+id="saveBtn"
+class="btn-blue"
+onclick="saveYes()">
+
+ADD TO SOLD
+
+</button>
+
+<button
+class="btn-orange"
+onclick="cancelNo()">
+
+CANCEL
+
+</button>
+
+</div>
+
+`;
+
+closeTagDialog();
+return;
+
+}
+
+
+// ================= NOT FOUND =================
+
+document.getElementById("result").innerHTML=`
+
+<div class="no-results">
+
+❌ TAG NUMBER NOT FOUND
+
+</div>
+
+`;
+
+closeTagDialog();
+
+}  
+
+
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function beep() {
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "square";
+  osc.frequency.value = 900;
+  gain.gain.value = 0.15;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.12);
+}
+
+function vibrate() {
+  if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+}
+
+document.addEventListener("click", initAudio, { once: true });
+
+async function logout() {
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+  localStorage.removeItem("inventorySelectedBranch");
+  try { await stopNormalScanner(); } catch(e) {}
+  location.reload();
+}
+
+function checkLoginExpiry(){
+
+  const loginTime = localStorage.getItem("loginTime_" + BRANCH);
+
+  if(!loginTime){
+    return;
+  }
+
+  const now = Date.now();
+
+  const maxTime = 13 * 60 * 60 * 1000; // 13 hours
+  if(now - Number(loginTime) > maxTime){
+
+    
+   Object.keys(localStorage).forEach(key=>{
+
+if(key.startsWith("inventorySession_")){
+
+localStorage.removeItem(key);
+
+}
+
+});
+    localStorage.removeItem("loginTime_" + BRANCH);
+   
+
+    alert("Session expired. Please login again.");
+
+    location.reload();
+
+  }
+
+}
+  document.getElementById("email").addEventListener("keydown",e=>{
+    if(e.key==="Enter") sendOTP();
+});
+
+document.getElementById("otp").addEventListener("keydown",e=>{
+    if(e.key==="Enter") verifyOTP();
+});
+
+
+
+window.addEventListener("DOMContentLoaded", async function(){
+
+  checkLoginExpiry();
+
+  const savedBranch =
+    localStorage.getItem("inventorySelectedBranch") || "";
+
+  if(!BRANCH_NAMES[savedBranch]){
+    document.getElementById("branchScreen").style.display = "flex";
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "none";
+    return;
+  }
+
+  BRANCH = savedBranch;
+  updateBranchUI();
+
+  const session =
+    JSON.parse(
+      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+    );
+
+  const email = session.email || "";
+  const sessionId = session.sessionId || "";
+
+  if(!email || !sessionId){
+    document.getElementById("branchScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+    resetLoginForm();
+    return;
+  }
+
+  try {
+    await requireSupabaseAccess();
+    openApp();
+  } catch (err) {
+    localStorage.removeItem("inventorySession_" + BRANCH);
+    document.getElementById("branchScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+    resetLoginForm();
+    document.getElementById("loginStatus").innerHTML =
+      "❌ " + (err.message === "EMAIL_DENIED" ? "Gmail not allowed for this branch." : "Session expired. Please login again.");
+  }
+
+});
+
+  const siInput = document.getElementById("siNo");
+
+siInput.addEventListener("input",function(){
+
+const btn=document.getElementById("tagBtn");
+
+if(this.value.trim()==""){
+
+btn.disabled=true;
+btn.style.opacity="0.5";
+
+}
+else{
+
+btn.disabled=false;
+btn.style.opacity="1";
+
+}
+
+});
+
+function askQuitAudit(pending){
+
+    document.getElementById("quitAuditMessage").innerHTML = `
+        ⚠ <b>${pending}</b> queued item(s) are still waiting to be processed.<br><br>
+
+        If you stop now, those items <b>will NOT be saved.</b><br><br>
+
+        Do you really want to stop Re-Inventory?
+    `;
+
+    document.getElementById("quitAuditDialog").style.display="flex";
+
+    return new Promise(resolve=>{
+        quitAuditResolve = resolve;
+    });
+
+}
+
+function confirmQuitAudit(){
+
+    document.getElementById("quitAuditDialog").style.display="none";
+
+    if(quitAuditResolve){
+        quitAuditResolve(true);
+        quitAuditResolve=null;
+    }
+
+}
+
+function cancelQuitAudit(){
+
+    document.getElementById("quitAuditDialog").style.display="none";
+
+    if(quitAuditResolve){
+        quitAuditResolve(false);
+        quitAuditResolve=null;
+    }
+
+}
+
+
+  
+  
+
+  
+
+
+
+  
+
+  
+</script>
+
+</body>
+</html>
+
+<!-- redeploy -->
