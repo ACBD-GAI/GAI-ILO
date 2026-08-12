@@ -1,66 +1,136 @@
-
-<!DOCTYPE html>
-
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 /* =========================================================
-   🚀 MODERN BLUE BRAND UI — CSS ONLY
-   DO NOT CHANGE HTML / JAVASCRIPT
+   ⚡ INVENTORY PRO — PREMIUM DARK GLASS UI
+   CSS ONLY
+   HTML / JAVASCRIPT UNCHANGED
    ========================================================= */
 
 :root{
-  --brand:#1976d2;
-  --brand-dark:#0d47a1;
-  --brand-mid:#2196f3;
-  --brand-light:#e3f2fd;
-  --brand-soft:#f4f9ff;
+  --blue:#3b82f6;
+  --blue-2:#2563eb;
+  --blue-3:#60a5fa;
+  --cyan:#22d3ee;
+  --navy:#07111f;
+  --navy-2:#0b1728;
+  --panel:rgba(13,27,46,.82);
+  --panel-2:rgba(18,35,58,.76);
+  --glass:rgba(255,255,255,.055);
+  --glass-strong:rgba(255,255,255,.09);
 
-  --text:#172b4d;
-  --muted:#6b7c93;
+  --white:#f8fbff;
+  --text:#e8f1ff;
+  --muted:#8ea4c2;
+  --muted-2:#657b98;
 
-  --white:rgba(255,255,255,.96);
+  --green:#22c55e;
+  --green-2:#16a34a;
 
-  --shadow-sm:0 5px 18px rgba(25,118,210,.10);
-  --shadow-md:0 12px 32px rgba(25,118,210,.15);
-  --shadow-lg:0 20px 55px rgba(13,71,161,.20);
+  --orange:#fb923c;
+  --orange-2:#f97316;
+
+  --red:#ef4444;
+
+  --border:rgba(148,163,184,.14);
+  --border-blue:rgba(59,130,246,.32);
+
+  --shadow:
+    0 25px 70px rgba(0,0,0,.35);
+
+  --shadow-blue:
+    0 18px 50px rgba(37,99,235,.22);
+
+  --radius:18px;
 }
 
 
 /* =========================================================
-   🌌 MAIN BACKGROUND
+   🌌 GLOBAL
    ========================================================= */
 
+*{
+  box-sizing:border-box;
+}
+
+html{
+  min-height:100%;
+  background:#050b14;
+}
+
 body{
+  margin:0;
+  min-height:100vh;
+
   font-family:
     Inter,
+    ui-sans-serif,
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     Arial,
     sans-serif;
 
+  color:var(--text);
+
   background:
     radial-gradient(
-      circle at 10% 10%,
-      rgba(33,150,243,.14),
+      circle at 8% 0%,
+      rgba(37,99,235,.22),
       transparent 28%
     ),
     radial-gradient(
-      circle at 90% 20%,
-      rgba(25,118,210,.12),
-      transparent 30%
+      circle at 92% 12%,
+      rgba(34,211,238,.10),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 50% 100%,
+      rgba(29,78,216,.13),
+      transparent 34%
     ),
     linear-gradient(
       135deg,
-      #eef6ff 0%,
-      #f7fbff 50%,
-      #eaf3ff 100%
+      #050b14 0%,
+      #081321 48%,
+      #07111f 100%
     );
 
-  color:var(--text);
+  overflow-x:hidden;
+}
+
+
+/* =========================================================
+   ✨ SUBTLE BACKGROUND LIGHT
+   ========================================================= */
+
+body::before{
+  content:"";
+
+  position:fixed;
+  inset:0;
+
+  pointer-events:none;
+  z-index:-1;
+
+  background:
+    linear-gradient(
+      rgba(255,255,255,.018) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.018) 1px,
+      transparent 1px
+    );
+
+  background-size:42px 42px;
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,.7),
+      transparent 85%
+    );
 }
 
 
@@ -69,55 +139,114 @@ body{
    ========================================================= */
 
 .header{
+  position:sticky;
+  top:0;
+  z-index:1000;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  min-height:70px;
+  padding:12px 18px;
+
   background:
     linear-gradient(
       135deg,
-      #2196f3 0%,
-      #1976d2 48%,
-      #0d47a1 100%
+      rgba(10,28,51,.94),
+      rgba(7,20,36,.90)
     );
 
-  padding:12px 17px;
+  border-bottom:
+    1px solid rgba(96,165,250,.15);
 
   box-shadow:
-    0 8px 28px rgba(13,71,161,.25);
+    0 12px 35px rgba(0,0,0,.28);
 
-  border-bottom:
-    1px solid rgba(255,255,255,.20);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
 
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
+
+.header::after{
+  content:"";
+
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+
+  height:1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(59,130,246,.65),
+      rgba(34,211,238,.35),
+      transparent
+    );
 }
 
 
 .header-left{
+  display:flex;
+  align-items:center;
   gap:12px;
 }
 
 
 .header-left img{
-  width:42px;
-  height:42px;
+  width:43px;
+  height:43px;
 
-  border-radius:12px;
+  object-fit:contain;
 
-  padding:4px;
+  border-radius:13px;
+
+  padding:5px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.025)
+    );
+
+  border:
+    1px solid rgba(255,255,255,.14);
 
   box-shadow:
-    0 5px 15px rgba(0,0,0,.18);
+    0 8px 24px rgba(0,0,0,.28);
 
-  transition:.25s ease;
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease;
 }
 
 
 .header-left img:hover{
-  transform:rotate(-3deg) scale(1.04);
+  transform:
+    translateY(-2px)
+    rotate(-2deg);
+
+  box-shadow:
+    0 12px 28px rgba(37,99,235,.25);
 }
 
 
 .header-left h3{
-  font-size:17px;
-  letter-spacing:.4px;
+  margin:0;
+
+  color:#f4f8ff;
+
+  font-size:16px;
+  font-weight:750;
+
+  letter-spacing:.45px;
+
+  text-shadow:
+    0 2px 12px rgba(0,0,0,.35);
 }
 
 
@@ -125,45 +254,85 @@ body{
    🔘 HEADER BUTTONS
    ========================================================= */
 
-.logout-btn{
+.header button{
+  min-height:38px;
+
+  padding:8px 13px;
+
+  font-size:12px;
+  font-weight:750;
+
   border-radius:11px;
-
-  background:rgba(255,255,255,.96);
-
-  color:#1565c0;
-
-  box-shadow:
-    0 5px 15px rgba(0,0,0,.12);
-
-  transition:.25s ease;
-}
-
-
-.logout-btn:hover{
-  transform:translateY(-2px);
-
-  box-shadow:
-    0 8px 20px rgba(0,0,0,.18);
 }
 
 
 .change-branch-btn{
-  background:rgba(255,255,255,.15) !important;
+  color:#dceaff !important;
+
+  background:
+    rgba(255,255,255,.055) !important;
 
   border:
-    1px solid rgba(255,255,255,.30) !important;
+    1px solid rgba(148,163,184,.22) !important;
 
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06);
 
-  transition:.25s ease !important;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+
+  transition:
+    transform .2s ease,
+    background .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease !important;
 }
 
 
 .change-branch-btn:hover{
-  background:rgba(255,255,255,.25) !important;
+  background:
+    rgba(59,130,246,.16) !important;
 
-  transform:translateY(-2px) !important;
+  border-color:
+    rgba(96,165,250,.38) !important;
+
+  transform:
+    translateY(-2px) !important;
+
+  box-shadow:
+    0 8px 24px rgba(37,99,235,.18) !important;
+}
+
+
+.logout-btn{
+  margin-left:6px;
+
+  color:#0b1728;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbff,
+      #dceaff
+    );
+
+  border:0;
+
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.22);
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease;
+}
+
+
+.logout-btn:hover{
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 12px 26px rgba(0,0,0,.30);
 }
 
 
@@ -172,33 +341,61 @@ body{
    ========================================================= */
 
 .container{
-  padding:18px;
-  max-width:900px;
-  margin:auto;
+  width:100%;
+  max-width:920px;
+
+  margin:0 auto;
+
+  padding:24px 18px 45px;
 }
 
 
 /* =========================================================
-   📷 SCANNER AREA
+   📷 SCANNERS
    ========================================================= */
 
 #reader,
 #auditReader{
   position:relative;
 
-  background:#081b33;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(37,99,235,.10),
+      transparent 55%
+    ),
+    #020914;
 
-  border-radius:22px !important;
+  border:
+    1px solid rgba(96,165,250,.25) !important;
+
+  border-radius:24px !important;
 
   overflow:hidden;
 
   box-shadow:
-    0 15px 40px rgba(13,71,161,.22);
+    0 25px 60px rgba(0,0,0,.45),
+    0 0 0 1px rgba(34,211,238,.035);
+
+  isolation:isolate;
+}
+
+
+#reader::before,
+#auditReader::before{
+  content:"";
+
+  position:absolute;
+  inset:12px;
 
   border:
-    3px solid rgba(33,150,243,.25);
+    1px solid rgba(96,165,250,.28);
 
-  transition:.3s ease;
+  border-radius:17px;
+
+  pointer-events:none;
+
+  z-index:5;
 }
 
 
@@ -208,14 +405,48 @@ body{
 
   position:absolute;
 
-  inset:12px;
+  left:18%;
+  right:18%;
+  top:50%;
 
-  border:
-    2px solid rgba(255,255,255,.18);
+  height:2px;
 
-  border-radius:16px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(34,211,238,.95),
+      rgba(96,165,250,.95),
+      transparent
+    );
+
+  box-shadow:
+    0 0 12px rgba(34,211,238,.75),
+    0 0 30px rgba(59,130,246,.35);
 
   pointer-events:none;
+
+  z-index:10;
+
+  animation:
+    scanLine 2.4s ease-in-out infinite;
+}
+
+
+@keyframes scanLine{
+  0%{
+    transform:translateY(-110px);
+    opacity:.15;
+  }
+
+  50%{
+    opacity:1;
+  }
+
+  100%{
+    transform:translateY(110px);
+    opacity:.15;
+  }
 }
 
 
@@ -224,69 +455,114 @@ body{
    ========================================================= */
 
 input{
-  background:rgba(255,255,255,.92);
+  width:100%;
 
-  color:var(--text);
+  min-height:48px;
+
+  padding:12px 15px;
+
+  margin:6px 0;
+
+  color:#eaf3ff;
+
+  background:
+    rgba(7,19,34,.82);
 
   border:
-    1px solid rgba(33,150,243,.10);
+    1px solid rgba(148,163,184,.16);
 
-  box-shadow:
-    0 5px 18px rgba(25,118,210,.08);
+  border-radius:13px;
 
   outline:none;
 
+  font-size:14px;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 8px 25px rgba(0,0,0,.16);
+
   transition:
-    border-color .25s ease,
-    box-shadow .25s ease,
-    transform .25s ease;
+    border-color .22s ease,
+    box-shadow .22s ease,
+    background .22s ease,
+    transform .22s ease;
 }
 
 
 input::placeholder{
-  color:#9aaabd;
+  color:#6f86a5;
+}
+
+
+input:hover{
+  border-color:
+    rgba(96,165,250,.28);
 }
 
 
 input:focus{
-  border-color:#2196f3;
+  background:
+    rgba(8,23,42,.95);
+
+  border-color:
+    rgba(59,130,246,.75);
 
   box-shadow:
-    0 0 0 4px rgba(33,150,243,.12),
-    0 8px 22px rgba(25,118,210,.12);
+    0 0 0 3px rgba(59,130,246,.12),
+    0 10px 28px rgba(37,99,235,.12);
 
-  transform:translateY(-1px);
+  transform:
+    translateY(-1px);
 }
 
 
 .si-input{
-  background:rgba(255,255,255,.96);
+  margin-top:18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15,31,51,.94),
+      rgba(8,20,35,.92)
+    );
 
   border:
-    1px solid rgba(33,150,243,.15);
+    1px solid rgba(96,165,250,.20);
 
   box-shadow:
-    0 5px 20px rgba(25,118,210,.10);
+    0 12px 30px rgba(0,0,0,.22);
 }
 
 
 /* =========================================================
-   🔵 BUTTONS
+   🔵 GLOBAL BUTTONS
    ========================================================= */
 
 button{
   position:relative;
 
+  min-height:46px;
+
+  padding:11px 16px;
+
+  border:0;
+  border-radius:13px;
+
+  color:#fff;
+
+  font-family:inherit;
+  font-size:13px;
+  font-weight:750;
+
+  cursor:pointer;
+
   overflow:hidden;
 
-  border-radius:14px;
-
-  letter-spacing:.2px;
-
   transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    filter .2s ease;
+    transform .18s ease,
+    box-shadow .18s ease,
+    filter .18s ease,
+    opacity .18s ease;
 }
 
 
@@ -295,65 +571,95 @@ button::after{
 
   position:absolute;
 
-  top:0;
+  top:-30%;
   left:-120%;
 
-  width:70%;
-  height:100%;
+  width:65%;
+  height:160%;
 
   background:
     linear-gradient(
       90deg,
       transparent,
-      rgba(255,255,255,.28),
+      rgba(255,255,255,.22),
       transparent
     );
 
   transform:skewX(-20deg);
 
-  transition:left .55s ease;
+  transition:
+    left .6s ease;
 
   pointer-events:none;
 }
 
 
 button:hover::after{
-  left:140%;
+  left:145%;
 }
 
 
 button:hover{
-  filter:brightness(1.03);
+  filter:brightness(1.07);
+}
+
+
+button:active{
+  transform:
+    translateY(1px)
+    scale(.985);
 }
 
 
 button:disabled{
-  filter:grayscale(.15);
   cursor:not-allowed;
+
+  filter:grayscale(.4);
+
+  opacity:.45 !important;
+}
+
+
+button:focus-visible,
+input:focus-visible{
+  outline:
+    2px solid rgba(34,211,238,.65);
+
+  outline-offset:3px;
 }
 
 
 /* =========================================================
-   💙 PRIMARY BLUE BUTTON
+   💙 BLUE BUTTON
    ========================================================= */
 
 .btn-blue{
+  color:#fff;
+
   background:
     linear-gradient(
       135deg,
-      #42a5f5 0%,
-      #2196f3 40%,
-      #1565c0 100%
+      #60a5fa 0%,
+      #3b82f6 42%,
+      #1d4ed8 100%
     );
 
+  border:
+    1px solid rgba(147,197,253,.18);
+
   box-shadow:
-    0 8px 22px rgba(25,118,210,.25);
+    0 10px 26px rgba(37,99,235,.25),
+    inset 0 1px 0 rgba(255,255,255,.18);
 }
 
 
 .btn-blue:hover{
+  transform:
+    translateY(-2px);
+
   box-shadow:
-    0 12px 28px rgba(25,118,210,.34);
+    0 15px 34px rgba(37,99,235,.36),
+    0 0 24px rgba(59,130,246,.12);
 }
 
 
@@ -362,99 +668,193 @@ button:disabled{
    ========================================================= */
 
 .btn-orange{
+  color:#fff;
+
   background:
     linear-gradient(
       135deg,
-      #ff8a65,
-      #ff5722
+      #fdba74 0%,
+      #fb923c 38%,
+      #ea580c 100%
     );
 
+  border:
+    1px solid rgba(255,255,255,.13);
+
   box-shadow:
-    0 8px 22px rgba(255,87,34,.20);
+    0 10px 26px rgba(249,115,22,.20),
+    inset 0 1px 0 rgba(255,255,255,.18);
 }
 
 
 .btn-orange:hover{
+  transform:
+    translateY(-2px);
+
   box-shadow:
-    0 12px 28px rgba(255,87,34,.28);
+    0 15px 34px rgba(249,115,22,.30);
 }
 
 
 /* =========================================================
-   🧊 RESULT CARDS
+   🟩 RESULT CARDS
    ========================================================= */
 
-.card{
+.card,
+.no-results{
   position:relative;
 
-  padding:18px;
+  margin-top:16px;
+
+  padding:20px;
 
   border-radius:18px;
-
-  margin-top:14px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(255,255,255,.98),
-      rgba(248,252,255,.96)
+      rgba(15,31,51,.94),
+      rgba(8,20,35,.90)
     );
 
   border:
-    1px solid rgba(33,150,243,.08);
+    1px solid rgba(148,163,184,.12);
 
   box-shadow:
-    0 10px 28px rgba(25,118,210,.10);
+    0 16px 40px rgba(0,0,0,.24);
 
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
 
-  transition:
-    transform .25s ease,
-    box-shadow .25s ease;
+  overflow:hidden;
+}
+
+
+.card::before{
+  content:"";
+
+  position:absolute;
+
+  left:0;
+  top:0;
+  bottom:0;
+
+  width:2px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      transparent,
+      rgba(96,165,250,.75),
+      transparent
+    );
+
+  opacity:.8;
 }
 
 
 .card:hover{
-  transform:translateY(-2px);
-
   box-shadow:
-    0 15px 35px rgba(25,118,210,.14);
+    0 20px 48px rgba(0,0,0,.30);
+
+  transform:
+    translateY(-1px);
 }
 
 
 .green{
-  border-left:6px solid #2ecc71;
+  border:
+    1px solid rgba(34,197,94,.22);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(10,42,31,.90),
+      rgba(8,27,24,.92)
+    );
 
   box-shadow:
-    0 10px 28px rgba(46,204,113,.12);
+    0 18px 45px rgba(34,197,94,.09);
+}
+
+
+.green::before{
+  background:
+    linear-gradient(
+      to bottom,
+      transparent,
+      rgba(34,197,94,.95),
+      transparent
+    );
 }
 
 
 .red{
-  border-left:6px solid #e74c3c;
+  border:
+    1px solid rgba(239,68,68,.25);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(53,18,25,.90),
+      rgba(30,13,19,.92)
+    );
 
   box-shadow:
-    0 10px 28px rgba(231,76,60,.10);
+    0 18px 45px rgba(239,68,68,.08);
+}
+
+
+.red::before{
+  background:
+    linear-gradient(
+      to bottom,
+      transparent,
+      rgba(239,68,68,.95),
+      transparent
+    );
 }
 
 
 /* =========================================================
-   💾 SAVING CARD
+   💾 SAVING
    ========================================================= */
 
 .saving{
-  border-left:6px solid #2196f3;
+  border:
+    1px solid rgba(59,130,246,.30);
 
   background:
     linear-gradient(
-      135deg,
-      #e3f2fd,
-      #ffffff
+      145deg,
+      rgba(12,31,60,.95),
+      rgba(8,20,38,.94)
     );
 
   box-shadow:
-    0 12px 32px rgba(33,150,243,.16);
+    0 18px 50px rgba(37,99,235,.16);
+}
+
+
+.saving::before{
+  background:
+    linear-gradient(
+      to bottom,
+      transparent,
+      #3b82f6,
+      #22d3ee,
+      transparent
+    );
+}
+
+
+.saving-text{
+  margin-top:12px;
+
+  color:#c9dcf7;
+
+  font-size:14px;
+  font-weight:650;
 }
 
 
@@ -466,13 +866,31 @@ button:disabled{
   width:38px;
   height:38px;
 
-  border:4px solid rgba(33,150,243,.15);
+  margin:auto;
+
+  border:
+    3px solid rgba(96,165,250,.15);
 
   border-top:
-    4px solid #1976d2;
+    3px solid #60a5fa;
+
+  border-right:
+    3px solid #22d3ee;
+
+  border-radius:50%;
 
   box-shadow:
-    0 4px 15px rgba(33,150,243,.12);
+    0 0 24px rgba(59,130,246,.18);
+
+  animation:
+    spin .75s linear infinite;
+}
+
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg);
+  }
 }
 
 
@@ -481,96 +899,171 @@ button:disabled{
    ========================================================= */
 
 .no-results{
+  color:#9bb0ca;
+
+  text-align:center;
+
+  border:
+    1px solid rgba(148,163,184,.13);
+
   background:
     linear-gradient(
       145deg,
-      #ffffff,
-      #f7fbff
+      rgba(14,29,47,.90),
+      rgba(8,19,33,.94)
     );
-
-  border:
-    1px solid rgba(33,150,243,.08);
-
-  box-shadow:
-    0 10px 28px rgba(25,118,210,.10);
-
-  color:#65758b;
-
-  border-radius:18px;
 }
 
 
 /* =========================================================
-   🏢 BRANCH SELECTOR
+   🏢 BRANCH SCREEN
    ========================================================= */
 
 #branchScreen{
+  position:fixed;
+
+  inset:0;
+
+  z-index:9000;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  overflow:auto;
+
+  padding:25px;
+
   background:
     radial-gradient(
-      circle at 20% 20%,
-      rgba(33,150,243,.20),
-      transparent 30%
+      circle at 15% 10%,
+      rgba(59,130,246,.23),
+      transparent 28%
     ),
     radial-gradient(
-      circle at 80% 80%,
-      rgba(13,71,161,.18),
-      transparent 30%
+      circle at 85% 85%,
+      rgba(34,211,238,.11),
+      transparent 25%
     ),
     linear-gradient(
       135deg,
-      #e3f2fd,
-      #bbdefb
+      #040b15,
+      #071321 55%,
+      #06101d
     );
 }
 
 
+#branchScreen::before{
+  content:"";
+
+  position:absolute;
+
+  width:480px;
+  height:480px;
+
+  border-radius:50%;
+
+  border:
+    1px solid rgba(96,165,250,.07);
+
+  box-shadow:
+    0 0 100px rgba(37,99,235,.08);
+
+  pointer-events:none;
+}
+
+
+/* =========================================================
+   🏢 BRANCH CARD
+   ========================================================= */
+
 .branch-card{
   position:relative;
 
-  width:360px;
+  width:390px;
+  max-width:100%;
 
-  padding:30px 25px;
+  padding:30px;
+
+  border-radius:26px;
 
   background:
-    rgba(255,255,255,.90);
+    linear-gradient(
+      145deg,
+      rgba(16,34,56,.88),
+      rgba(7,19,34,.94)
+    );
 
   border:
-    1px solid rgba(255,255,255,.75);
-
-  border-radius:28px;
+    1px solid rgba(148,163,184,.15);
 
   box-shadow:
-    0 25px 70px rgba(13,71,161,.22);
+    0 30px 90px rgba(0,0,0,.48),
+    0 0 0 1px rgba(59,130,246,.04);
 
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
 
   animation:
-    branchCardIn .45s ease;
+    branchCardIn .45s cubic-bezier(.2,.8,.2,1);
+}
+
+
+.branch-card::before{
+  content:"";
+
+  position:absolute;
+
+  left:24px;
+  right:24px;
+  top:0;
+
+  height:1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(96,165,250,.8),
+      rgba(34,211,238,.45),
+      transparent
+    );
 }
 
 
 @keyframes branchCardIn{
   from{
     opacity:0;
-    transform:translateY(18px) scale(.96);
+    transform:
+      translateY(22px)
+      scale(.96);
   }
 
   to{
     opacity:1;
-    transform:translateY(0) scale(1);
+    transform:
+      translateY(0)
+      scale(1);
   }
 }
 
 
 .branch-card h2{
-  font-size:25px;
+  margin:0 0 7px;
+
+  font-size:24px;
+  font-weight:800;
+
+  letter-spacing:.3px;
 
   background:
     linear-gradient(
       135deg,
-      #2196f3,
-      #0d47a1
+      #ffffff,
+      #93c5fd 48%,
+      #22d3ee
     );
 
   -webkit-background-clip:text;
@@ -581,51 +1074,77 @@ button:disabled{
 
 
 .branch-card p{
-  color:#718096;
+  margin:0 0 22px;
+
+  color:#7f96b4;
+
+  font-size:13px;
 }
 
 
+/* =========================================================
+   🔲 BRANCH GRID
+   ========================================================= */
+
 .branch-grid{
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
+
   gap:10px;
 }
 
 
 .branch-option{
+  min-height:48px;
+
+  color:#eef6ff;
+
   background:
     linear-gradient(
-      135deg,
-      #42a5f5,
-      #1976d2 55%,
-      #0d47a1
+      145deg,
+      rgba(59,130,246,.95),
+      rgba(29,78,216,.92)
     );
 
-  box-shadow:
-    0 8px 20px rgba(25,118,210,.20);
-
   border:
-    1px solid rgba(255,255,255,.20);
+    1px solid rgba(147,197,253,.16);
+
+  border-radius:13px;
+
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.13);
 
   transition:
     transform .2s ease,
     box-shadow .2s ease,
-    filter .2s ease;
+    background .2s ease;
 }
 
 
 .branch-option:hover{
   transform:
-    translateY(-3px)
-    scale(1.015);
+    translateY(-3px);
+
+  background:
+    linear-gradient(
+      145deg,
+      #60a5fa,
+      #2563eb
+    );
 
   box-shadow:
-    0 13px 28px rgba(25,118,210,.30);
-
-  filter:brightness(1.04);
+    0 14px 30px rgba(37,99,235,.30),
+    0 0 20px rgba(59,130,246,.10);
 }
 
 
 .branch-option:active{
-  transform:scale(.97);
+  transform:
+    translateY(0)
+    scale(.97);
 }
 
 
@@ -634,121 +1153,175 @@ button:disabled{
    ========================================================= */
 
 #loginScreen{
+  position:fixed !important;
+
+  inset:0 !important;
+
+  z-index:9999;
+
+  overflow:hidden;
+
   background:
     radial-gradient(
-      circle at 15% 15%,
-      rgba(33,150,243,.20),
+      circle at 15% 10%,
+      rgba(59,130,246,.20),
       transparent 30%
+    ),
+    radial-gradient(
+      circle at 85% 85%,
+      rgba(34,211,238,.10),
+      transparent 28%
+    ),
+    linear-gradient(
+      135deg,
+      #040b15,
+      #071321 52%,
+      #06101d
     ) !important;
-
-  background-color:#eaf4ff !important;
 }
 
 
-#loginScreen::before{
-  width:365px;
-  height:500px;
+/* =========================================================
+   🔐 LOGIN GLASS CARD
+   ========================================================= */
 
-  max-width:90vw;
+#loginScreen::before{
+  content:"";
+
+  position:absolute;
+
+  width:370px;
+  height:510px;
+
+  max-width:calc(100vw - 30px);
+
+  border-radius:28px;
 
   background:
-    rgba(255,255,255,.88);
+    linear-gradient(
+      145deg,
+      rgba(16,34,56,.91),
+      rgba(7,19,34,.96)
+    );
 
   border:
-    1px solid rgba(255,255,255,.80);
-
-  border-radius:30px;
+    1px solid rgba(148,163,184,.15);
 
   box-shadow:
-    0 25px 70px rgba(13,71,161,.20);
+    0 35px 100px rgba(0,0,0,.50),
+    0 0 0 1px rgba(59,130,246,.04);
 
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
 
   animation:
-    loginCardIn .45s ease;
+    loginCardIn .45s cubic-bezier(.2,.8,.2,1);
+
+  pointer-events:none;
+}
+
+
+#loginScreen::after{
+  content:"";
+
+  position:absolute;
+
+  width:280px;
+  height:280px;
+
+  border-radius:50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(37,99,235,.18),
+      transparent 70%
+    );
+
+  filter:blur(15px);
+
+  pointer-events:none;
 }
 
 
 @keyframes loginCardIn{
   from{
     opacity:0;
-    transform:translateY(20px) scale(.96);
+    transform:
+      translateY(22px)
+      scale(.96);
   }
 
   to{
     opacity:1;
-    transform:translateY(0) scale(1);
+    transform:
+      translateY(0)
+      scale(1);
   }
 }
 
 
 #loginScreen h2{
+  position:relative;
+  z-index:2;
+
+  margin:0 0 15px;
+
+  font-size:25px;
+  font-weight:850;
+
+  letter-spacing:.7px;
+
   background:
     linear-gradient(
       135deg,
-      #42a5f5,
-      #1565c0
+      #ffffff,
+      #93c5fd 50%,
+      #22d3ee
     );
 
   -webkit-background-clip:text;
   background-clip:text;
 
   -webkit-text-fill-color:transparent;
-
-  letter-spacing:.5px;
 }
 
 
-#loginScreen input{
-  background:
-    rgba(248,251,255,.90);
-
-  box-shadow:
-    0 5px 18px rgba(25,118,210,.07);
+#loginScreen > *{
+  position:relative;
+  z-index:2;
 }
 
 
-#loginScreen button{
-  background:
-    linear-gradient(
-      135deg,
-      #42a5f5,
-      #2196f3 45%,
-      #1565c0
-    );
-
-  box-shadow:
-    0 10px 25px rgba(25,118,210,.25);
-}
-
-
-#loginScreen button:hover{
-  box-shadow:
-    0 14px 32px rgba(25,118,210,.34);
+#loginScreen .selected-branch-label{
+  margin-bottom:5px;
 }
 
 
 /* =========================================================
-   🏷 SELECTED BRANCH LABEL
+   🏷 SELECTED BRANCH
    ========================================================= */
 
 .selected-branch-label{
+  padding:9px 14px;
+
+  border-radius:999px;
+
+  color:#a9d3ff;
+
   background:
-    linear-gradient(
-      135deg,
-      #e3f2fd,
-      #f7fbff
-    );
+    rgba(59,130,246,.10);
 
   border:
-    1px solid rgba(33,150,243,.12);
+    1px solid rgba(96,165,250,.20);
 
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.8),
-    0 5px 15px rgba(25,118,210,.07);
+    inset 0 1px 0 rgba(255,255,255,.04);
 
-  color:#1565c0;
+  font-size:12px;
+  font-weight:750;
+
+  letter-spacing:.35px;
 }
 
 
@@ -757,18 +1330,29 @@ button:disabled{
    ========================================================= */
 
 .login-warning{
+  margin-top:12px;
+
+  padding:14px;
+
+  color:#fed7aa;
+
   background:
     linear-gradient(
-      135deg,
-      #fff8df,
-      #fff0b5
+      145deg,
+      rgba(124,45,18,.34),
+      rgba(67,25,12,.30)
     );
 
+  border:
+    1px solid rgba(251,146,60,.25);
+
   border-left:
-    5px solid #ff9800;
+    3px solid #fb923c;
+
+  border-radius:13px;
 
   box-shadow:
-    0 8px 22px rgba(255,152,0,.18);
+    0 12px 30px rgba(249,115,22,.08);
 }
 
 
@@ -777,74 +1361,128 @@ button:disabled{
    ========================================================= */
 
 #auditCounter{
-  padding:10px 18px;
+  position:relative;
 
   width:max-content;
 
-  margin:12px auto;
+  min-width:140px;
 
-  border-radius:999px;
+  margin:14px auto;
+
+  padding:9px 17px;
+
+  color:#bfe5ff;
 
   background:
     linear-gradient(
       135deg,
-      #e3f2fd,
-      #ffffff
+      rgba(12,36,63,.94),
+      rgba(8,23,41,.92)
     );
 
-  color:#1565c0;
-
   border:
-    1px solid rgba(33,150,243,.12);
+    1px solid rgba(96,165,250,.22);
+
+  border-radius:999px;
 
   box-shadow:
-    0 6px 18px rgba(25,118,210,.10);
+    0 10px 28px rgba(0,0,0,.20),
+    0 0 18px rgba(37,99,235,.07);
+
+  font-size:13px;
+
+  letter-spacing:.25px;
 }
 
 
 /* =========================================================
-   🪟 MODALS
+   🪟 MODAL OVERLAY
    ========================================================= */
 
 .report-overlay{
+  position:fixed;
+
+  inset:0;
+
+  z-index:11000;
+
+  display:none;
+
+  align-items:center;
+  justify-content:center;
+
+  padding:18px;
+
   background:
-    linear-gradient(
-      135deg,
-      rgba(13,71,161,.45),
-      rgba(0,20,50,.62)
-    );
-
-  backdrop-filter:
-    blur(14px);
-
-  -webkit-backdrop-filter:
-    blur(14px);
-}
-
-
-.report-modal{
-  background:
-    rgba(255,255,255,.96);
-
-  border:
-    1px solid rgba(255,255,255,.75);
-
-  border-radius:24px;
-
-  box-shadow:
-    0 25px 70px rgba(0,0,0,.28);
+    rgba(2,8,18,.72);
 
   backdrop-filter:blur(18px);
   -webkit-backdrop-filter:blur(18px);
 }
 
 
+/* =========================================================
+   🪟 MODAL
+   ========================================================= */
+
+.report-modal{
+  width:390px;
+  max-width:100%;
+
+  padding:25px;
+
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17,36,59,.97),
+      rgba(7,19,34,.98)
+    );
+
+  border:
+    1px solid rgba(148,163,184,.16);
+
+  box-shadow:
+    0 35px 90px rgba(0,0,0,.52);
+
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+
+  animation:
+    modalIn .25s ease-out;
+}
+
+
+@keyframes modalIn{
+  from{
+    opacity:0;
+    transform:
+      translateY(12px)
+      scale(.97);
+  }
+
+  to{
+    opacity:1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+
 .report-title{
+  margin-bottom:7px;
+
+  font-size:19px;
+  font-weight:800;
+
   background:
     linear-gradient(
       135deg,
-      #2196f3,
-      #0d47a1
+      #fff,
+      #93c5fd,
+      #22d3ee
     );
 
   -webkit-background-clip:text;
@@ -855,7 +1493,11 @@ button:disabled{
 
 
 .report-subtitle{
-  color:#718096;
+  margin-bottom:15px;
+
+  color:#8298b5;
+
+  font-size:13px;
 }
 
 
@@ -864,48 +1506,57 @@ button:disabled{
    ========================================================= */
 
 .recipient-card{
+  padding:12px;
+
+  color:#dbeafe;
+
   background:
-    linear-gradient(
-      135deg,
-      #ffffff,
-      #f7fbff
-    );
+    rgba(255,255,255,.035);
 
   border:
-    1px solid #e5edf6;
+    1px solid rgba(148,163,184,.12);
+
+  border-radius:13px;
 
   box-shadow:
-    0 4px 12px rgba(25,118,210,.05);
+    0 6px 18px rgba(0,0,0,.12);
 
   transition:
     transform .2s ease,
     border-color .2s ease,
+    background .2s ease,
     box-shadow .2s ease;
 }
 
 
 .recipient-card:hover{
-  transform:translateY(-2px);
+  transform:
+    translateY(-2px);
 
-  border-color:#90caf9;
+  background:
+    rgba(59,130,246,.08);
+
+  border-color:
+    rgba(96,165,250,.28);
 
   box-shadow:
-    0 8px 20px rgba(25,118,210,.10);
+    0 10px 25px rgba(0,0,0,.20);
 }
 
 
 .recipient-card.selected{
-  border-color:#2196f3;
-
   background:
     linear-gradient(
       135deg,
-      #e3f2fd,
-      #ffffff
+      rgba(37,99,235,.18),
+      rgba(34,211,238,.05)
     );
 
+  border-color:
+    rgba(59,130,246,.55);
+
   box-shadow:
-    0 8px 22px rgba(33,150,243,.14);
+    0 12px 30px rgba(37,99,235,.15);
 }
 
 
@@ -913,26 +1564,37 @@ button:disabled{
   background:
     linear-gradient(
       135deg,
-      #42a5f5,
-      #1565c0
+      #60a5fa,
+      #2563eb
     );
 
   box-shadow:
-    0 5px 12px rgba(25,118,210,.22);
+    0 7px 18px rgba(37,99,235,.25);
 }
 
 
 /* =========================================================
-   🔄 REFRESH BUTTON
+   🔄 REFRESH
    ========================================================= */
 
 #refreshBtn{
   position:relative;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fb923c,
+      #ea580c
+    );
 }
 
 
 #refreshBtn:hover{
-  filter:brightness(1.04);
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 13px 30px rgba(249,115,22,.25);
 }
 
 
@@ -942,65 +1604,64 @@ button:disabled{
 
 .scan-animate{
   animation:
-    popIn .35s ease-out,
-    glow 1.1s ease-in-out;
+    resultPop .38s cubic-bezier(.2,.8,.2,1),
+    resultGlow 1.15s ease-out;
+}
+
+
+@keyframes resultPop{
+  from{
+    opacity:0;
+    transform:
+      translateY(8px)
+      scale(.985);
+  }
+
+  to{
+    opacity:1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+
+@keyframes resultGlow{
+  0%{
+    box-shadow:
+      0 0 0 rgba(59,130,246,0);
+  }
+
+  35%{
+    box-shadow:
+      0 0 35px rgba(59,130,246,.20);
+  }
+
+  100%{
+    box-shadow:
+      0 16px 40px rgba(0,0,0,.24);
+  }
 }
 
 
 /* =========================================================
-   📱 MOBILE POLISH
+   🧱 BUTTON GRID
    ========================================================= */
 
-@media(max-width:600px){
+.button-grid{
+  display:grid;
 
-  .header{
-    padding:10px 12px;
-  }
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
 
-  .header-left h3{
-    font-size:15px;
-  }
+  gap:10px;
 
-  .header-left img{
-    width:38px;
-    height:38px;
-  }
+  margin-top:12px;
+}
 
-  .container{
-    padding:12px;
-  }
 
-  .button-grid{
-    gap:8px;
-  }
-
-  button{
-    min-height:50px;
-  }
-
-  .branch-card{
-    width:calc(100vw - 30px);
-    padding:25px 18px;
-  }
-
-  .branch-grid{
-    width:100%;
-  }
-
-  #loginScreen::before{
-    width:calc(100vw - 30px);
-    height:490px;
-  }
-
-  #loginScreen input,
-  #loginScreen button{
-    width:270px;
-  }
-
-  .card{
-    border-radius:16px;
-  }
-
+.button-grid button{
+  width:100%;
 }
 
 
@@ -1010,11 +1671,12 @@ button:disabled{
 
 ::-webkit-scrollbar{
   width:8px;
+  height:8px;
 }
 
 
 ::-webkit-scrollbar-track{
-  background:#edf5fd;
+  background:#050c16;
 }
 
 
@@ -1022,2267 +1684,276 @@ button:disabled{
   background:
     linear-gradient(
       180deg,
-      #42a5f5,
-      #1565c0
+      #3b82f6,
+      #1d4ed8
     );
 
   border-radius:999px;
+
+  border:
+    2px solid #050c16;
 }
 
 
 ::-webkit-scrollbar-thumb:hover{
-  background:#0d47a1;
+  background:
+    linear-gradient(
+      180deg,
+      #60a5fa,
+      #2563eb
+    );
 }
 
 
 /* =========================================================
-   ✨ SELECTION
+   ✨ TEXT SELECTION
    ========================================================= */
 
 ::selection{
-  background:#2196f3;
-  color:white;
+  color:#fff;
+
+  background:
+    rgba(37,99,235,.75);
 }
 
 
 /* =========================================================
-   🔵 FOCUS ACCESSIBILITY
+   📱 MOBILE
    ========================================================= */
 
-button:focus-visible,
-input:focus-visible{
-  outline:
-    3px solid rgba(33,150,243,.30);
+@media(max-width:600px){
 
-  outline-offset:2px;
-}
-
-</style>
-</head>
-
-<body>
+  body{
+    font-size:14px;
+  }
 
 
-  
+  .header{
+    min-height:62px;
 
-<div id="branchScreen">
-  <div class="branch-card">
-    <h2>🏢 SELECT BRANCH</h2>
-    <p>Select the branch you want to access.</p>
-
-    <div class="branch-grid">
-      <button class="branch-option" onclick="selectBranch('GAI')">GAI</button>
-      <button class="branch-option" onclick="selectBranch('CAS')">CAS</button>
-      <button class="branch-option" onclick="selectBranch('BAC')">BAC</button>
-      <button class="branch-option" onclick="selectBranch('BIN')">BIN</button>
-      <button class="branch-option" onclick="selectBranch('BIS')">BIS</button>
-      <button class="branch-option" onclick="selectBranch('CAD')">CAD</button>
-      <button class="branch-option" onclick="selectBranch('DGT')">DGT</button>
-      <button class="branch-option" onclick="selectBranch('KAB')">KAB</button>
-      <button class="branch-option" onclick="selectBranch('KAL')">KAL</button>
-      <button class="branch-option" onclick="selectBranch('PAS')">PAS</button>
-      <button class="branch-option" onclick="selectBranch('POT')">POT</button>
-      <button class="branch-option" onclick="selectBranch('SAN')">SAN</button>
-      <button class="branch-option" onclick="selectBranch('TAB')">TAB</button>
-      <button class="branch-option" onclick="selectBranch('TAN')">TAN</button>
-      <button class="branch-option" onclick="selectBranch('TIS')">TIS</button>
-      <button class="branch-option" onclick="selectBranch('TOL')">TOL</button>
-    </div>
-  </div>
-</div>
+    padding:9px 11px;
+  }
 
 
-<div id="loginScreen" style="
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:#eef2f7;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  z-index:9999;
-">
-
-  <h2>🔐 SYSTEM LOGIN</h2>
-  <div id="loginBranchLabel" class="selected-branch-label">SELECT BRANCH</div>
-  <button class="cancel-report-btn" style="width:280px;max-width:80%;margin-top:8px;" onclick="changeBranch()">↩ CHANGE BRANCH</button>
-  <p style="
-color:#666;
-margin-top:-15px;
-margin-bottom:15px;
-">
-<BR><BR>Secure OTP Login
-</p>
-
-<input id="email" placeholder="Enter Gmail">
-
-<button class="btn-blue" onclick="sendOTP()">
-SEND OTP
-</button>
+  .header-left{
+    gap:9px;
+  }
 
 
-<input id="otp" placeholder="Enter OTP"
-style="display:none">
+  .header-left img{
+    width:37px;
+    height:37px;
+
+    border-radius:10px;
+  }
 
 
-<button id="verifyBtn" 
-class="btn-blue"
-style="display:none"
-onclick="verifyOTP()">
-VERIFY OTP
-</button>
+  .header-left h3{
+    max-width:145px;
 
-  <p id="loginStatus"></p>
-</div>
-
-
-<div id="app" style="display:none;">
-
-  <div class="header">
-
-    <div class="header-left">
-        <img src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&sz=w200">
-        <h3 id="branchTitle">SELECTED BRANCH</h3>&nbsp;&nbsp;
-    </div>
-
-    <div style="display:flex;align-items:center;">
-      <button class="change-branch-btn" onclick="changeBranch()">CHANGE BRANCH</button>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
-
-</div>
- <div class="container">
-
-    <!-- RESULT AREA -->
-    <div id="result"></div>
-
-    
-
-    <!-- QR SCANNER -->
-    <div id="reader" style="display:none;"></div>
-
-    <!-- AUDIT SCANNER -->
-    <div id="auditReader"
-    style="
-    display:none;
-    width:100%;
-    max-width:360px;
-    margin:auto;
-    border-radius:15px;
     overflow:hidden;
-    ">
-    </div>
-  <div id="auditCounter"
-style="
-display:none;
-text-align:center;
-font-weight:bold;
-margin:10px;
-font-size:16px;
-">
-Scanned : 0
-</div>
 
-    <input id="siNo" class="si-input" placeholder="Enter SI No">
+    white-space:nowrap;
 
-   <div class="button-grid">
+    text-overflow:ellipsis;
 
-<button id="scanBtn" class="btn-blue" onclick="toggleScan()">
-📷 START SCAN
-</button>
-
-<button
-id="auditScanBtn"
-class="btn-orange"
-onclick="toggleAuditScan()">
-🔄 RE-INVENTORY
-</button>
-
-<button 
-id="tagBtn"
-class="btn-blue"
-onclick="showTagDialog()"
-disabled>
-🏷 ADD VIA TAG NUMBER
-</button>
-
-<button class="btn-blue" onclick="searchSI()">
-🔍 SEARCH SI
-</button>
-
-<button
-id="refreshBtn"
-class="btn-orange"
-onclick="refreshPage()">
-♻ REFRESH
-</button>
-
-
-</div>
-
-
-
-   <div id="searchResult"></div>
-
-   
-
-  </div>
-<div id="tagDialog" class="report-overlay">
-
-<div class="report-modal">
-
-<div class="report-title">
-🏷 Tag Number Search
-</div>
-
-<div class="report-subtitle">
-Enter Tag Number 
-</div>
-
-
-<input 
-id="tagNumberInput"
-placeholder="Enter Tag Number"
->
-
-
-<button 
-class="send-report-btn"
-onclick="searchTagNumber()">
-SEARCH
-</button>
-
-
-<button 
-class="cancel-report-btn"
-onclick="closeTagDialog()">
-CANCEL
-</button>
-
-
-</div>
-
-</div>
-
-</div>
-  
-</div>
-  <div id="quitAuditDialog" class="report-overlay">
-
-<div class="report-modal">
-
-<div class="report-title">
-⚠ Stop Re-Inventory?
-</div>
-
-<div
-id="quitAuditMessage"
-class="report-subtitle"
-style="
-line-height:1.6;
-font-size:15px;
-margin-top:15px;
-">
-</div>
-
-<button
-class="btn-orange"
-onclick="confirmQuitAudit()">
-🛑 STOP RE-INVENTORY
-</button>
-
-<button
-class="cancel-report-btn"
-onclick="cancelQuitAudit()">
-CONTINUE SCANNING
-</button>
-
-</div>
-
-</div>
-
-<script>
-
-
-let auditBusy = false;
-let auditCount = 0;
-
-let BRANCH = localStorage.getItem("inventorySelectedBranch") || "";
-
-const BRANCH_NAMES = {
-  GAI: "GAI BRANCH",
-  CAS: "CAS BRANCH",
-  BAC: "BAC BRANCH",
-  BIN: "BIN BRANCH",
-  BIS: "BIS BRANCH",
-  CAD: "CAD BRANCH",
-  DGT: "DGT BRANCH",
-  KAB: "KAB BRANCH",
-  KAL: "KAL BRANCH",
-  PAS: "PAS BRANCH",
-  POT: "POT BRANCH",
-  SAN: "SAN BRANCH",
-  TAB: "TAB BRANCH",
-  TAN: "TAN BRANCH",
-  TIS: "TIS BRANCH",
-  TOL: "TOL BRANCH"
-};
-let auditMode = false;
-let scanner = null;
-let isScanning = false;
-let isSaving = false;
-
-let lastAuditBarcode = "";
-let tempCode = "";
-let tempSi = "";
-
-/* ===== NEW FOR CONTINUOUS RE-INVENTORY ===== */
-let auditQueue = [];
-let auditProcessing = false;
-let auditRecent = new Map();
-/* =========================================== */
-
-const STOCK_ADMIN = [
-  "remnvill@gmail.com",
-  "fmfc_audit654@yahoo.com"
-];
-
-
-const API_URL = "https://script.google.com/macros/s/AKfycbxng8kMj4DViaX43Zy-SJG6Q_GWkusS9J-4hH1z5vc_I7ZeQjxrY0VlvuwxjlqQ1msU/exec";
-
-/* ================= DIRECT SUPABASE ================= */
-const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDg3NjE3MSwiZXhwIjoyMTAwNDUyMTcxfQ.RfKJxtV06KMMNGHAqG0BhrYsjtee_eUq0m2ktrgUcxA";
-
-const BRANCH_PREFIX = {
-  GAI:"gai", CAS:"cas", BAC:"bac", BIN:"bin", BIS:"bis", CAD:"cad", DGT:"dgt",
-  KAB:"kab", KAL:"kal", PAS:"pas", POT:"pot", SAN:"san", TAB:"tab", TAN:"tan",
-  TIS:"tis", TOL:"tol"
-};
-
-function sbHeaders(extra={}) {
-  return Object.assign({
-    apikey: SUPABASE_KEY,
-    Authorization: "Bearer " + SUPABASE_KEY,
-    Accept: "application/json",
-    "Content-Type": "application/json"
-  }, extra);
-}
-
-async function sbRequest(path, options={}) {
-  const res = await fetch(SUPABASE_URL + path, Object.assign({}, options, {
-    headers: sbHeaders(options.headers || {})
-  }));
-  const text = await res.text();
-  let data;
-  try { data = text ? JSON.parse(text) : []; } catch(e) {
-    throw new Error("Supabase returned invalid JSON: " + text.slice(0,300));
-  }
-  if (!res.ok) {
-    const msg = data && (data.message || data.error || data.hint || data.details);
-    throw new Error("Supabase HTTP " + res.status + (msg ? ": " + msg : ""));
-  }
-  return data;
-}
-
-function branchTable(branch, type) {
-  const p = BRANCH_PREFIX[String(branch || "").trim().toUpperCase()];
-  if (!p) throw new Error("INVALID BRANCH");
-  return p + "_" + type;
-}
-
-function currentSession() {
-  return JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
-}
-
-async function requireSupabaseAccess() {
-  const session = currentSession();
-  const email = String(session.email || "").trim().toLowerCase();
-  if (!BRANCH || !email || !session.sessionId) throw new Error("SESSION EXPIRED");
-
-  const rows = await sbRequest("/rest/v1/allowed_users?email=eq." + encodeURIComponent(email) + "&select=*");
-  if (!Array.isArray(rows) || !rows.length) throw new Error("EMAIL_DENIED");
-
-  const active = rows.some(r => {
-    const v = r.active ?? r.ACTIVE ?? r.enabled ?? r.ENABLED;
-    return v === undefined || v === true || String(v).toLowerCase() === "true" || String(v) === "1";
-  });
-  if (!active) throw new Error("EMAIL_DENIED");
-
-  const allowed = rows.some(r => {
-    const raw = r.branch ?? r.BRANCH ?? r.branch_code ?? r.BRANCH_CODE ?? r.branches ?? r.BRANCHES;
-    if (raw === undefined || raw === null || String(raw).trim() === "") return true;
-    if (Array.isArray(raw)) return raw.map(x=>String(x).trim().toUpperCase()).includes(BRANCH);
-    return String(raw).split(/[,|;]/).map(x=>x.trim().toUpperCase()).includes(BRANCH);
-  });
-  if (!allowed) throw new Error("EMAIL_DENIED");
-  return {email, branch:BRANCH};
-}
-
-function normalizeBarcode(value) {
-  return String(value || "").trim().replace(/\s+/g, "").toUpperCase();
-}
-
-/* EXACT ORIGINAL DECODE FIX — DO NOT CHANGE */
-function decodeBarcode(code){
-  code = String(code || "").trim().toUpperCase();
-  if(code.indexOf("-") > -1){ return normalizeBarcode(code); }
-  if(code.length % 2 !== 0){ return normalizeBarcode(code); }
-  let result = "";
-  try{
-    for(let i = 0; i < code.length; i += 2){
-      const value = parseInt(code.substr(i,2),16);
-      if(isNaN(value)){ return normalizeBarcode(code); }
-      result += String.fromCharCode(value ^ 91);
-    }
-    return normalizeBarcode(result);
-  }catch(err){ return normalizeBarcode(code); }
-}
-
-function getBranchFromBarcode(barcode){
-  const parts = normalizeBarcode(barcode).split("-");
-  return parts.length >= 2 ? parts[0] : "";
-}
-
-function validateBarcodeBranch(barcode, branch){
-  const parts = normalizeBarcode(barcode).split("-");
-  return parts.length >= 2 && parts[0] === String(branch).trim().toUpperCase();
-}
-
-function formatLens(value) {
-  if (value === null || value === undefined) return "";
-  let str = String(value).trim();
-  if (str.includes("#ERROR") || str.includes("#VALUE")) return "0.00";
-  str = str.replace(/^\++/, "");
-  const hadPlus = String(value).trim().startsWith("+");
-  if (!isNaN(str) && str !== "" && !str.includes("/")) {
-    const num = Number(str);
-    return hadPlus ? "+" + num.toFixed(2) : num.toFixed(2);
-  }
-  if (str.includes("/")) return hadPlus ? "+" + str : str;
-  return hadPlus ? "+" + str : str;
-}
-
-function stockRowArray(s){
-  return [s.SDATE,s.SUPPLIER,s.DR,s.COST,s.ASG,s.CB,s.FD,s.UNITS,s.POWER,s.LENSTYPE,s.PUNIT,s.BR,s.NTAGN,s.CATEGORY,s.DESCRIPTION,s.LENSCODE,s.SELLINGPRICE,s.DELIVERYDATE,s.ORNUMBER,s.ORDATE,s.REMARKS,s.TAGPRICE,s.QR];
-}
-
-function manilaNow(){
-  return new Intl.DateTimeFormat("en-US", {timeZone:"Asia/Manila", month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(new Date());
-}
-
-async function getStockByBarcodeDirect(barcode){
-  const parts = normalizeBarcode(barcode).split("-");
-  if(parts.length < 2) return null;
-  const br = parts[0], ntagn = parts.slice(1).join("-");
-  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
-  return rows[0] || null;
-}
-
-async function isAlreadySoldDirect(barcode){
-  const parts = normalizeBarcode(barcode).split("-");
-  if(parts.length < 2) return null;
-  const br = parts[0], ntagn = parts.slice(1).join("-");
-  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1");
-  return rows[0] || null;
-}
-
-async function directCheck(rawBarcode){
-  await requireSupabaseAccess();
-  const scannedBarcode = normalizeBarcode(rawBarcode);
-  const barcode = decodeBarcode(scannedBarcode);
-  if(!validateBarcodeBranch(barcode, BRANCH)){
-    return {status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode)};
-  }
-  const sold = await isAlreadySoldDirect(barcode);
-  if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
-  const stock = await getStockByBarcodeDirect(barcode);
-  if(stock){ return {status:"FOUND", row:stockRowArray(stock), colJ:String(stock.LENSTYPE||""), colO:String(stock.DESCRIPTION||""), tag:String(stock.NTAGN||"")}; }
-  return {status:"NOT FOUND"};
-}
-
-async function directSave(rawBarcode, siNo){
-  const access = await requireSupabaseAccess();
-  const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
-  if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
-  const stock = await getStockByBarcodeDirect(barcode);
-  if(!stock) return {status:"NOT FOUND"};
-  const row = stockRowArray(stock);
-  while(row.length < 27) row.push("");
-  row[14] = formatLens(row[14]);
-  row[23] = String(siNo || "").trim();
-  row[24] = manilaNow();
-  row[25] = access.email;
-  row[26] = "";
-  const payload = [{SDATE:row[0],SUPPLIER:row[1],DR:row[2],COST:row[3],ASG:row[4],CB:row[5],FD:row[6],UNITS:row[7],POWER:row[8],LENSTYPE:row[9],PUNIT:row[10],BR:row[11],NTAGN:row[12],CATEGORY:row[13],DESCRIPTION:row[14],LENSCODE:row[15],SELLINGPRICE:row[16],DELIVERYDATE:row[17],ORNUMBER:row[18],ORDATE:row[19],REMARKS:row[20],TAGPRICE:row[21],QR:row[22],"SI NO.":row[23],"DATE AND TIME":row[24],"USER EMAIL":row[25],STATUS:row[26]}];
-  await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
-  return {status:"ADDED TO SOLD",row};
-}
-
-async function directSearchSI(siNo){
-  await requireSupabaseAccess();
-  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?%22SI%20NO.%22=eq." + encodeURIComponent(siNo) + "&select=LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22&limit=100");
-  return {status:"OK",items:rows.map(r=>({colJ:String(r.LENSTYPE||""),colO:formatLens(String(r.DESCRIPTION||"")),tag:String(r.NTAGN||""),siNo:String(r["SI NO."]||""),date:String(r["DATE AND TIME"]||"")}))};
-}
-
-async function directCheckTag(tag){
-  await requireSupabaseAccess();
-  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(String(tag).trim().toUpperCase()) + "&select=*&limit=1");
-  if(!rows.length) return {status:"NOT_FOUND"};
-  const s=rows[0], barcode=normalizeBarcode(s.BR+"-"+s.NTAGN);
-  const sold=await isAlreadySoldDirect(barcode);
-  if(sold) return {status:"DUPLICATE",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
-  return {status:"FOUND",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
-}
-
-async function directSaveAudit(rawBarcode){
-  const access=await requireSupabaseAccess();
-  const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
-  const parts=barcode.split("-");
-  if(parts.length<2) return {status:"INVALID BARCODE"};
-  const br=parts[0], ntagn=parts.slice(1).join("-");
-  const auditTable=branchTable(BRANCH,"audit");
-  const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
-  if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
-  const stock=await getStockByBarcodeDirect(barcode);
-  if(!stock) return {status:"NOT_FOUND"};
-  const payload=[{SDATE:String(stock.SDATE||""),SUPPLIER:String(stock.SUPPLIER||""),DR:String(stock.DR||""),COST:String(stock.COST||""),ASG:String(stock.ASG||""),CB:String(stock.CB||""),FD:String(stock.FD||""),UNITS:String(stock.UNITS||""),POWER:String(stock.POWER||""),LENSTYPE:String(stock.LENSTYPE||""),PUNIT:String(stock.PUNIT||""),BR:String(stock.BR||""),NTAGN:String(stock.NTAGN||""),CATEGORY:String(stock.CATEGORY||""),DESCRIPTION:String(formatLens(stock.DESCRIPTION||"")),LENSCODE:String(stock.LENSCODE||""),SELLINGPRICE:String(stock.SELLINGPRICE||""),DELIVERYDATE:String(stock.DELIVERYDATE||""),ORNUMBER:String(stock.ORNUMBER||""),ORDATE:String(stock.ORDATE||""),REMARKS:String(stock.REMARKS||""),TAGPRICE:String(stock.TAGPRICE||""),QR:String(stock.QR||""),"SI NO.":"","DATE AND TIME":manilaNow(),"USER EMAIL":access.email,STATUS:"AUDITED"}];
-  await sbRequest("/rest/v1/"+auditTable,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
-  return {status:"RECORDED",colO:String(stock.DESCRIPTION||""),colJ:String(stock.LENSTYPE||""),tag:String(stock.NTAGN||"")};
-}
-
-
-  
-  
-
-
-/* ================= BRANCH SELECTION ================= */
-
-function updateBranchUI(){
-  if(!BRANCH || !BRANCH_NAMES[BRANCH]) return;
-
-  const label = document.getElementById("loginBranchLabel");
-  const title = document.getElementById("branchTitle");
-
-  if(label){
-    label.textContent = BRANCH + " — " + BRANCH_NAMES[BRANCH];
+    font-size:13px;
   }
 
-  if(title){
-    title.textContent = BRANCH_NAMES[BRANCH];
+
+  .header button{
+    min-height:36px;
+
+    padding:7px 9px;
+
+    font-size:10px;
   }
 
-  document.title = "Inventory - " + BRANCH_NAMES[BRANCH];
-}
 
-function resetLoginForm(){
-  const otp = document.getElementById("otp");
-  const verify = document.getElementById("verifyBtn");
-  const status = document.getElementById("loginStatus");
-
-  if(otp){
-    otp.value = "";
-    otp.style.display = "none";
+  .logout-btn{
+    margin-left:3px;
   }
 
-  if(verify) verify.style.display = "none";
-  if(status) status.innerHTML = "";
 
-  const email = document.getElementById("email");
-  if(email) email.focus();
-}
-
-async function selectBranch(branch){
-  branch = String(branch || "").trim().toUpperCase();
-
-  if(!BRANCH_NAMES[branch]){
-    alert("Invalid branch.");
-    return;
+  .container{
+    padding:
+      14px
+      12px
+      32px;
   }
 
-  BRANCH = branch;
-  localStorage.setItem("inventorySelectedBranch", BRANCH);
 
-  updateBranchUI();
-
-  document.getElementById("branchScreen").style.display = "none";
-  document.getElementById("app").style.display = "none";
-  document.getElementById("loginScreen").style.display = "flex";
-
-  resetLoginForm();
-
-}
-
-function openApp(){
-  updateBranchUI();
-
-  document.getElementById("branchScreen").style.display = "none";
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("app").style.display = "block";
-
-}
-
-async function changeBranch(){
-  if(scanner){
-    try{
-      await scanner.stop();
-      await scanner.clear();
-    }catch(e){}
-    scanner = null;
-    isScanning = false;
+  #reader,
+  #auditReader{
+    border-radius:19px !important;
   }
 
-  BRANCH = "";
-  localStorage.removeItem("inventorySelectedBranch");
 
-  document.getElementById("app").style.display = "none";
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("branchScreen").style.display = "flex";
+  #reader::before,
+  #auditReader::before{
+    inset:9px;
 
-  document.getElementById("result").innerHTML = "";
-  document.getElementById("searchResult").innerHTML = "";
-}
-
-
-/* ================= LOGIN ================= */
-async function sendOTP(){
-
-try {
-
-const email = document.getElementById("email").value.trim();
-
-if(!email){
-  alert("Enter Gmail");
-  return;
-}
-
-const res = await fetch(
-API_URL +
-"?action=sendOTP" +
-"&branch=" + encodeURIComponent(BRANCH) +
-"&email=" + encodeURIComponent(email)
-);
-
-// ===== DEBUG SERVER RESPONSE =====
-const text = await res.text();
-
-console.log("SEND OTP RAW RESPONSE:");
-console.log(text);
-
-let data;
-
-try{
-    data = JSON.parse(text);
-}
-catch(e){
-
-    document.getElementById("loginStatus").innerHTML = `
-    <div style="color:red">
-    ❌ SERVER RETURNED HTML
-    <br><br>
-    <pre style="
-        white-space:pre-wrap;
-        font-size:12px;
-        max-height:300px;
-        overflow:auto;
-        background:#f5f5f5;
-        padding:10px;
-        border-radius:8px;
-    ">
-${text.replace(/</g,"&lt;")}
-    </pre>
-    </div>
-    `;
-
-    console.log(text);
-    return;
-}
-// ================================
-
-if (data.status === "OTP_SENT") {
-
-    if (data.alreadyLoggedIn) {
-
-      document.getElementById("loginStatus").innerHTML =
-      `
-      <div class="login-warning">
-      ⚠ Account already logged in.<br><br>
-
-      <button
-      onclick="forceLogin()"
-      style="
-      background:#ff9800;
-      color:white;
-      padding:10px 20px;
-      border:none;
-      border-radius:10px;
-      font-weight:bold;
-      cursor:pointer;
-      ">
-      FORCE LOGOUT OTHER DEVICE
-      </button>
-
-      </div>
-      `;
-
-    } else {
-
-      document.getElementById("loginStatus").innerText =
-      "✅ OTP sent to Gmail";
-
-    }
-
-    const otpBox = document.getElementById("otp");
-
-    otpBox.style.display = "block";
-    document.getElementById("verifyBtn").style.display = "block";
-
-    otpBox.focus();
-    otpBox.select();
-
-}
-else if(data.status === "EMAIL_DENIED"){
-
-    document.getElementById("loginStatus").innerText =
-    "❌ Gmail not allowed.";
-
-}
-else{
-
-    document.getElementById("loginStatus").innerText =
-    "❌ Login error.";
-
-}
-
-}
-catch(err){
-
-document.getElementById("loginStatus").innerHTML =
-`
-<div style="color:red">
-❌ ERROR:<br>
-${err}
-</div>
-`;
-
-console.log(err);
-
-}
-
-}
-async function verifyOTP() {
-
-  try {
-
-    const email = document.getElementById("email").value.trim();
-    const otp = document.getElementById("otp").value.trim();
-
-    const res = await fetch(
-  API_URL +
-  "?action=verifyOTP" +
-  "&branch=" + encodeURIComponent(BRANCH) +
-  "&email=" + encodeURIComponent(email) +
-  "&otp=" + encodeURIComponent(otp)
-);
-
-const text = await res.text();
-
-console.log(text);
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.log(text);
-
-      document.getElementById("loginStatus").innerHTML =
-      "❌ Server returned invalid response.<br>Please try again.";
-
-      return;
-    }
-
-    if (data.status === "OK") {
-
-      localStorage.setItem(
-        "inventorySession_" + BRANCH,
-        JSON.stringify({
-          email,
-          sessionId: data.sessionId,
-          time: Date.now()
-        })
-      );
-
-      localStorage.setItem("loginTime_" + BRANCH, Date.now());
-
-      openApp();
-      return;
-    }
-
-    if (data.status === "ALREADY_LOGGED_IN") {
-
-      if (confirm("Already logged in.\nForce logout other device?")) {
-        forceLogin();
-      }
-
-      return;
-    }
-
-    if (data.status === "INVALID") {
-
-      document.getElementById("loginStatus").innerHTML =
-      "❌ Wrong OTP.";
-
-      return;
-    }
-
-    document.getElementById("loginStatus").innerHTML =
-    "❌ Login failed.";
-
+    border-radius:14px;
   }
 
-  catch(err){
 
-    console.error(err);
+  .button-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
 
-    document.getElementById("loginStatus").innerHTML =
-    "❌ Cannot connect to server.";
-
+    gap:8px;
   }
 
-}
 
-  async function forceLogin() {
+  button{
+    min-height:48px;
 
-  const email = document.getElementById("email").value;
-  const otp = document.getElementById("otp").value;
+    padding:
+      10px 9px;
 
-  const res = await fetch(
-    API_URL +
-    "?action=forceLogin" +
-    "&branch=" + encodeURIComponent(BRANCH) +
-    "&email=" + encodeURIComponent(email) +
-    "&otp=" + encodeURIComponent(otp)
-  );
+    font-size:12px;
+  }
 
-  const data = await res.json();
 
-  if (data.status === "OK") {
+  .si-input{
+    min-height:50px;
 
-    localStorage.setItem("inventoryLoggedIn", "true");
-localStorage.setItem(
-"inventorySession_"+BRANCH,
-JSON.stringify({
-email: email,
-sessionId: data.sessionId,
-time: Date.now()
-})
-);
-    
-    localStorage.setItem("loginTime_" + BRANCH, Date.now());
-    
-    
+    margin-top:14px;
+  }
 
-    openApp();
 
-  } else {
+  .card,
+  .no-results{
+    padding:17px;
 
-    alert("Force login failed. Please request a new OTP.");
+    border-radius:16px;
+  }
 
+
+  .branch-card{
+    width:
+      calc(100vw - 28px);
+
+    padding:
+      25px
+      18px;
+
+    border-radius:23px;
+  }
+
+
+  .branch-card h2{
+    font-size:21px;
+  }
+
+
+  .branch-grid{
+    gap:8px;
+  }
+
+
+  .branch-option{
+    min-height:47px;
+  }
+
+
+  #loginScreen::before{
+    width:
+      calc(100vw - 28px);
+
+    height:500px;
+
+    border-radius:24px;
+  }
+
+
+  #loginScreen h2{
+    font-size:22px;
+  }
+
+
+  #loginScreen input,
+  #loginScreen button{
+    width:270px;
+
+    max-width:
+      calc(100vw - 70px);
+  }
+
+
+  #auditCounter{
+    margin:
+      10px
+      auto;
+  }
+
+
+  .report-modal{
+    padding:20px;
+
+    border-radius:19px;
   }
 
 }
 
 
-  
-  
+/* =========================================================
+   📱 VERY SMALL PHONES
+   ========================================================= */
 
+@media(max-width:380px){
 
-function setUIScanning(state) {
-  const btn = document.getElementById("scanBtn");
-  const siBox = document.getElementById("siNo");
-  const reader = document.getElementById("reader");
-  const refreshBtn = document.getElementById("refreshBtn");
-
-  if (state) {
-    btn.innerHTML = "⛔ STOP SCANNING";
-    siBox.disabled = true;
-    reader.style.display = "block";
-    refreshBtn.disabled = true;
-    refreshBtn.style.opacity = "0.5";
-  } else {
-    btn.innerHTML = "📷 START SCAN";
-    siBox.disabled = false;
-    reader.style.display = "none";
-    refreshBtn.disabled = false;
-    refreshBtn.style.opacity = "1";
-  }
-}
-
-
-
-async function toggleScan() {
-  const siNo = document.getElementById("siNo").value;
-  if (!siNo) return alert("Enter SI No");
-
-  if (isScanning) {
-    isScanning = false;
-    setUIScanning(false);
-    if (scanner) {
-      await scanner.stop();
-      await scanner.clear();
-      scanner = null;
-    }
-    return;
-  }
-
-  clearUI();
-  isScanning = true;
-  setUIScanning(true);
-
-const devices = await Html5Qrcode.getCameras();
-
-if(!devices.length){
-  alert("No camera detected");
-  isScanning = false;
-  setUIScanning(false);
-  return;
-}
-
-let cameraId = devices[0].id;
-
-for (let d of devices) {
-  const label = (d.label || "").toLowerCase();
-
-  if (label.includes("back") || label.includes("rear")) {
-    cameraId = d.id;
-    break;
-  }
-}
-
- scanner = new Html5Qrcode("reader");
-
-await scanner.start(
-    {
-        deviceId: { exact: cameraId }
-    },
-    {
-        fps: 20,
-        qrbox: {
-            width: 300,
-            height: 300
-        },
-        aspectRatio: 1.0,
-        videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-        }
-    },
-    async (code) => {
-
-        if (!isScanning) return;
-
-        isScanning = false;
-        await scanner.stop();
-        await scanner.clear();
-        scanner = null;
-        setUIScanning(false);
-
-        beep();
-        vibrate();
-
-        tempCode = code;
-        tempSi = siNo;
-
-        let data;
-        try {
-          data = await directCheck(code);
-        } catch (err) {
-          document.getElementById("result").innerHTML = `
-            <div class="card red">
-              ❌ ${err.message || err}
-            </div>`;
-          return;
-        }
-
-      let row = data.row || [];
-
-let colJ = data.colJ || row[9] || "";
-let colO = data.colO || row[14] || "";
-
-let tag = data.tag || row[12] || "";
-
-        if (data.status === "FOUND") {
-            document.getElementById("result").innerHTML = `
-                <div class="card green scan-animate">
-                    ✅ AVAILABLE<br><br>
-                    <b>${colO}</b><br>
-                    ${colJ ? `<small>${colJ}</small><br>` : ""}
-                    <small>🏷 Tag: <b>${tag}</b></small><br>
-                    
-
-                    <button id="saveBtn"
-                        class="btn-blue"
-                        onclick="saveYes()">
-                        ADD TO SOLD
-                    </button>
-
-                    <button class="btn-orange"
-                        onclick="cancelNo()">
-                        CANCEL
-                    </button>
-                </div>
-            `;
-        }
-        else if (data.status === "WRONG BRANCH") {
-            document.getElementById("result").innerHTML = `
-                <div class="card red">
-                    ❌ WRONG BRANCH<br><br>
-                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
-                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
-                </div>
-            `;
-        }
-        else if (data.status === "DUPLICATE") {
-            document.getElementById("result").innerHTML = `
-                <div class="card red">
-                    🛑 ALREADY SOLD<br><br>
-                    <b>${colO}</b><br>
-                    ${colJ ? `<small>${colJ}</small><br>` : ""}
-                    <small>🏷 Tag: <b>${tag || ""}</b></small><br>
-                   
-                </div>
-            `;
-        }
-        else {
-            document.getElementById("result").innerHTML = `
-                <div class="no-results">
-                    ❌ NOT FOUND
-                </div><br>
-                <b>${colO}</b><br>
-                ${colJ ? `<small>${colJ}</small>` : ""}
-            `;
-        }
-    }
-);
-
-// ================= CAMERA IMPROVEMENTS =================
-
-try {
-
-    const video = document.querySelector("#reader video");
-
-    if (video && video.srcObject) {
-
-        const track = video.srcObject.getVideoTracks()[0];
-
-        if (track) {
-
-            const capabilities = track.getCapabilities();
-
-            // Continuous autofocus
-            if (
-                capabilities.focusMode &&
-                capabilities.focusMode.includes("continuous")
-            ) {
-                await track.applyConstraints({
-                    advanced: [{
-                        focusMode: "continuous"
-                    }]
-                });
-
-                console.log("Continuous autofocus enabled");
-            }
-
-            // Auto zoom if supported
-       if (capabilities.zoom) {
-
-    const desiredZoom = 2.0;  
-
-    await track.applyConstraints({
-        advanced: [{
-            zoom: desiredZoom
-        }]
-    });
-
-                console.log("Camera zoom enabled");
-            }
-
-        }
-
-    }
-
-}
-catch (e) {
-
-    console.log("Camera features not supported:", e);
-
-}
-}
-
-  async function stopNormalScanner(){
-
-  if(scanner){
-
-    try{
-      await scanner.stop();
-      await scanner.clear();
-    }
-    catch(e){
-      console.log("Normal scanner stop:", e);
-    }
-
-    scanner=null;
-  }
-
-  isScanning=false;
-
-  setUIScanning(false);
-
-}
-
-  let auditScanner = null;
-let auditScanning = false;
-
-
-  
-
-async function toggleAuditScan() {
-
-  const btn = document.getElementById("auditScanBtn");
-  const scanBtn = document.getElementById("scanBtn");
-
-
-  // STOP NORMAL SCANNER FIRST
-  await stopNormalScanner();
-
-
-
-
-  // ================= STOP AUDIT =================
-
-if (auditScanning) {
-
-  // Warn if there are still queued items
-  if (auditQueue.length > 0 || auditProcessing) {
-
-    const pending = auditQueue.length + (auditProcessing ? 1 : 0);
-
-   const quit = await askQuitAudit(pending);
-
-if (!quit) {
-    return;
-}
-  }
-
-  auditScanning = false;
-
-  btn.innerHTML = "🔄 RE-INVENTORY";
-
-  scanBtn.disabled = false;
-  scanBtn.style.opacity = "1";
-  scanBtn.style.cursor = "pointer";
-
-  if (auditScanner) {
-    try {
-      await auditScanner.stop();
-      await auditScanner.clear();
-    } catch (e) {
-      console.log(e);
-    }
-
-    auditScanner = null;
-  }
-
-  document.getElementById("auditReader").style.display = "none";
-
-document.getElementById("auditCounter").style.display = "none";
-document.getElementById("auditCounter").innerHTML = "Scanned : 0";
-
-return;
-
-  return;
-}
-
-
-  // ================= START AUDIT =================
-
-
-  auditScanning = true;
- auditQueue.length = 0;
-auditProcessing = false;
-auditRecent.clear();
-
-auditCount = 0;
-
-document.getElementById("auditCounter").style.display = "block";
-
-document.getElementById("auditCounter").innerHTML =
-"Scanned : 0";
-
-
-  btn.innerHTML = "⏹ STOP AUDIT";
-
-
-  scanBtn.disabled = true;
-  scanBtn.style.opacity = "0.5";
-  scanBtn.style.cursor = "not-allowed";
-
-
-  document.getElementById("auditReader").style.display="block";
-
-
-
-  const cameras = await Html5Qrcode.getCameras();
-
-
-  if(!cameras.length){
-
-    alert("No camera detected");
-
-    auditScanning=false;
-
-    btn.innerHTML="🔄 RE-INVENTORY";
-
-    return;
-
+  .header-left h3{
+    max-width:105px;
   }
 
 
+  .header button{
+    padding:
+      6px 7px;
 
-  let cameraId = cameras[0].id;
-
-
-
-  for(let cam of cameras){
-
-    let label=(cam.label || "").toLowerCase();
-
-
-    if(label.includes("back") || label.includes("rear")){
-
-      cameraId=cam.id;
-      break;
-
-    }
-
+    font-size:9px;
   }
 
 
-
-  auditScanner = new Html5Qrcode("auditReader");
-
-
-
-  try {
-
-
-    await auditScanner.start(
-
-      {
-        deviceId:{
-          exact:cameraId
-        }
-      },
-
-
-      {
-
-        fps:20,
-
-        qrbox:{
-          width:300,
-          height:300
-        },
-
-        aspectRatio:1,
-
-
-        videoConstraints:{
-
-          facingMode:"environment",
-
-          width:{
-            ideal:1920
-          },
-
-          height:{
-            ideal:1080
-          }
-
-        }
-
-      },
-
-
-     async (decodedText) => {
-
-    if (!auditScanning) return;
-
-    const barcode = decodedText.trim().toUpperCase();
-
-    // Ignore same barcode within 2 seconds
-    const now = Date.now();
-    const last = auditRecent.get(barcode) || 0;
-
-    if (now - last < 2000) return;
-
-    auditRecent.set(barcode, now);
-
-    // Cleanup old entries
-    for (const [k, t] of auditRecent) {
-        if (now - t > 10000) {
-            auditRecent.delete(k);
-        }
-    }
-
-    // Immediate feedback
-    beep();
-    vibrate();
-
-    // Don't queue the same barcode twice
-if (!auditQueue.includes(barcode)) {
-    auditQueue.push(barcode);
-    processAuditQueue();
-}
-
-}
-
-);      
-
-
-
-    // CAMERA AUTO FOCUS + ZOOM
-
-    try{
-
-
-      const video=document.querySelector("#auditReader video");
-
-
-      if(video && video.srcObject){
-
-
-        const track =
-        video.srcObject.getVideoTracks()[0];
-
-
-        if(track){
-
-
-          const capabilities =
-          track.getCapabilities();
-
-
-
-          if(
-            capabilities.focusMode &&
-            capabilities.focusMode.includes("continuous")
-          ){
-
-
-            await track.applyConstraints({
-
-              advanced:[
-                {
-                  focusMode:"continuous"
-                }
-              ]
-
-            });
-
-
-          }
-
-
-
-          if(capabilities.zoom){
-
-
-            await track.applyConstraints({
-
-              advanced:[
-                {
-                  zoom:2
-                }
-              ]
-
-            });
-
-
-          }
-
-
-        }
-
-      }
-
-
-    }
-
-    catch(e){
-
-      console.log(
-        "Audit camera enhancement:",
-        e
-      );
-
-    }
-
-
-
-  }
-
-  catch(e){
-
-
-    console.log(
-      "AUDIT CAMERA ERROR:",
-      e
-    );
-
-
-    alert(
-      "Cannot start audit camera:\n"+e
-    );
-
-
-    auditScanning=false;
-
-    btn.innerHTML="🔄 RE-INVENTORY";
-
-
-    document.getElementById("auditReader").style.display="none";
-    document.getElementById("auditCounter").style.display = "none";
-
-
+  .container{
+    padding-left:9px;
+    padding-right:9px;
   }
 
 
-}
-  
-  
-
-  
-
-
-  async function saveAudit(barcode){
-
-const data = await directSaveAudit(barcode);
-
-
-if(data.status==="RECORDED"){
-
-
-auditCount++;
-
-
-document.getElementById("auditCounter").innerHTML =
-"Scanned : " + auditCount;
-
-
-
-document.getElementById("result").innerHTML=`
-<div class="card green scan-animate">
-
-✅ AUDIT RECORDED
-
-<br><br>
-
-<b>${data.colO}</b><br>
-
-${data.colJ}
-<small>🏷 Tag: <b>${data.tag || ""}</b></small><br>
-<br><br>
-
-
-
-</div>
-
-`;
-
-}
-
-else{
-
-alert(data.status);
-
-}
-
-}
-async function processAuditQueue() {
-
-    if (auditProcessing) return;
-
-    auditProcessing = true;
-
-    try {
-
-        while (auditQueue.length > 0) {
-
-            const barcode = auditQueue.shift();
-
-            let saveData;
-            try {
-                saveData = await directSaveAudit(barcode);
-            } catch(e) {
-                document.getElementById("result").innerHTML = `<div class="card red">❌ ${e.message}</div>`;
-                continue;
-            }
-
-
-
-            switch (saveData.status) {
-
-
-                case "RECORDED":
-
-                    auditCount++;
-
-                    document.getElementById("auditCounter").innerHTML =
-                    "Scanned : " + auditCount;
-
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card green scan-animate">
-
-                    ✅ AUDIT RECORDED
-
-                    <br><br>
-
-                    <b>${saveData.colO || ""}</b><br>
-
-                    ${saveData.colJ || ""}
-
-                    <br>
-
-                    🏷 Tag:
-                    <b>${saveData.tag || ""}</b>
-
-                    </div>
-                    `;
-
-                break;
-
-
-
-                case "ALREADY_AUDITED":
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card red">
-
-                    🛑 ALREADY AUDITED
-
-                    <br><br>
-
-                    🏷 Tag:
-                    <b>${saveData.tag || ""}</b>
-
-                    </div>
-                    `;
-
-                break;
-
-
-
-                case "NOT_FOUND":
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card red">
-                    ❌ NOT FOUND
-                    </div>
-                    `;
-
-                break;
-
-
-
-                default:
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card red">
-                    ❌ ${saveData.status || "UNKNOWN ERROR"}
-
-                    <br><br>
-
-                    ${JSON.stringify(saveData)}
-
-                    </div>
-                    `;
-
-            }
-
-
-        }
-
-
-    }
-    catch(err){
-
-        console.error(err);
-
-        document.getElementById("result").innerHTML = `
-        <div class="card red">
-        ❌ ${err.message}
-        </div>
-        `;
-
-    }
-    finally{
-
-        auditProcessing=false;
-
-    }
-
-}
-  
-
-  
-async function saveYes() {
-
-  console.log("========== saveYes() ==========");
-  console.log("tempCode:", tempCode);
-  console.log("tempSi:", tempSi);
-  console.log("isSaving:", isSaving);
-
-  if(!tempCode || !tempSi){
-
-  alert(
-    "Missing data\nBarcode: " + tempCode +
-    "\nSI: " + tempSi
-  );
-
-  return;
-
-}
-
-  
-
-if (isSaving) return;
-
-isSaving = true;
-
-const saveBtn = document.getElementById("saveBtn");
-
-if (saveBtn) {
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = "⏳ SAVING...";
-  saveBtn.style.opacity = "0.6";
-  saveBtn.style.cursor = "not-allowed";
-}
-
-
-  document.getElementById("result").innerHTML = `
-    <div class="card saving">
-      <div class="spinner"></div>
-      <div class="saving-text">
-        Saving data...
-      </div>
-    </div>
-  `;
-
-
-  try {
-
-    const data = await directSave(tempCode, tempSi);
-
-
-   let row = data.row || [];
-
-let colJ = data.colJ || row[9] || "";
-let colO = data.colO || row[14] || "";
-
-let tag = data.tag || row[12] || "";
-
-
-    if (data.status === "ERROR") {
-
-    document.getElementById("result").innerHTML = `
-    <div class="card red">
-
-    ❌ ERROR
-
-    <br><br>
-
-    ${data.error}
-
-    <br><br>
-
-    
-
-    </div>
-    `;
-
-    isSaving = false;
-    return;
-}
-
-// SUCCESS
-document.getElementById("result").innerHTML = `
-<div class="card green scan-animate">
-
-✅ ADDED TO SOLD
-
-<br><br>
-
-<b>${colO}</b><br>
-
-${colJ ? `<small>${colJ}</small><br>` : ""}
-<small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
-
-
-
-</div>
-`;
-
-tempCode = "";
-tempSi = "";
-
-}
-catch(err){
-
-    console.error(err);
-
-    document.getElementById("result").innerHTML = `
-    <div class="card red">
-        ❌ SAVE FAILED
-        <br><br>
-        ${err.message}
-    </div>
-    `;
-
-}
-finally{
-
-    isSaving = false;
-
-}
-}
-
-async function searchSI() {
-
-  clearUI();
-
-  const siNo = document.getElementById("siNo").value.trim();
-  const out = document.getElementById("searchResult");
-
-  if (!siNo) {
-    out.innerHTML = `
-      <div class="no-results">
-        ❌ ENTER SI NO.
-      </div>
-    `;
-    return;
-  }
-
-  out.innerHTML = `
-    <div class="card">
-      🔎 SEARCHING SOLD OUT SI: <b>${siNo}</b>...
-    </div>
-  `;
-
-  try {
-
-    const data = await directSearchSI(siNo);
-
-    console.log("SEARCH SI RESPONSE:", data);
-
-    if (data.status === "ERROR") {
-      out.innerHTML = `
-        <div class="card red">
-          ❌ SEARCH ERROR
-          <br><br>
-          ${data.error || "Unknown error"}
-          ${data.details ? `<br><br><small>${data.details}</small>` : ""}
-        </div>
-      `;
-      return;
-    }
-
-    if (!Array.isArray(data.items) || !data.items.length) {
-      out.innerHTML = `
-        <div class="no-results">
-          ❌ No results found
-          <br><br>
-          SI No: <b>${siNo}</b>
-          <br>
-          Branch: <b>${BRANCH}</b>
-        </div>
-      `;
-      return;
-    }
-
-    out.innerHTML = data.items.map((item, idx) => `
-      <div class="card">
-        #${idx + 1}<br>
-        <b>${item.colO || ""}</b><br>
-        ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
-        <small>🏷 Tag: <b>${item.tag || ""}</b></small><br>
-        <small>📄 SI No: <b>${item.siNo || siNo}</b></small><br>
-        <small>📅 ${item.date || "No Date"}</small>
-      </div>
-    `).join("");
-
-  } catch (err) {
-
-    console.error("SEARCH SI ERROR:", err);
-
-    out.innerHTML = `
-      <div class="card red">
-        ❌ SEARCH FAILED
-        <br><br>
-        ${err.message || err}
-      </div>
-    `;
-
-  }
-}
-
-/* ================= UTIL ================= */
-
-function clearUI() {
-  document.getElementById("result").innerHTML = "";
-  document.getElementById("searchResult").innerHTML = "";
-}
-
-function cancelNo() {
-  document.getElementById("result").innerHTML = `
-  <div class="no-results">
-    ❌ CANCELLED
-  </div>
-`;
-}
-
-async function refreshPage() {
-
- // STOP NORMAL CAMERA
-if(scanner){
-
-try{
-
-await scanner.stop();
-await scanner.clear();
-
-}catch(e){}
-
-scanner=null;
-
-}
-
-
-// STOP AUDIT CAMERA
-if(auditScanner){
-
-try{
-
-await auditScanner.stop();
-await auditScanner.clear();
-
-}catch(e){}
-
-auditScanner=null;
-
-}
-
-auditScanning=false;
-
-  auditCount=0;
-
-document.getElementById("auditCounter").style.display = "none";
-
-document.getElementById("auditCounter").innerHTML =
-"Scanned : 0";
-
-  isScanning = false;
-
-  setUIScanning(false);
-
-  // Stop audit scanner if running
-if(auditScanner){
-  try{
-    await auditScanner.stop();
-    await auditScanner.clear();
-  }
-  catch(e){
-    console.log(e);
-  }
-
-  auditScanner = null;
-}
-
-auditScanning = false;
-auditBusy = false;
-
-document.getElementById("auditReader").style.display = "none";
-document.getElementById("auditScanBtn").innerHTML = "🔄 RE-INVENTORY";
-
-  document.getElementById("scanBtn").disabled = false;
-document.getElementById("scanBtn").style.opacity = "1";
-document.getElementById("scanBtn").style.cursor = "pointer";
-
-
-  // Clear inputs
-  document.getElementById("tagNumberInput").value = "";
-
-  document.getElementById("siNo").value = "";
-
-
-  // Disable tag button
-  const tagBtn = document.getElementById("tagBtn");
-
-  if(tagBtn){
-    tagBtn.disabled = true;
-    tagBtn.style.opacity = "0.5";
+  .button-grid{
+    gap:7px;
   }
 
 
-  // Clear results
-  clearUI();
-
-
-  // Put cursor back to SI
-  document.getElementById("siNo").focus();
-
-}
-function showTagDialog(){
-
-    document.getElementById("tagNumberInput").value = "";
-    document.getElementById("tagDialog").style.display = "flex";
-
-}
-
-
-function closeTagDialog(){
-
-document.getElementById("tagDialog").style.display="none";
-
-}
-
-
-async function searchTagNumber(){
-
-
-const tag =
-document.getElementById("tagNumberInput")
-.value.trim();
-
-const siNo =
-document.getElementById("siNo")
-.value.trim();
-
-if(!siNo){
-  alert("Enter SI No first");
-  return;
-}
-
-if(!tag){
-  alert("Enter Tag Number");
-  return;
-}
-
-const data = await directCheckTag(tag);
-
-
-// ================= DUPLICATE =================
-if(data.status==="DUPLICATE"){
-
-document.getElementById("result").innerHTML=`
-
-<div class="card red">
-
-🛑 ALREADY SOLD
-
-<br><br>
-
-<b>${data.colO}</b><br>
-
-${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
-
-🏷 TAG:
-<b>${tag}</b>
-
-</div>
-
-`;
-
-closeTagDialog();
-return;
-
-}
-
-
-// ================= FOUND =================
-if(data.status==="FOUND"){
-
-tempCode=data.barcode;
-tempSi=siNo;
-
-document.getElementById("result").innerHTML=`
-
-<div class="card green scan-animate">
-
-✅ AVAILABLE<br><br>
-
-<b>${data.colO}</b><br>
-
-${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
-
-🏷 TAG:
-<b>${tag}</b>
-
-<br><br>
-
-<button
-id="saveBtn"
-class="btn-blue"
-onclick="saveYes()">
-
-ADD TO SOLD
-
-</button>
-
-<button
-class="btn-orange"
-onclick="cancelNo()">
-
-CANCEL
-
-</button>
-
-</div>
-
-`;
-
-closeTagDialog();
-return;
-
-}
-
-
-// ================= NOT FOUND =================
-
-document.getElementById("result").innerHTML=`
-
-<div class="no-results">
-
-❌ TAG NUMBER NOT FOUND
-
-</div>
-
-`;
-
-closeTagDialog();
-
-}  
-
-
-let audioCtx = null;
-
-function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-}
-
-function beep() {
-  initAudio();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.type = "square";
-  osc.frequency.value = 900;
-  gain.gain.value = 0.15;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.12);
-}
-
-function vibrate() {
-  if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
-}
-
-document.addEventListener("click", initAudio, { once: true });
-
-async function logout() {
-  localStorage.removeItem("inventorySession_" + BRANCH);
-  localStorage.removeItem("loginTime_" + BRANCH);
-  localStorage.removeItem("inventorySelectedBranch");
-  try { await stopNormalScanner(); } catch(e) {}
-  location.reload();
-}
-
-function checkLoginExpiry(){
-
-  const loginTime = localStorage.getItem("loginTime_" + BRANCH);
-
-  if(!loginTime){
-    return;
+  button{
+    font-size:11px;
   }
 
-  const now = Date.now();
 
-  const maxTime = 13 * 60 * 60 * 1000; // 13 hours
-  if(now - Number(loginTime) > maxTime){
-
-    
-   Object.keys(localStorage).forEach(key=>{
-
-if(key.startsWith("inventorySession_")){
-
-localStorage.removeItem(key);
-
-}
-
-});
-    localStorage.removeItem("loginTime_" + BRANCH);
-   
-
-    alert("Session expired. Please login again.");
-
-    location.reload();
-
+  .branch-card{
+    padding:
+      22px
+      15px;
   }
 
 }
-  document.getElementById("email").addEventListener("keydown",e=>{
-    if(e.key==="Enter") sendOTP();
-});
-
-document.getElementById("otp").addEventListener("keydown",e=>{
-    if(e.key==="Enter") verifyOTP();
-});
 
 
+/* =========================================================
+   🧊 REDUCED MOTION
+   ========================================================= */
 
-window.addEventListener("DOMContentLoaded", async function(){
+@media(prefers-reduced-motion:reduce){
 
-  checkLoginExpiry();
-
-  const savedBranch =
-    localStorage.getItem("inventorySelectedBranch") || "";
-
-  if(!BRANCH_NAMES[savedBranch]){
-    document.getElementById("branchScreen").style.display = "flex";
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "none";
-    return;
+  *,
+  *::before,
+  *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
   }
 
-  BRANCH = savedBranch;
-  updateBranchUI();
-
-  const session =
-    JSON.parse(
-      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
-    );
-
-  const email = session.email || "";
-  const sessionId = session.sessionId || "";
-
-  if(!email || !sessionId){
-    document.getElementById("branchScreen").style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("app").style.display = "none";
-    resetLoginForm();
-    return;
-  }
-
-  try {
-    await requireSupabaseAccess();
-    openApp();
-  } catch (err) {
-    localStorage.removeItem("inventorySession_" + BRANCH);
-    document.getElementById("branchScreen").style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("app").style.display = "none";
-    resetLoginForm();
-    document.getElementById("loginStatus").innerHTML =
-      "❌ " + (err.message === "EMAIL_DENIED" ? "Gmail not allowed for this branch." : "Session expired. Please login again.");
-  }
-
-});
-
-  const siInput = document.getElementById("siNo");
-
-siInput.addEventListener("input",function(){
-
-const btn=document.getElementById("tagBtn");
-
-if(this.value.trim()==""){
-
-btn.disabled=true;
-btn.style.opacity="0.5";
-
 }
-else{
-
-btn.disabled=false;
-btn.style.opacity="1";
-
-}
-
-});
-
-function askQuitAudit(pending){
-
-    document.getElementById("quitAuditMessage").innerHTML = `
-        ⚠ <b>${pending}</b> queued item(s) are still waiting to be processed.<br><br>
-
-        If you stop now, those items <b>will NOT be saved.</b><br><br>
-
-        Do you really want to stop Re-Inventory?
-    `;
-
-    document.getElementById("quitAuditDialog").style.display="flex";
-
-    return new Promise(resolve=>{
-        quitAuditResolve = resolve;
-    });
-
-}
-
-function confirmQuitAudit(){
-
-    document.getElementById("quitAuditDialog").style.display="none";
-
-    if(quitAuditResolve){
-        quitAuditResolve(true);
-        quitAuditResolve=null;
-    }
-
-}
-
-function cancelQuitAudit(){
-
-    document.getElementById("quitAuditDialog").style.display="none";
-
-    if(quitAuditResolve){
-        quitAuditResolve(false);
-        quitAuditResolve=null;
-    }
-
-}
-
-
-  
-  
-
-  
-
-
-
-  
-
-  
-</script>
-
-</body>
-</html>
-
-<!-- redeploy -->
+</style>
