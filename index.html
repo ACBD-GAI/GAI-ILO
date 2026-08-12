@@ -1223,7 +1223,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwzu1cSoQOZyDHA8_hzBiWt7HkKOsT7vFuAr30OT40QOmX0RJS8rey3lLTC8gpgMQqi/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzgLq2uZI1tCvpQ8ImBKzlP3hSYz6FWxE4JPxNfS4-nrAEgO0fMH0Xp79Jc5Erc7P9P/exec";
 
 function getSessionParams(){
 
@@ -2569,41 +2569,124 @@ finally{
 }
 
 async function searchSI() {
+
   clearUI();
 
-  const siNo = document.getElementById("siNo").value;
-
-  const res = await fetch(
-  API_URL +
-  "?action=searchSI" +
-  "&siNo=" + encodeURIComponent(siNo) +
-  getSessionParams()
-);
-  const data = await res.json();
+  const siNo = document.getElementById("siNo").value.trim();
 
   const out = document.getElementById("searchResult");
 
-  if (!data.items?.length) {
+  if (!siNo) {
+
     out.innerHTML = `
-  <div class="no-results">
-    ❌ No results found
-  </div>
-`;
+      <div class="no-results">
+        ❌ ENTER SI NUMBER
+      </div>
+    `;
+
     return;
   }
 
-  out.innerHTML = data.items.map((item, idx) => `
+  out.innerHTML = `
     <div class="card">
-      #${idx + 1}<br>
-      <b>${item.colO}</b><br>
-      ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
-      <small>🏷 Tag: <b>${item.tag}</b></small><br>
-      <small>📅 ${item.date || "No Date"}</small>
+      🔎 Searching SI No: <b>${siNo}</b>...
     </div>
-  `).join("");
-}
+  `;
 
-/* ================= UTIL ================= */
+  try {
+
+    const res = await fetch(
+      API_URL +
+      "?action=searchSI" +
+      "&siNo=" + encodeURIComponent(siNo) +
+      getSessionParams()
+    );
+
+    const data = await res.json();
+
+    console.log("SEARCH SI RESPONSE:", data);
+
+    if (data.status === "ERROR") {
+
+      out.innerHTML = `
+        <div class="card red">
+          ❌ SEARCH ERROR
+          <br><br>
+          <b>${data.error || "Unknown error"}</b>
+          <br><br>
+          <small>${data.details || ""}</small>
+        </div>
+      `;
+
+      return;
+    }
+
+    if (!data.items || !data.items.length) {
+
+      out.innerHTML = `
+        <div class="no-results">
+          ❌ No results found
+          <br><br>
+          SI No: <b>${siNo}</b>
+          <br>
+          Branch: <b>${BRANCH}</b>
+        </div>
+      `;
+
+      return;
+    }
+
+    out.innerHTML = data.items.map((item, idx) => `
+
+      <div class="card">
+
+        #${idx + 1}<br>
+
+        <b>${item.colO}</b><br>
+
+        ${item.colJ
+          ? `<small>${item.colJ}</small><br>`
+          : ""
+        }
+
+        <small>
+          🏷 Tag:
+          <b>${item.tag}</b>
+        </small>
+
+        <br>
+
+        <small>
+          📄 SI No:
+          <b>${item.siNo || siNo}</b>
+        </small>
+
+        <br>
+
+        <small>
+          📅 ${item.date || "No Date"}
+        </small>
+
+      </div>
+
+    `).join("");
+
+  }
+  catch(err) {
+
+    console.error("SEARCH SI ERROR:", err);
+
+    out.innerHTML = `
+      <div class="card red">
+        ❌ SEARCH FAILED
+        <br><br>
+        ${err.message}
+      </div>
+    `;
+
+  }
+
+}/* ================= UTIL ================= */
 
 function clearUI() {
   document.getElementById("result").innerHTML = "";
