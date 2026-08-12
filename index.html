@@ -1808,127 +1808,216 @@ async function changeBranch(){
 /* ================= LOGIN ================= */
 async function sendOTP(){
 
-try {
+  try {
 
-const email = document.getElementById("email").value.trim();
+    const email = document.getElementById("email").value.trim();
 
-if(!email){
-  alert("Enter Gmail");
-  return;
-}
-
-const res = await fetch(
-API_URL +
-"?action=sendOTP" +
-"&branch=" + encodeURIComponent(BRANCH) +
-"&email=" + encodeURIComponent(email)
-);
-
-// ===== DEBUG SERVER RESPONSE =====
-const text = await res.text();
-
-console.log("SEND OTP RAW RESPONSE:");
-console.log(text);
-
-let data;
-
-try{
-    data = JSON.parse(text);
-}
-catch(e){
-
-    document.getElementById("loginStatus").innerHTML = `
-    <div style="color:red">
-    ❌ SERVER RETURNED HTML
-    <br><br>
-    <pre style="
-        white-space:pre-wrap;
-        font-size:12px;
-        max-height:300px;
-        overflow:auto;
-        background:#f5f5f5;
-        padding:10px;
-        border-radius:8px;
-    ">
-${text.replace(/</g,"&lt;")}
-    </pre>
-    </div>
-    `;
-
-    console.log(text);
-    return;
-}
-// ================================
-
-if (data.status === "OTP_SENT") {
-
-    if (data.alreadyLoggedIn) {
-
-      document.getElementById("loginStatus").innerHTML =
-      `
-      <div class="login-warning">
-      ⚠ Account already logged in.<br><br>
-
-      <button
-      onclick="forceLogin()"
-      style="
-      background:#ff9800;
-      color:white;
-      padding:10px 20px;
-      border:none;
-      border-radius:10px;
-      font-weight:bold;
-      cursor:pointer;
-      ">
-      FORCE LOGOUT OTHER DEVICE
-      </button>
-
-      </div>
-      `;
-
-    } else {
-
-      document.getElementById("loginStatus").innerText =
-      "✅ OTP sent to Gmail";
-
+    if(!email){
+      alert("Enter Gmail");
+      return;
     }
 
-    const otpBox = document.getElementById("otp");
+    if(!BRANCH){
+      alert("Please select branch first.");
+      return;
+    }
 
-    otpBox.style.display = "block";
-    document.getElementById("verifyBtn").style.display = "block";
+    const btn = document.getElementById("sendOtpBtn");
 
-    otpBox.focus();
-    otpBox.select();
+    // Prevent repeated clicking
+    if(btn){
+      btn.disabled = true;
+      btn.style.opacity = "0.6";
+      btn.innerText = "SENDING...";
+    }
 
-}
-else if(data.status === "EMAIL_DENIED"){
+    const res = await fetch(
+      API_URL +
+      "?action=sendOTP" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email)
+    );
+
+    const text = await res.text();
+
+    console.log("SEND OTP RAW RESPONSE:");
+    console.log(text);
+
+    let data;
+
+    try{
+      data = JSON.parse(text);
+    }
+    catch(e){
+
+      document.getElementById("loginStatus").innerHTML = `
+        <div style="color:red">
+          ❌ SERVER ERROR
+          <br><br>
+          <pre style="
+            white-space:pre-wrap;
+            font-size:12px;
+            max-height:300px;
+            overflow:auto;
+            background:#f5f5f5;
+            padding:10px;
+            border-radius:8px;
+          ">${text.replace(/</g,"&lt;")}</pre>
+        </div>
+      `;
+
+      if(btn){
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerText = "SEND OTP";
+      }
+
+      return;
+    }
+
+
+    // =========================================
+    // OTP SENT
+    // =========================================
+
+    if(data.status === "OTP_SENT"){
+
+      document.getElementById("loginStatus").innerText =
+        "✅ OTP sent to Gmail";
+
+      const otpBox = document.getElementById("otp");
+      const verifyBtn = document.getElementById("verifyBtn");
+
+      if(otpBox){
+        otpBox.style.display = "block";
+        otpBox.focus();
+        otpBox.select();
+      }
+
+      if(verifyBtn){
+        verifyBtn.style.display = "block";
+      }
+
+      // 60 SECOND RESEND COOLDOWN
+      let seconds = 60;
+
+      if(btn){
+
+        btn.disabled = true;
+
+        const timer = setInterval(() => {
+
+          seconds--;
+
+          btn.innerText =
+            "RESEND OTP (" + seconds + "s)";
+
+          if(seconds <= 0){
+
+            clearInterval(timer);
+
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.innerText = "RESEND OTP";
+
+          }
+
+        },1000);
+      }
+
+      return;
+    }
+
+
+    // =========================================
+    // EMAIL NOT ALLOWED
+    // =========================================
+
+    if(data.status === "EMAIL_DENIED"){
+
+      document.getElementById("loginStatus").innerText =
+        "❌ Gmail not allowed for this branch.";
+
+      if(btn){
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerText = "SEND OTP";
+      }
+
+      return;
+    }
+
+
+    // =========================================
+    // GOOGLE EMAIL QUOTA ERROR
+    // =========================================
+
+    if(data.status === "ERROR"){
+
+      const errorText =
+        data.error || "Unknown server error";
+
+      document.getElementById("loginStatus").innerHTML = `
+        <div style="color:red;font-weight:bold">
+          ❌ OTP EMAIL ERROR
+          <br><br>
+          <span style="font-weight:normal">
+            ${String(errorText).replace(/</g,"&lt;")}
+          </span>
+          <br><br>
+          <small>
+            Google Apps Script may have reached its daily email limit.
+          </small>
+        </div>
+      `;
+
+      if(btn){
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerText = "SEND OTP";
+      }
+
+      return;
+    }
+
+
+    // =========================================
+    // UNKNOWN RESPONSE
+    // =========================================
 
     document.getElementById("loginStatus").innerText =
-    "❌ Gmail not allowed.";
+      "❌ Login error: " +
+      (data.error || data.status || "Unknown error");
 
-}
-else{
 
-    document.getElementById("loginStatus").innerText =
-    "❌ Login error.";
+    if(btn){
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.innerText = "SEND OTP";
+    }
 
-}
+  }
+  catch(err){
 
-}
-catch(err){
+    console.error("SEND OTP ERROR:", err);
 
-document.getElementById("loginStatus").innerHTML =
-`
-<div style="color:red">
-❌ ERROR:<br>
-${err}
-</div>
-`;
+    document.getElementById("loginStatus").innerHTML = `
+      <div style="color:red">
+        ❌ CONNECTION ERROR
+        <br><br>
+        ${String(err).replace(/</g,"&lt;")}
+      </div>
+    `;
 
-console.log(err);
+    const btn = document.getElementById("sendOtpBtn");
 
-}
+    if(btn){
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.innerText = "SEND OTP";
+    }
+
+  }
 
 }
 async function verifyOTP() {
