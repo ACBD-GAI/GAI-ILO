@@ -2490,17 +2490,67 @@ async function isAlreadySoldDirect(barcode){
 }
 
 async function directCheck(rawBarcode){
-  await requireSupabaseAccess();
-  const scannedBarcode = normalizeBarcode(rawBarcode);
-  const barcode = decodeBarcode(scannedBarcode);
-  if(!validateBarcodeBranch(barcode, BRANCH)){
-    return {status:"WRONG BRANCH"};
-  }
-  const sold = await isAlreadySoldDirect(barcode);
-  if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
-  const stock = await getStockByBarcodeDirect(barcode);
-  if(stock){ return {status:"FOUND", row:stockRowArray(stock), colJ:String(stock.LENSTYPE||""), colO:String(stock.DESCRIPTION||""), tag:String(stock.NTAGN||"")}; }
-  return {status:"NOT FOUND"};
+
+    await requireSupabaseAccess();
+
+    const scannedBarcode = normalizeBarcode(rawBarcode);
+    const barcode = decodeBarcode(scannedBarcode);
+
+    // ==========================================
+    // BRANCH VALIDATION
+    // ==========================================
+
+    const parts = barcode.split("-");
+    const qrBranch = parts.length >= 2
+        ? String(parts[0]).trim().toUpperCase()
+        : "";
+
+    const selectedBranch = String(BRANCH || "").trim().toUpperCase();
+
+    if (
+        !qrBranch ||
+        !selectedBranch ||
+        qrBranch !== selectedBranch
+    ) {
+        return {
+            status: "WRONG BRANCH"
+        };
+    }
+
+    // ==========================================
+    // DUPLICATE CHECK
+    // ==========================================
+
+    const sold = await isAlreadySoldDirect(barcode);
+
+    if(sold){
+        return {
+            status: "DUPLICATE",
+            colJ: String(sold.LENSTYPE || ""),
+            colO: String(sold.DESCRIPTION || ""),
+            tag: String(sold.NTAGN || "")
+        };
+    }
+
+    // ==========================================
+    // STOCK CHECK
+    // ==========================================
+
+    const stock = await getStockByBarcodeDirect(barcode);
+
+    if(stock){
+        return {
+            status: "FOUND",
+            row: stockRowArray(stock),
+            colJ: String(stock.LENSTYPE || ""),
+            colO: String(stock.DESCRIPTION || ""),
+            tag: String(stock.NTAGN || "")
+        };
+    }
+
+    return {
+        status: "NOT FOUND"
+    };
 }
 
 async function directSave(rawBarcode, siNo){
@@ -3037,11 +3087,15 @@ let tag = data.tag || row[12] || "";
 else if (data.status === "WRONG BRANCH") {
 
     document.getElementById("result").innerHTML = `
-        <div class="card red">
+        <div class="card red scan-animate">
             ❌ WRONG BRANCH
         </div>
     `;
 
+    tempCode = "";
+    tempSi = "";
+
+    return;
 }
         else if (data.status === "DUPLICATE") {
             document.getElementById("result").innerHTML = `
