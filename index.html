@@ -383,7 +383,261 @@ button:active {
 
 }
 
-  /* ================= BRANCH SELECTOR ================= */
+  /* ================= REPORT DIALOG ================= */
+
+.report-overlay{
+
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+
+display:none;
+justify-content:center;
+align-items:center;
+
+
+
+z-index:99999;
+
+animation:fadeReport .25s;
+}
+
+@keyframes fadeReport{
+
+from{
+opacity:0;
+}
+
+to{
+opacity:1;
+}
+
+}
+
+.report-modal{
+
+width:320px;
+max-width:90%;
+
+max-height:85vh;
+overflow-y:auto;
+
+background:#fff;
+
+border-radius:18px;
+
+padding:18px;
+
+box-shadow:0 20px 45px rgba(0,0,0,.25);
+
+animation:popReport .25s;
+
+}
+
+@keyframes popReport{
+
+from{
+
+transform:scale(.85);
+opacity:0;
+
+}
+
+to{
+
+transform:scale(1);
+opacity:1;
+
+}
+
+}
+
+.report-title{
+
+font-size:20px;
+font-weight:bold;
+color:#1976d2;
+
+text-align:center;
+
+}
+
+.report-subtitle{
+
+margin-top:8px;
+margin-bottom:22px;
+
+text-align:center;
+color:#777;
+
+}
+
+.recipient-card{
+
+display:flex;
+align-items:center;
+
+padding:10px 12px;
+
+margin-bottom:8px;
+
+border:1.5px solid #e5e5e5;
+
+border-radius:14px;
+
+cursor:pointer;
+
+transition:.25s;
+
+position:relative;
+
+}
+
+
+.recipient-icon{
+
+width:38px;
+height:38px;
+
+border-radius:50%;
+
+background:#2196f3;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-size:18px;
+
+color:#fff;
+
+margin-right:10px;
+
+flex-shrink:0;
+
+}
+
+
+.recipient-name{
+
+font-weight:bold;
+font-size:14px;
+
+}
+
+
+.recipient-email{
+
+font-size:11px;
+
+color:#777;
+
+margin-top:2px;
+
+}
+
+
+.checkmark{
+
+margin-left:auto;
+
+font-size:18px;
+
+color:#2196f3;
+
+opacity:0;
+
+transform:scale(.5);
+
+transition:.25s;
+
+}
+  .checkmark{
+
+margin-left:auto;
+
+font-size:22px;
+
+color:#2196f3;
+
+opacity:0;
+
+transform:scale(.5);
+
+transition:.25s;
+
+}
+
+.recipient-card.selected .checkmark{
+
+opacity:1;
+
+transform:scale(1);
+
+}
+
+.send-report-btn{
+
+margin-top:10px;
+
+background:linear-gradient(135deg,#2196f3,#1565c0);
+
+color:#fff;
+
+font-size:17px;
+
+}
+
+.cancel-report-btn{
+
+background:#f2f2f2;
+
+color:#555;
+
+margin-top:10px;
+
+}
+  .report-overlay{
+    background:
+    linear-gradient(
+      135deg,
+      rgba(25,118,210,.35),
+      rgba(0,0,0,.55)
+    );
+
+    backdrop-filter: blur(10px);
+}
+
+  .button-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.button-grid button{
+  width:100%;
+}
+
+  .si-input {
+  width:50%;
+  display:block;
+  margin:12px auto 0 auto;
+
+  text-align:center;
+  padding:14px;
+
+  font-size:16px;
+
+  border-radius:12px;
+  border:none;
+
+  box-sizing:border-box;
+}
+  
+
+/* ================= BRANCH SELECTOR ================= */
 #branchScreen{
   position:fixed;
   inset:0;
@@ -646,6 +900,35 @@ onclick="refreshPage()">
 ♻ REFRESH
 </button>
 
+<button
+id="reportBtn"
+class="btn-blue"
+onclick="showReportDialog()"
+style="display:none;">
+📧 SEND REPORT
+</button>
+     <button
+id="updateStockBtn"
+class="btn-orange"
+onclick="document.getElementById('stockFile').click()"
+style="display:none;">
+📤 UPDATE STOCKS
+</button>
+
+     <button
+id="clearBtn"
+class="btn-orange"
+onclick="showClearDialog()"
+style="display:none;">
+🗑 CLEAR REPORT
+</button>
+
+<input
+type="file"
+id="stockFile"
+accept=".xlsx,.xls"
+style="display:none"
+onchange="uploadStockFile(this.files[0])">
 
 </div>
 
@@ -656,6 +939,130 @@ onclick="refreshPage()">
    
 
   </div>
+<div id="reportDialog" class="report-overlay">
+
+    <div class="report-modal">
+
+        <div class="report-title">
+            📧 Send Inventory Report
+        </div>
+
+     <select id="reportType" 
+style="
+width:100%;
+padding:14px;
+border-radius:12px;
+border:1px solid #ddd;
+font-size:16px;
+font-weight:bold;
+margin-bottom:20px;
+">
+
+<option value="sales">
+📊 Sales Report
+</option>
+
+<option value="reinventory">
+📦 Re-Inventory Report
+</option>
+
+</select>
+<div class="report-subtitle">
+    Choose recipient(s)
+</div>
+
+        <div class="recipient-card" data-email="remnvill@gmail.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Remn Vill
+                </div>
+
+                <div class="recipient-email">
+                    remnvill@gmail.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+
+        <div class="recipient-card" data-email="willremn@gmail.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Will Remn
+                </div>
+
+                <div class="recipient-email">
+                    willremn@gmail.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+
+        <div class="recipient-card" data-email="mmlorijo1990@gmail.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Mary May
+                </div>
+
+                <div class="recipient-email">
+                    mmlorijo1990@gmail.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+
+         <div class="recipient-card" data-email="fmfc_audit654@yahoo.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    AUDIT
+                </div>
+
+                <div class="recipient-email">
+                    fmfc_audit654@yahoo.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+         <div class="recipient-card" data-email="fmfc_ho2016@yahoo.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Ma'am Che
+                </div>
+
+                <div class="recipient-email">
+                    fmfc_ho2016@yahoo.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+            </div>
+       
+
+        <button class="send-report-btn" onclick="sendSelectedReport()">
+            📧 SEND REPORT
+        </button>
+
+        <button class="cancel-report-btn" onclick="closeReportDialog()">
+CANCEL
+</button>
+
+</div>
+</div>
+
+
 <div id="tagDialog" class="report-overlay">
 
 <div class="report-modal">
@@ -729,6 +1136,46 @@ CONTINUE SCANNING
 </div>
 
 </div>
+
+<div id="clearDialog" class="report-overlay">
+
+<div class="report-modal">
+
+<div class="report-title">
+🗑 CLEAR REPORT
+</div>
+
+<div class="report-subtitle">
+Choose what to clear
+</div>
+
+<button
+class="btn-orange"
+onclick="clearReport('SCANRESULTS')">
+🗑 CLEAR SOLD-OUT REPORT
+</button>
+
+<button
+class="btn-orange"
+onclick="clearReport('AUDIT')"
+style="margin-top:10px;">
+🗑 CLEAR AUDITED REPORT
+</button>
+
+<button
+class="cancel-report-btn"
+onclick="closeClearDialog()">
+CANCEL
+</button>
+
+</div>
+
+</div>
+
+  
+
+
+  
 <script>
 
 
@@ -770,732 +1217,13 @@ let auditProcessing = false;
 let auditRecent = new Map();
 /* =========================================== */
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyO5Iv9HFct8Hlbm4d_6UKjVT8HeXJ49SSXRsrYJairJxRNVzuCu5hvg03JbaCvK3iP/exec";
+const STOCK_ADMIN = [
+  "remnvill@gmail.com",
+  "fmfc_audit654@yahoo.com"
+];
 
-const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4NzYxNzEsImV4cCI6MjEwMDQ1MjE3MX0.PFAW_RDcYwhNpeBic3CnrNBD2ndKqSi-8wbeH8AbXvM";
-const QR_SECRET = "GAI2026SECRET";
 
-/*
-  Apps Script is used ONLY for:
-  - sendOTP
-  - verifyOTP
-  - forceLogin
-  - checkSession
-  - logout
-
-  All inventory operations below go directly to Supabase.
-*/
-
-let SUPABASE_ACCESS_TOKEN = "";
-
-function getStoredInventorySession(){
-  try{
-    return JSON.parse(
-      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
-    );
-  }catch(e){
-    return {};
-  }
-}
-
-function setSupabaseToken(token){
-  SUPABASE_ACCESS_TOKEN = String(token || "");
-  if(SUPABASE_ACCESS_TOKEN){
-    localStorage.setItem(
-      "inventorySupabaseToken_" + BRANCH,
-      SUPABASE_ACCESS_TOKEN
-    );
-  }
-}
-
-function loadSupabaseToken(){
-  SUPABASE_ACCESS_TOKEN =
-    localStorage.getItem("inventorySupabaseToken_" + BRANCH) || "";
-}
-
-function clearSupabaseToken(){
-  SUPABASE_ACCESS_TOKEN = "";
-  localStorage.removeItem("inventorySupabaseToken_" + BRANCH);
-}
-
-function supabaseHeaders(extra={}){
-  if(!SUPABASE_ACCESS_TOKEN){
-    throw new Error("SUPABASE SESSION EXPIRED");
-  }
-
-  return Object.assign({
-    "apikey": SUPABASE_ANON_KEY,
-    "Authorization": "Bearer " + SUPABASE_ACCESS_TOKEN,
-    "Content-Type": "application/json"
-  }, extra);
-}
-
-function tableName(type){
-  const prefix = String(BRANCH || "").trim().toLowerCase();
-  if(!prefix) throw new Error("BRANCH NOT SELECTED");
-  return prefix + "_" + type;
-}
-
-function normalizeBarcode(value){
-  return String(value || "")
-    .trim()
-    .replace(/\s+/g, "")
-    .toUpperCase();
-}
-
-/*
-  IMPORTANT:
-  The old decoder used ^91 while the encoder uses QR_SECRET.
-  That was inconsistent and caused encoded QR values to decode incorrectly.
-  This decoder now uses the SAME QR_SECRET algorithm as the encoder.
-*/
-function decodeBarcode(code){
-  code = String(code || "").trim().toUpperCase();
-
-  if(code.indexOf("-") > -1){
-    return normalizeBarcode(code);
-  }
-
-  if(!code || code.length % 2 !== 0){
-    return normalizeBarcode(code);
-  }
-
-  let result = "";
-
-  try{
-    for(let i=0; i<code.length; i+=2){
-      const value = parseInt(code.substr(i,2),16);
-      if(Number.isNaN(value)) return normalizeBarcode(code);
-
-      result += String.fromCharCode(
-        value ^ QR_SECRET.charCodeAt((i/2) % QR_SECRET.length)
-      );
-    }
-
-    const decoded = normalizeBarcode(result);
-
-    /*
-      Only accept the decoded result when it has the expected
-      BRANCH-TAG format. Otherwise keep the original QR value.
-    */
-    if(decoded.indexOf("-") > 0){
-      return decoded;
-    }
-
-    return normalizeBarcode(code);
-  }catch(e){
-    return normalizeBarcode(code);
-  }
-}
-
-function barcodeParts(input){
-  const barcode = decodeBarcode(normalizeBarcode(input));
-  const parts = barcode.split("-");
-
-  return {
-    barcode,
-    branch: parts.length >= 2 ? parts[0] : "",
-    tag: parts.length >= 2 ? parts.slice(1).join("-") : ""
-  };
-}
-
-function validateBarcodeBranch(input){
-  const p = barcodeParts(input);
-
-  return {
-    ok: p.branch === String(BRANCH || "").trim().toUpperCase(),
-    barcode: p.barcode,
-    branch: p.branch,
-    tag: p.tag
-  };
-}
-
-function formatLens(value){
-  if(value === null || value === undefined) return "";
-
-  let str = String(value).trim();
-
-  if(str.includes("#ERROR") || str.includes("#VALUE")){
-    return "0.00";
-  }
-
-  const hadPlus = str.startsWith("+");
-  str = str.replace(/^\++/, "");
-
-  if(!isNaN(str) && str !== "" && !str.includes("/")){
-    const num = Number(str);
-    return hadPlus ? "+" + num.toFixed(2) : num.toFixed(2);
-  }
-
-  if(str.includes("/")){
-    return hadPlus ? "+" + str : str;
-  }
-
-  return hadPlus ? "+" + str : str;
-}
-
-function rowFromStock(stock){
-  return [
-    stock.SDATE,
-    stock.SUPPLIER,
-    stock.DR,
-    stock.COST,
-    stock.ASG,
-    stock.CB,
-    stock.FD,
-    stock.UNITS,
-    stock.POWER,
-    stock.LENSTYPE,
-    stock.PUNIT,
-    stock.BR,
-    stock.NTAGN,
-    stock.CATEGORY,
-    stock.DESCRIPTION,
-    stock.LENSCODE,
-    stock.SELLINGPRICE,
-    stock.DELIVERYDATE,
-    stock.ORNUMBER,
-    stock.ORDATE,
-    stock.REMARKS,
-    stock.TAGPRICE,
-    stock.QR
-  ];
-}
-
-function nowManila(){
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone:"Asia/Manila",
-    month:"2-digit",
-    day:"2-digit",
-    year:"numeric",
-    hour:"2-digit",
-    minute:"2-digit",
-    second:"2-digit",
-    hour12:true
-  }).format(new Date()).replace(",", "");
-}
-
-async function sbGet(table, query){
-  const url =
-    SUPABASE_URL +
-    "/rest/v1/" +
-    table +
-    "?" +
-    query;
-
-  const res = await fetch(url, {
-    method:"GET",
-    headers:supabaseHeaders()
-  });
-
-  const text = await res.text();
-
-  if(!res.ok){
-    throw new Error("SUPABASE " + res.status + ": " + text);
-  }
-
-  return text ? JSON.parse(text) : [];
-}
-
-async function sbInsert(table, rows){
-  const res = await fetch(
-    SUPABASE_URL + "/rest/v1/" + table,
-    {
-      method:"POST",
-      headers:supabaseHeaders({
-        "Prefer":"return=representation"
-      }),
-      body:JSON.stringify(rows)
-    }
-  );
-
-  const text = await res.text();
-
-  if(!res.ok){
-    throw new Error("SUPABASE " + res.status + ": " + text);
-  }
-
-  return text ? JSON.parse(text) : [];
-}
-
-/*
-  This function intentionally has the same Response-like interface
-  as fetch(). Existing inventory UI functions can continue using
-  const res = await fetch(...); const data = await res.json();
-  but the inventory request never reaches Apps Script.
-*/
-async function inventoryFetch(url, options={}){
-  const parsed = new URL(url, window.location.href);
-  const action = parsed.searchParams.get("action");
-
-  const inventoryActions = [
-    "check",
-    "save",
-    "checkTag",
-    "searchSI",
-    "checkAudit",
-    "audit",
-    "saveAudit"
-  ];
-
-  if(!inventoryActions.includes(action)){
-    return window.__nativeFetch(url, options);
-  }
-
-  try{
-    if(!SUPABASE_ACCESS_TOKEN){
-      throw new Error("SUPABASE SESSION EXPIRED");
-    }
-
-    if(!BRANCH){
-      throw new Error("BRANCH NOT SELECTED");
-    }
-
-    const branchCheck = parsed.searchParams.get("branch");
-    if(branchCheck && branchCheck.toUpperCase() !== BRANCH.toUpperCase()){
-      return fakeResponse({
-        status:"WRONG BRANCH",
-        selectedBranch:BRANCH,
-        barcodeBranch:branchCheck
-      });
-    }
-
-    if(action === "check"){
-      return fakeResponse(await supabaseCheck(
-        parsed.searchParams.get("barcode")
-      ));
-    }
-
-    if(action === "save"){
-      return fakeResponse(await supabaseSave(
-        parsed.searchParams.get("barcode"),
-        parsed.searchParams.get("siNo")
-      ));
-    }
-
-    if(action === "checkTag"){
-      return fakeResponse(await supabaseCheckTag(
-        parsed.searchParams.get("tag")
-      ));
-    }
-
-    if(action === "searchSI"){
-      return fakeResponse(await supabaseSearchSI(
-        parsed.searchParams.get("siNo")
-      ));
-    }
-
-    if(action === "checkAudit" || action === "audit"){
-      return fakeResponse(await supabaseCheckAudit(
-        parsed.searchParams.get("barcode")
-      ));
-    }
-
-    if(action === "saveAudit"){
-      return fakeResponse(await supabaseSaveAudit(
-        parsed.searchParams.get("barcode")
-      ));
-    }
-
-    return fakeResponse({status:"UNKNOWN ACTION"});
-  }catch(err){
-    console.error("DIRECT SUPABASE ERROR", err);
-    return fakeResponse({
-      status:"ERROR",
-      error:String(err && err.message ? err.message : err)
-    });
-  }
-}
-
-function fakeResponse(data){
-  return {
-    ok:true,
-    status:200,
-    async json(){ return data; },
-    async text(){ return JSON.stringify(data); }
-  };
-}
-
-async function supabaseStockByBarcode(input){
-  const v = validateBarcodeBranch(input);
-
-  if(!v.ok){
-    return {
-      error:{
-        status:"WRONG BRANCH",
-        selectedBranch:BRANCH,
-        barcodeBranch:v.branch
-      }
-    };
-  }
-
-  const rows = await sbGet(
-    tableName("stocks"),
-    "BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(v.tag) +
-    "&select=*"
-  );
-
-  return {
-    barcode:v.barcode,
-    stock:rows && rows.length ? rows[0] : null
-  };
-}
-
-async function supabaseSoldByBarcode(input){
-  const v = validateBarcodeBranch(input);
-
-  if(!v.ok){
-    return {
-      error:{
-        status:"WRONG BRANCH",
-        selectedBranch:BRANCH,
-        barcodeBranch:v.branch
-      }
-    };
-  }
-
-  const rows = await sbGet(
-    tableName("scanresults"),
-    "BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(v.tag) +
-    "&select=BR,NTAGN,LENSTYPE,DESCRIPTION"
-  );
-
-  return {
-    barcode:v.barcode,
-    sold:rows && rows.length ? rows[0] : null
-  };
-}
-
-async function supabaseCheck(input){
-  const decoded = validateBarcodeBranch(input);
-
-  if(!decoded.ok){
-    return {
-      status:"WRONG BRANCH",
-      selectedBranch:BRANCH,
-      barcodeBranch:decoded.branch
-    };
-  }
-
-  const sold = await supabaseSoldByBarcode(decoded.barcode);
-
-  if(sold.sold){
-    return {
-      status:"DUPLICATE",
-      colJ:sold.sold.LENSTYPE || "",
-      colO:formatLens(sold.sold.DESCRIPTION || ""),
-      tag:sold.sold.NTAGN || decoded.tag
-    };
-  }
-
-  const stock = await supabaseStockByBarcode(decoded.barcode);
-
-  if(!stock.stock){
-    return {status:"NOT FOUND"};
-  }
-
-  const row = rowFromStock(stock.stock);
-
-  return {
-    status:"FOUND",
-    row,
-    colJ:String(stock.stock.LENSTYPE || ""),
-    colO:String(stock.stock.DESCRIPTION || ""),
-    tag:String(stock.stock.NTAGN || "")
-  };
-}
-
-async function supabaseSave(input, siNo){
-  const decoded = validateBarcodeBranch(input);
-
-  if(!decoded.ok){
-    return {
-      status:"WRONG BRANCH",
-      selectedBranch:BRANCH,
-      barcodeBranch:decoded.branch
-    };
-  }
-
-  const sold = await supabaseSoldByBarcode(decoded.barcode);
-
-  if(sold.sold){
-    return {status:"ALREADY SAVED"};
-  }
-
-  const stockResult = await supabaseStockByBarcode(decoded.barcode);
-  const stock = stockResult.stock;
-
-  if(!stock){
-    return {status:"NOT FOUND"};
-  }
-
-  const session = getStoredInventorySession();
-  const email = String(session.email || "").trim().toLowerCase();
-
-  const payload = {
-    SDATE:stock.SDATE,
-    SUPPLIER:stock.SUPPLIER,
-    DR:stock.DR,
-    COST:stock.COST,
-    ASG:stock.ASG,
-    CB:stock.CB,
-    FD:stock.FD,
-    UNITS:stock.UNITS,
-    POWER:stock.POWER,
-    LENSTYPE:stock.LENSTYPE,
-    PUNIT:stock.PUNIT,
-    BR:stock.BR,
-    NTAGN:stock.NTAGN,
-    CATEGORY:stock.CATEGORY,
-    DESCRIPTION:formatLens(stock.DESCRIPTION || ""),
-    LENSCODE:stock.LENSCODE,
-    SELLINGPRICE:stock.SELLINGPRICE,
-    DELIVERYDATE:stock.DELIVERYDATE,
-    ORNUMBER:stock.ORNUMBER,
-    ORDATE:stock.ORDATE,
-    REMARKS:stock.REMARKS,
-    TAGPRICE:stock.TAGPRICE,
-    QR:stock.QR,
-    "SI NO.":String(siNo || "").trim(),
-    "DATE AND TIME":nowManila(),
-    "USER EMAIL":email,
-    STATUS:""
-  };
-
-  try{
-    await sbInsert(tableName("scanresults"), [payload]);
-  }catch(err){
-    if(String(err).includes("duplicate") || String(err).includes("23505")){
-      return {status:"ALREADY SAVED"};
-    }
-    throw err;
-  }
-
-  return {
-    status:"ADDED TO SOLD",
-    row:rowFromStock(stock)
-      .concat([
-        payload["SI NO."],
-        payload["DATE AND TIME"],
-        payload["USER EMAIL"]
-      ])
-  };
-}
-
-async function supabaseCheckTag(tag){
-  tag = String(tag || "").trim().toUpperCase();
-
-  if(!tag){
-    return {status:"NOT_FOUND"};
-  }
-
-  const rows = await sbGet(
-    tableName("stocks"),
-    "BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(tag) +
-    "&select=*"
-  );
-
-  if(!rows.length){
-    return {status:"NOT_FOUND"};
-  }
-
-  const stock = rows[0];
-  const barcode = normalizeBarcode(
-    stock.BR + "-" + stock.NTAGN
-  );
-
-  const sold = await supabaseSoldByBarcode(barcode);
-
-  if(sold.sold){
-    return {
-      status:"DUPLICATE",
-      barcode,
-      colJ:String(stock.LENSTYPE || ""),
-      colM:String(stock.NTAGN || ""),
-      colO:formatLens(stock.DESCRIPTION || "")
-    };
-  }
-
-  return {
-    status:"FOUND",
-    barcode,
-    colJ:String(stock.LENSTYPE || ""),
-    colM:String(stock.NTAGN || ""),
-    colO:formatLens(stock.DESCRIPTION || "")
-  };
-}
-
-async function supabaseSearchSI(siNo){
-  siNo = String(siNo || "").trim();
-
-  if(!siNo){
-    return {items:[]};
-  }
-
-  const rows = await sbGet(
-    tableName("scanresults"),
-    encodeURIComponent("SI NO.") +
-    "=eq." + encodeURIComponent(siNo) +
-    "&select=LENSTYPE,DESCRIPTION,NTAGN,%22DATE%20AND%20TIME%22" +
-    "&limit=100"
-  );
-
-  return {
-    items:(rows || []).map(row => ({
-      colJ:row.LENSTYPE || "",
-      colO:formatLens(row.DESCRIPTION || ""),
-      tag:row.NTAGN || "",
-      date:row["DATE AND TIME"] || ""
-    }))
-  };
-}
-
-async function supabaseCheckAudit(input){
-  const decoded = validateBarcodeBranch(input);
-
-  if(!decoded.ok){
-    return {
-      status:"WRONG BRANCH",
-      selectedBranch:BRANCH,
-      barcodeBranch:decoded.branch
-    };
-  }
-
-  const auditRows = await sbGet(
-    tableName("audit"),
-    "BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(decoded.tag) +
-    "&select=BR,NTAGN,%22DATE%20AND%20TIME%22"
-  );
-
-  if(auditRows.length){
-    return {
-      status:"ALREADY_AUDITED",
-      date:auditRows[0]["DATE AND TIME"]
-    };
-  }
-
-  const stockResult = await supabaseStockByBarcode(decoded.barcode);
-
-  if(!stockResult.stock){
-    return {status:"NOT_FOUND"};
-  }
-
-  return {
-    status:"FOUND",
-    row:rowFromStock(stockResult.stock)
-  };
-}
-
-async function supabaseSaveAudit(input){
-  const decoded = validateBarcodeBranch(input);
-
-  if(!decoded.ok){
-    return {
-      status:"WRONG BRANCH",
-      selectedBranch:BRANCH,
-      barcodeBranch:decoded.branch
-    };
-  }
-
-  const auditRows = await sbGet(
-    tableName("audit"),
-    "BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(decoded.tag) +
-    "&select=BR,NTAGN,%22DATE%20AND%20TIME%22"
-  );
-
-  if(auditRows.length){
-    return {
-      status:"ALREADY_AUDITED",
-      tag:decoded.tag,
-      date:auditRows[0]["DATE AND TIME"]
-    };
-  }
-
-  const stockResult = await supabaseStockByBarcode(decoded.barcode);
-  const stock = stockResult.stock;
-
-  if(!stock){
-    return {status:"NOT_FOUND"};
-  }
-
-  const session = getStoredInventorySession();
-  const email = String(session.email || "").trim().toLowerCase();
-
-  const payload = {
-    SDATE:String(stock.SDATE || ""),
-    SUPPLIER:String(stock.SUPPLIER || ""),
-    DR:String(stock.DR || ""),
-    COST:String(stock.COST || ""),
-    ASG:String(stock.ASG || ""),
-    CB:String(stock.CB || ""),
-    FD:String(stock.FD || ""),
-    UNITS:String(stock.UNITS || ""),
-    POWER:String(stock.POWER || ""),
-    LENSTYPE:String(stock.LENSTYPE || ""),
-    PUNIT:String(stock.PUNIT || ""),
-    BR:String(stock.BR || ""),
-    NTAGN:String(stock.NTAGN || ""),
-    CATEGORY:String(stock.CATEGORY || ""),
-    DESCRIPTION:formatLens(stock.DESCRIPTION || ""),
-    LENSCODE:String(stock.LENSCODE || ""),
-    SELLINGPRICE:String(stock.SELLINGPRICE || ""),
-    DELIVERYDATE:String(stock.DELIVERYDATE || ""),
-    ORNUMBER:String(stock.ORNUMBER || ""),
-    ORDATE:String(stock.ORDATE || ""),
-    REMARKS:String(stock.REMARKS || ""),
-    TAGPRICE:String(stock.TAGPRICE || ""),
-    QR:String(stock.QR || ""),
-    "SI NO.":"",
-    "DATE AND TIME":nowManila(),
-    "USER EMAIL":email,
-    STATUS:"AUDITED"
-  };
-
-  try{
-    await sbInsert(tableName("audit"), [payload]);
-  }catch(err){
-    if(String(err).includes("duplicate") || String(err).includes("23505")){
-      return {status:"ALREADY_AUDITED", tag:decoded.tag};
-    }
-    throw err;
-  }
-
-  return {
-    status:"RECORDED",
-    tag:stock.NTAGN,
-    colJ:stock.LENSTYPE,
-    colO:formatLens(stock.DESCRIPTION || ""),
-    description:formatLens(stock.DESCRIPTION || "")
-  };
-}
-
-/*
-  Preserve the old login-only fetch behavior.
-  Inventory fetches are intercepted and sent to Supabase.
-*/
-window.__nativeFetch = window.fetch.bind(window);
-window.fetch = function(url, options){
-  const u = String(url || "");
-  if(u.indexOf("?action=") !== -1){
-    const action = new URL(u, window.location.href)
-      .searchParams.get("action");
-
-    if([
-      "check","save","checkTag","searchSI",
-      "checkAudit","audit","saveAudit"
-    ].includes(action)){
-      return inventoryFetch(u, options);
-    }
-  }
-  return window.__nativeFetch(url, options);
-};
-
+const API_URL = "https://script.google.com/macros/s/AKfycbwzu1cSoQOZyDHA8_hzBiWt7HkKOsT7vFuAr30OT40QOmX0RJS8rey3lLTC8gpgMQqi/exec";
 
 function getSessionParams(){
 
@@ -1513,6 +1241,60 @@ return (
 );
 
 }
+function checkReportAccess(){
+
+  const session = JSON.parse(
+    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+  );
+
+  const email = (session.email || "").trim().toLowerCase();
+
+  const reportBtn = document.getElementById("reportBtn");
+  const updateBtn = document.getElementById("updateStockBtn");
+
+  const REPORT_USERS = [
+    "remnvill@gmail.com",
+    "willremn@gmail.com",
+    "fmfc_audit654@yahoo.com",
+    "fmfc_ho2016@yahoo.com",
+    "mmlorijo1990@gmail.com"
+  ];
+
+  if(reportBtn){
+    reportBtn.style.display =
+      REPORT_USERS.includes(email) ? "block" : "none";
+  }
+
+const clearBtn = document.getElementById("clearBtn");
+
+if(clearBtn){
+    clearBtn.style.display =
+        STOCK_ADMIN.includes(email) ? "block" : "none";
+}
+  
+
+  if(updateBtn){
+    updateBtn.style.display =
+      STOCK_ADMIN.includes(email) ? "block" : "none";
+  }
+
+}
+
+function checkStockAccess(){
+
+  const session = JSON.parse(
+    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+  );
+
+  const email = (session.email || "").trim().toLowerCase();
+
+  return STOCK_ADMIN.includes(email);
+
+}
+  
+  
+
+
 /* ================= BRANCH SELECTION ================= */
 
 function updateBranchUI(){
@@ -1591,7 +1373,6 @@ async function selectBranch(branch){
       openApp();
     }else{
       localStorage.removeItem("inventorySession_" + BRANCH);
-    clearSupabaseToken();
     }
   }catch(err){
     openApp();
@@ -1599,13 +1380,13 @@ async function selectBranch(branch){
 }
 
 function openApp(){
-  loadSupabaseToken();
   updateBranchUI();
 
   document.getElementById("branchScreen").style.display = "none";
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
+  checkReportAccess();
 }
 
 async function changeBranch(){
@@ -1797,13 +1578,6 @@ console.log(text);
           time: Date.now()
         })
       );
-
-      setSupabaseToken(data.accessToken || "");
-      if(!data.accessToken){
-        document.getElementById("loginStatus").innerText =
-          "❌ Login succeeded but Supabase session was not created.";
-        return;
-      }
 
       localStorage.setItem("loginTime_" + BRANCH, Date.now());
 
@@ -3266,7 +3040,6 @@ window.addEventListener("DOMContentLoaded", async function(){
     }
     else {
       localStorage.removeItem("inventorySession_" + BRANCH);
-    clearSupabaseToken();
       document.getElementById("branchScreen").style.display = "none";
       document.getElementById("loginScreen").style.display = "flex";
       document.getElementById("app").style.display = "none";
@@ -3302,6 +3075,468 @@ btn.style.opacity="1";
 }
 
 });
+
+function showReportDialog() {
+
+    // Clear previous selections
+    document.querySelectorAll(".recipient-card").forEach(card => {
+        card.classList.remove("selected");
+    });
+
+    document.getElementById("reportDialog").style.display = "flex";
+
+}
+
+function closeReportDialog() {
+
+    document.getElementById("reportDialog").style.display = "none";
+
+}
+
+
+// CLICK CARD TO SELECT
+document.querySelectorAll(".recipient-card").forEach(card => {
+
+    card.addEventListener("click", function () {
+
+        this.classList.toggle("selected");
+
+    });
+
+});
+
+
+async function sendSelectedReport() {
+
+    const selectedCards =
+        document.querySelectorAll(".recipient-card.selected");
+
+    if (selectedCards.length === 0) {
+
+        alert("Please select at least one recipient.");
+
+        return;
+
+    }
+
+    const emails = [...selectedCards]
+        .map(card => card.dataset.email)
+        .join(",");
+
+
+    closeReportDialog();
+  document.querySelectorAll(".recipient-card").forEach(card=>{
+    card.classList.remove("selected");
+});
+
+
+    showReportMessage(`
+        <div class="spinner"></div>
+        <div class="saving-text">
+            Sending report...
+        </div>
+    `);
+
+
+    try {
+
+const reportType =
+document.getElementById("reportType").value;
+
+const res = await fetch(
+
+            API_URL +
+            "?action=sendReport" +
+            "&type=" + encodeURIComponent(reportType) +
+            "&emails=" + encodeURIComponent(emails) +
+            getSessionParams()
+
+        );
+
+        const data = await res.json();
+
+        if (data.status === "REPORT SENT") {
+
+            showReportMessage(`
+                ✅ <b>REPORT SENT</b><br><br>
+                📧 Sent to:<br>
+                <small>${emails.replaceAll(",", "<br>")}</small>
+            `);
+
+        } else {
+
+            showReportMessage("❌ " + data.status);
+
+        }
+
+    } catch (err) {
+
+        showReportMessage("❌ SERVER ERROR");
+
+        console.log(err);
+
+    }
+
+}
+
+
+  function showReportMessage(message){
+
+  const result =
+  document.getElementById("result");
+
+
+  result.innerHTML = `
+
+  <div class="card green scan-animate"
+  style="
+  text-align:center;
+  font-size:18px;
+  padding:25px;
+  ">
+
+  ${message}
+
+  </div>
+
+  `;
+
+}
+
+function showClearDialog(){
+    document.getElementById("clearDialog").style.display = "flex";
+}
+
+function closeClearDialog(){
+    document.getElementById("clearDialog").style.display = "none";
+}
+
+async function clearReport(sheet){
+
+    const displayName =
+        sheet === "SCANRESULTS" ? "Sold Out" :
+        sheet === "AUDIT" ? "Re-Inventory" :
+        sheet;
+
+    if(!confirm(
+        "Clear all records from " + displayName + "?\n\nThis cannot be undone."
+    )) return;
+
+   if (sheet === "SCANRESULTS") {
+
+        const password = prompt(
+            "Enter administrator password to clear the Sold Out report:"
+        );
+
+        if (password === null) return;
+
+        if (password !== "12345") {
+            alert("❌ Incorrect password.");
+            return;
+        }
+    }
+  
+
+    closeClearDialog();
+
+    document.getElementById("result").innerHTML = `
+    <div class="card saving">
+        <div class="spinner"></div>
+        Clearing report...
+    </div>`;
+
+    try{
+
+        const res = await fetch(
+            API_URL +
+            "?action=clearReport" +
+            "&sheet=" + encodeURIComponent(sheet) +
+            getSessionParams()
+        );
+
+        const data = await res.json();
+
+        if(data.status=="OK"){
+
+            document.getElementById("result").innerHTML = `
+            <div class="card green">
+                ✅ REPORT CLEARED
+            </div>`;
+
+        }else{
+
+            document.getElementById("result").innerHTML = `
+            <div class="card red">
+                ❌ ${data.status}
+            </div>`;
+
+        }
+
+    }catch(err){
+
+        document.getElementById("result").innerHTML = `
+        <div class="card red">
+            ❌ SERVER ERROR
+        </div>`;
+
+    }
+}
+
+
+
+  
+ async function uploadStockFile(file){
+
+    if(!file){
+        alert("❌ No file selected");
+        return;
+    }
+
+
+    if(!checkStockAccess()){
+
+        alert("❌ NO ACCESS");
+        return;
+
+    }
+
+
+    // Check file type
+    const allowed = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel"
+    ];
+
+    if(!allowed.includes(file.type)){
+
+        alert("❌ Please upload Excel file only");
+
+        return;
+
+    }
+
+
+    // Optional size check
+    if(file.size > 10 * 1024 * 1024){
+
+        alert(
+          "❌ File too large\n\nMaximum 10MB"
+        );
+
+        return;
+
+    }
+
+
+    const reader = new FileReader();
+
+
+    reader.onload = async function(e){
+
+        try {
+
+
+            // REMOVE DATA URL HEADER
+            const base64 =
+            e.target.result.split(",")[1];
+
+
+            const params =
+            new URLSearchParams();
+
+
+            params.append(
+                "action",
+                "uploadStock"
+            );
+
+
+            
+            params.append(
+                "branch",
+                BRANCH
+            );
+
+            params.append(
+                "file",
+                base64
+            );
+
+
+            params.append(
+                "fileName",
+                file.name
+            );
+
+
+            const session =
+            JSON.parse(
+            localStorage.getItem(
+                "inventorySession_"+BRANCH
+            ) || "{}"
+            );
+
+          console.log("SESSION OBJECT:", session);
+console.log("EMAIL:", session.email);
+console.log("SESSION ID:", session.sessionId);
+console.log("LOCAL STORAGE KEY:", "inventorySession_" + BRANCH);
+
+
+            params.append(
+                "email",
+                session.email || ""
+            );
+
+
+            params.append(
+                "sessionId",
+                session.sessionId || ""
+            );
+
+
+            document.getElementById("result").innerHTML = `
+
+            <div class="card saving">
+
+            <div class="spinner"></div>
+
+            Uploading stock file...
+
+            </div>
+
+            `;
+
+
+
+            const res = await fetch(
+                API_URL,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/x-www-form-urlencoded;charset=UTF-8"
+                    },
+
+                    body:params.toString()
+
+                }
+            );
+
+
+
+         const text = await res.text();
+
+console.log("RAW SERVER RESPONSE:");
+console.log(text);
+
+let data;
+
+try{
+    data = JSON.parse(text);
+}catch(e){
+    document.getElementById("result").innerHTML = `
+        <div class="card red">
+            ❌ SERVER DID NOT RETURN JSON
+            <br><br>
+            <pre style="white-space:pre-wrap;font-size:12px;">${text}</pre>
+        </div>
+    `;
+    return;
+}
+
+console.log("UPLOAD RESPONSE:", data);
+
+
+
+           if(data.status === "OK"){
+
+
+    document.getElementById("result").innerHTML = `
+
+    <div class="card green scan-animate">
+
+    ✅ STOCK UPDATED
+
+    <br><br>
+
+    ITEMS:
+    <b>${data.rows}</b>
+
+    </div>
+
+    `;
+
+
+    // reset only the file input
+    document.getElementById("stockFile").value = "";
+
+
+}
+            else{
+
+
+                document.getElementById("result").innerHTML = `
+<div class="card red">
+❌ UPLOAD FAILED
+<br><br>
+<b>Status:</b> ${data.status}<br>
+<b>HTTP:</b> ${data.code || "-"}<br><br>
+<pre style="white-space:pre-wrap;font-size:12px;">
+${data.error || ""}
+</pre>
+</div>
+`;
+
+
+            }
+
+
+
+        }
+        catch(err){
+
+
+            console.error(
+                "UPLOAD ERROR:",
+                err
+            );
+
+
+            document.getElementById("result").innerHTML = `
+
+            <div class="card red">
+
+            ❌ UPLOAD ERROR
+
+            <br><br>
+
+            ${err.message}
+
+            </div>
+
+            `;
+
+
+        }
+
+
+    };
+
+
+    reader.onerror = function(){
+
+        alert(
+          "❌ Cannot read file"
+        );
+
+    };
+
+
+    reader.readAsDataURL(file);
+
+
+}
 
 function askQuitAudit(pending){
 
