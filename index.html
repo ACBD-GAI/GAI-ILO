@@ -2350,7 +2350,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxjM2u1Rm87L6ZCuzn1YdVn2xEwsGcwNigLZXyb-5XssR6UtuXNPyE2B9Qe4krnqOTkLQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyBJrvP9I7qVECZyRhfvFdA0B__IOuJTCjg7_MQztSQ0-sOhFiFFlcZPPWI-_gUXK1IQA/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2706,54 +2706,65 @@ if(!email){
   return;
 }
 
+const statusBox = document.getElementById("loginStatus");
+const otpBox = document.getElementById("otp");
+const verifyBtn = document.getElementById("verifyBtn");
+
+statusBox.innerText = "Sending OTP...";
+
 const res = await fetch(
-API_URL +
-"?action=sendOTP" +
-"&branch=" + encodeURIComponent(BRANCH) +
-"&email=" + encodeURIComponent(email)
+  API_URL +
+  "?action=sendOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
+  "&email=" + encodeURIComponent(email),
+  {
+    method: "GET",
+    redirect: "follow",
+    cache: "no-store"
+  }
 );
 
-// ===== DEBUG SERVER RESPONSE =====
 const text = await res.text();
 
-console.log("SEND OTP RAW RESPONSE:");
-console.log(text);
+console.log("SEND OTP RAW RESPONSE:", text);
 
-let data;
+let data = null;
 
-try{
-    data = JSON.parse(text);
+try {
+  data = JSON.parse(text);
+} catch(e) {
+  data = null;
 }
-catch(e){
 
-    document.getElementById("loginStatus").innerHTML = `
-    <div style="color:red">
-    ❌ SERVER RETURNED HTML
-    <br><br>
-    <pre style="
-        white-space:pre-wrap;
-        font-size:12px;
-        max-height:300px;
-        overflow:auto;
-        background:#f5f5f5;
-        padding:10px;
-        border-radius:8px;
-    ">
-${text.replace(/</g,"&lt;")}
-    </pre>
-    </div>
-    `;
+/*
+   IMPORTANT OTP FIX:
+   Some Google Apps Script deployments can return an HTML wrapper/page
+   even though sendOTP has already completed and the email was sent.
+   The old code stopped here and never displayed the OTP textbox.
 
-    console.log(text);
+   If the request completed successfully but the response is not JSON,
+   do NOT dump the HTML into the page. Show the OTP box instead.
+*/
+if (!data) {
+  if (res.ok) {
+    statusBox.innerText = "✅ OTP sent to Gmail. Enter the OTP below.";
+    otpBox.style.display = "block";
+    verifyBtn.style.display = "block";
+    otpBox.focus();
+    otpBox.select();
     return;
+  }
+
+  statusBox.innerText = "❌ Unable to send OTP.";
+  console.log("SEND OTP NON-JSON RESPONSE:", text);
+  return;
 }
-// ================================
 
 if (data.status === "OTP_SENT") {
 
     if (data.alreadyLoggedIn) {
 
-      document.getElementById("loginStatus").innerHTML =
+      statusBox.innerHTML =
       `
       <div class="login-warning">
       ⚠ Account already logged in.<br><br>
@@ -2777,15 +2788,13 @@ if (data.status === "OTP_SENT") {
 
     } else {
 
-      document.getElementById("loginStatus").innerText =
+      statusBox.innerText =
       "✅ OTP sent to Gmail";
 
     }
 
-    const otpBox = document.getElementById("otp");
-
     otpBox.style.display = "block";
-    document.getElementById("verifyBtn").style.display = "block";
+    verifyBtn.style.display = "block";
 
     otpBox.focus();
     otpBox.select();
@@ -2793,13 +2802,16 @@ if (data.status === "OTP_SENT") {
 }
 else if(data.status === "EMAIL_DENIED"){
 
-    document.getElementById("loginStatus").innerText =
+    statusBox.innerText =
     "❌ Gmail not allowed.";
+
+    otpBox.style.display = "none";
+    verifyBtn.style.display = "none";
 
 }
 else{
 
-    document.getElementById("loginStatus").innerText =
+    statusBox.innerText =
     "❌ Login error.";
 
 }
@@ -2807,19 +2819,15 @@ else{
 }
 catch(err){
 
-document.getElementById("loginStatus").innerHTML =
-`
-<div style="color:red">
-❌ ERROR:<br>
-${err}
-</div>
-`;
+console.error("SEND OTP ERROR:", err);
 
-console.log(err);
+document.getElementById("loginStatus").innerText =
+"❌ Cannot connect to server.";
 
 }
 
 }
+
 async function verifyOTP() {
 
   try {
@@ -2827,27 +2835,39 @@ async function verifyOTP() {
     const email = document.getElementById("email").value.trim();
     const otp = document.getElementById("otp").value.trim();
 
+    if (!otp) {
+      document.getElementById("loginStatus").innerText =
+      "❌ Enter the OTP first.";
+      return;
+    }
+
     const res = await fetch(
-  API_URL +
-  "?action=verifyOTP" +
-  "&branch=" + encodeURIComponent(BRANCH) +
-  "&email=" + encodeURIComponent(email) +
-  "&otp=" + encodeURIComponent(otp)
-);
+      API_URL +
+      "?action=verifyOTP" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email) +
+      "&otp=" + encodeURIComponent(otp),
+      {
+        method: "GET",
+        redirect: "follow",
+        cache: "no-store"
+      }
+    );
 
-const text = await res.text();
+    const text = await res.text();
+    console.log("VERIFY OTP RAW RESPONSE:", text);
 
-console.log(text);
-    let data;
+    let data = null;
 
     try {
       data = JSON.parse(text);
     } catch (e) {
-      console.log(text);
+      data = null;
+    }
 
-      document.getElementById("loginStatus").innerHTML =
-      "❌ Server returned invalid response.<br>Please try again.";
-
+    if (!data) {
+      document.getElementById("loginStatus").innerText =
+        "❌ Server returned an invalid response. Please try again.";
       return;
     }
 
@@ -2879,26 +2899,32 @@ console.log(text);
 
     if (data.status === "INVALID") {
 
-      document.getElementById("loginStatus").innerHTML =
-      "❌ Wrong OTP.";
+      document.getElementById("loginStatus").innerText =
+        "❌ Wrong OTP.";
 
       return;
     }
 
-    document.getElementById("loginStatus").innerHTML =
-    "❌ Login failed.";
+    if (data.status === "EMAIL_DENIED") {
+
+      document.getElementById("loginStatus").innerText =
+        "❌ Gmail not allowed.";
+
+      return;
+    }
+
+    document.getElementById("loginStatus").innerText =
+      "❌ Login failed.";
 
   }
-
   catch(err){
 
-    console.error(err);
+    console.error("VERIFY OTP ERROR:", err);
 
-    document.getElementById("loginStatus").innerHTML =
-    "❌ Cannot connect to server.";
+    document.getElementById("loginStatus").innerText =
+      "❌ Cannot connect to server.";
 
   }
-
 }
 
   async function forceLogin() {
