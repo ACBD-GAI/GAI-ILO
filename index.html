@@ -1223,7 +1223,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzgLq2uZI1tCvpQ8ImBKzlP3hSYz6FWxE4JPxNfS4-nrAEgO0fMH0Xp79Jc5Erc7P9P/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbygtQfll3WXwHg-p_uQRLVcfj1H2LfWrGawP5E0JF6yqdXld09BEiEmAxtCze_tpSIU/exec";
 
 function getSessionParams(){
 
@@ -2573,23 +2573,20 @@ async function searchSI() {
   clearUI();
 
   const siNo = document.getElementById("siNo").value.trim();
-
   const out = document.getElementById("searchResult");
 
   if (!siNo) {
-
     out.innerHTML = `
       <div class="no-results">
-        ❌ ENTER SI NUMBER
+        ❌ ENTER SI NO.
       </div>
     `;
-
     return;
   }
 
   out.innerHTML = `
     <div class="card">
-      🔎 Searching SI No: <b>${siNo}</b>...
+      🔎 SEARCHING SOLD OUT SI: <b>${siNo}</b>...
     </div>
   `;
 
@@ -2607,22 +2604,18 @@ async function searchSI() {
     console.log("SEARCH SI RESPONSE:", data);
 
     if (data.status === "ERROR") {
-
       out.innerHTML = `
         <div class="card red">
           ❌ SEARCH ERROR
           <br><br>
-          <b>${data.error || "Unknown error"}</b>
-          <br><br>
-          <small>${data.details || ""}</small>
+          ${data.error || "Unknown error"}
+          ${data.details ? `<br><br><small>${data.details}</small>` : ""}
         </div>
       `;
-
       return;
     }
 
-    if (!data.items || !data.items.length) {
-
+    if (!Array.isArray(data.items) || !data.items.length) {
       out.innerHTML = `
         <div class="no-results">
           ❌ No results found
@@ -2632,47 +2625,21 @@ async function searchSI() {
           Branch: <b>${BRANCH}</b>
         </div>
       `;
-
       return;
     }
 
     out.innerHTML = data.items.map((item, idx) => `
-
       <div class="card">
-
         #${idx + 1}<br>
-
-        <b>${item.colO}</b><br>
-
-        ${item.colJ
-          ? `<small>${item.colJ}</small><br>`
-          : ""
-        }
-
-        <small>
-          🏷 Tag:
-          <b>${item.tag}</b>
-        </small>
-
-        <br>
-
-        <small>
-          📄 SI No:
-          <b>${item.siNo || siNo}</b>
-        </small>
-
-        <br>
-
-        <small>
-          📅 ${item.date || "No Date"}
-        </small>
-
+        <b>${item.colO || ""}</b><br>
+        ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
+        <small>🏷 Tag: <b>${item.tag || ""}</b></small><br>
+        <small>📄 SI No: <b>${item.siNo || siNo}</b></small><br>
+        <small>📅 ${item.date || "No Date"}</small>
       </div>
-
     `).join("");
 
-  }
-  catch(err) {
+  } catch (err) {
 
     console.error("SEARCH SI ERROR:", err);
 
@@ -2680,13 +2647,14 @@ async function searchSI() {
       <div class="card red">
         ❌ SEARCH FAILED
         <br><br>
-        ${err.message}
+        ${err.message || err}
       </div>
     `;
 
   }
+}
 
-}/* ================= UTIL ================= */
+/* ================= UTIL ================= */
 
 function clearUI() {
   document.getElementById("result").innerHTML = "";
