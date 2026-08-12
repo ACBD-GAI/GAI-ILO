@@ -3034,12 +3034,14 @@ let tag = data.tag || row[12] || "";
                 </div>
             `;
         }
- else if (data.status === "WRONG BRANCH") {
+else if (data.status === "WRONG BRANCH") {
+
     document.getElementById("result").innerHTML = `
         <div class="card red">
             ❌ WRONG BRANCH
         </div>
     `;
+
 }
         else if (data.status === "DUPLICATE") {
             document.getElementById("result").innerHTML = `
