@@ -899,6 +899,8 @@ class="btn-orange"
 onclick="refreshPage()">
 ♻ REFRESH
 </button>
+
+
 </div>
 
 
@@ -908,9 +910,6 @@ onclick="refreshPage()">
    
 
   </div>
-
-
-
 <div id="tagDialog" class="report-overlay">
 
 <div class="report-modal">
@@ -1032,89 +1031,95 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbz01WmwzTe0EYuUXjWYSF9-QCHfas9cVLuMRI9ZiBz6l54gaU5l3AtMRMVCEG4jQpK4/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxng8kMj4DViaX43Zy-SJG6Q_GWkusS9J-4hH1z5vc_I7ZeQjxrY0VlvuwxjlqQ1msU/exec";
 
+/* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDg3NjE3MSwiZXhwIjoyMTAwNDUyMTcxfQ.RfKJxtV06KMMNGHAqG0BhrYsjtee_eUq0m2ktrgUcxA";
 
-function getSessionParams(){
-  const session = JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
-  return {
-    email: String(session.email || "").trim().toLowerCase(),
-    sessionId: String(session.sessionId || "")
-  };
-}
+const BRANCH_PREFIX = {
+  GAI:"gai", CAS:"cas", BAC:"bac", BIN:"bin", BIS:"bis", CAD:"cad", DGT:"dgt",
+  KAB:"kab", KAL:"kal", PAS:"pas", POT:"pot", SAN:"san", TAB:"tab", TAN:"tan",
+  TIS:"tis", TOL:"tol"
+};
 
-function supabaseHeaders(){
-  return {
+function sbHeaders(extra={}) {
+  return Object.assign({
     apikey: SUPABASE_KEY,
     Authorization: "Bearer " + SUPABASE_KEY,
     Accept: "application/json",
     "Content-Type": "application/json"
-  };
+  }, extra);
 }
 
-async function supabaseRequest(path, options={}){
-  const response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
-    method: options.method || "GET",
-    headers: { ...supabaseHeaders(), ...(options.headers || {}) },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    cache: "no-store"
-  });
-
-  const text = await response.text();
-  let data = [];
-  try { data = text ? JSON.parse(text) : []; } catch (err) {
-    throw new Error("Supabase returned invalid JSON (HTTP " + response.status + ")");
+async function sbRequest(path, options={}) {
+  const res = await fetch(SUPABASE_URL + path, Object.assign({}, options, {
+    headers: sbHeaders(options.headers || {})
+  }));
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : []; } catch(e) {
+    throw new Error("Supabase returned invalid JSON: " + text.slice(0,300));
   }
-
-  if (!response.ok) {
-    const detail = typeof data === "object" ? (data.message || data.details || data.hint || text) : text;
-    throw new Error("Supabase HTTP " + response.status + ": " + detail);
+  if (!res.ok) {
+    const msg = data && (data.message || data.error || data.hint || data.details);
+    throw new Error("Supabase HTTP " + res.status + (msg ? ": " + msg : ""));
   }
-
   return data;
 }
 
-async function isAllowedUser(email, branch){
-  email = String(email || "").trim().toLowerCase();
-  branch = String(branch || "").trim().toUpperCase();
-  if (!email || !branch) return false;
-
-  const rows = await supabaseRequest(
-    "allowed_users?email=eq." + encodeURIComponent(email) + "&select=*"
-  );
-
-  if (!Array.isArray(rows) || rows.length === 0) return false;
-
-  return rows.some(row => {
-    const rowBranch = String(
-      row.branch ?? row.BRANCH ?? row.branch_code ?? row.BRANCH_CODE ?? ""
-    ).trim().toUpperCase();
-    return !rowBranch || rowBranch === "ALL" || rowBranch === branch;
-  });
+function branchTable(branch, type) {
+  const p = BRANCH_PREFIX[String(branch || "").trim().toUpperCase()];
+  if (!p) throw new Error("INVALID BRANCH");
+  return p + "_" + type;
 }
 
-function normalizeBarcode(value){
+function currentSession() {
+  return JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
+}
+
+async function requireSupabaseAccess() {
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  if (!BRANCH || !email || !session.sessionId) throw new Error("SESSION EXPIRED");
+
+  const rows = await sbRequest("/rest/v1/allowed_users?email=eq." + encodeURIComponent(email) + "&select=*");
+  if (!Array.isArray(rows) || !rows.length) throw new Error("EMAIL_DENIED");
+
+  const active = rows.some(r => {
+    const v = r.active ?? r.ACTIVE ?? r.enabled ?? r.ENABLED;
+    return v === undefined || v === true || String(v).toLowerCase() === "true" || String(v) === "1";
+  });
+  if (!active) throw new Error("EMAIL_DENIED");
+
+  const allowed = rows.some(r => {
+    const raw = r.branch ?? r.BRANCH ?? r.branch_code ?? r.BRANCH_CODE ?? r.branches ?? r.BRANCHES;
+    if (raw === undefined || raw === null || String(raw).trim() === "") return true;
+    if (Array.isArray(raw)) return raw.map(x=>String(x).trim().toUpperCase()).includes(BRANCH);
+    return String(raw).split(/[,|;]/).map(x=>x.trim().toUpperCase()).includes(BRANCH);
+  });
+  if (!allowed) throw new Error("EMAIL_DENIED");
+  return {email, branch:BRANCH};
+}
+
+function normalizeBarcode(value) {
   return String(value || "").trim().replace(/\s+/g, "").toUpperCase();
 }
 
+/* EXACT ORIGINAL DECODE FIX — DO NOT CHANGE */
 function decodeBarcode(code){
   code = String(code || "").trim().toUpperCase();
-  if (code.indexOf("-") > -1) return normalizeBarcode(code);
-  if (code.length % 2 !== 0) return normalizeBarcode(code);
-
-  const secret = "GAI2026SECRET";
+  if(code.indexOf("-") > -1){ return normalizeBarcode(code); }
+  if(code.length % 2 !== 0){ return normalizeBarcode(code); }
   let result = "";
-  try {
-    for (let i = 0; i < code.length; i += 2) {
-      const value = parseInt(code.substr(i, 2), 16);
-      result += String.fromCharCode(value ^ secret.charCodeAt((i / 2) % secret.length));
+  try{
+    for(let i = 0; i < code.length; i += 2){
+      const value = parseInt(code.substr(i,2),16);
+      if(isNaN(value)){ return normalizeBarcode(code); }
+      result += String.fromCharCode(value ^ 91);
     }
     return normalizeBarcode(result);
-  } catch (err) {
-    return normalizeBarcode(code);
-  }
+  }catch(err){ return normalizeBarcode(code); }
 }
 
 function getBranchFromBarcode(barcode){
@@ -1123,21 +1128,11 @@ function getBranchFromBarcode(barcode){
 }
 
 function validateBarcodeBranch(barcode, branch){
-  return getBranchFromBarcode(barcode) === String(branch || "").trim().toUpperCase();
+  const parts = normalizeBarcode(barcode).split("-");
+  return parts.length >= 2 && parts[0] === String(branch).trim().toUpperCase();
 }
 
-function getTable(branch, type){
-  const prefixes = {
-    GAI:"gai", CAS:"cas", BAC:"bac", BIN:"bin", BIS:"bis", CAD:"cad", DGT:"dgt",
-    KAB:"kab", KAL:"kal", PAS:"pas", POT:"pot", SAN:"san", TAB:"tab", TAN:"tan",
-    TIS:"tis", TOL:"tol"
-  };
-  branch = String(branch || "").trim().toUpperCase();
-  if (!prefixes[branch]) throw new Error("INVALID BRANCH");
-  return prefixes[branch] + "_" + String(type || "").toLowerCase();
-}
-
-function formatLens(value){
+function formatLens(value) {
   if (value === null || value === undefined) return "";
   let str = String(value).trim();
   if (str.includes("#ERROR") || str.includes("#VALUE")) return "0.00";
@@ -1151,89 +1146,100 @@ function formatLens(value){
   return hadPlus ? "+" + str : str;
 }
 
-async function directAction(action, params={}){
-  const session = getSessionParams();
-  if (!session.email || !session.sessionId) return { status:"NO SESSION" };
-
-  if (!(await isAllowedUser(session.email, BRANCH))) return { status:"EMAIL_DENIED" };
-
-  if (action === "check") {
-    const barcode = decodeBarcode(params.barcode);
-    if (!validateBarcodeBranch(barcode, BRANCH)) return { status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode) };
-    const parts = barcode.split("-");
-    if (parts.length < 2) return { status:"INVALID BARCODE" };
-    const br = parts[0], ntagn = parts.slice(1).join("-");
-
-    const sold = await supabaseRequest(
-      getTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1"
-    );
-    if (sold.length) return { status:"DUPLICATE", colJ:String(sold[0].LENSTYPE||""), colO:String(sold[0].DESCRIPTION||""), tag:String(sold[0].NTAGN||"") };
-
-    const stock = await supabaseRequest(
-      getTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1"
-    );
-    if (!stock.length) return { status:"NOT FOUND" };
-    const r = stock[0];
-    const row = [r.SDATE,r.SUPPLIER,r.DR,r.COST,r.ASG,r.CB,r.FD,r.UNITS,r.POWER,r.LENSTYPE,r.PUNIT,r.BR,r.NTAGN,r.CATEGORY,r.DESCRIPTION,r.LENSCODE,r.SELLINGPRICE,r.DELIVERYDATE,r.ORNUMBER,r.ORDATE,r.REMARKS,r.TAGPRICE,r.QR];
-    return { status:"FOUND", row, colJ:String(r.LENSTYPE||""), colO:String(r.DESCRIPTION||""), tag:String(r.NTAGN||"") };
-  }
-
-  if (action === "save") {
-    const barcode = decodeBarcode(params.barcode);
-    if (!validateBarcodeBranch(barcode, BRANCH)) return { status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode) };
-    const parts = barcode.split("-");
-    if (parts.length < 2) return { status:"INVALID BARCODE" };
-    const br = parts[0], ntagn = parts.slice(1).join("-");
-
-    const sold = await supabaseRequest(getTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
-    if (sold.length) return { status:"ALREADY SAVED" };
-
-    const stockRows = await supabaseRequest(getTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
-    if (!stockRows.length) return { status:"NOT FOUND" };
-    const r = stockRows[0];
-    const now = new Date().toLocaleString("en-US", { timeZone:"Asia/Manila", hour12:true });
-    const payload = { SDATE:r.SDATE||"", SUPPLIER:r.SUPPLIER||"", DR:r.DR||"", COST:r.COST||"", ASG:r.ASG||"", CB:r.CB||"", FD:r.FD||"", UNITS:r.UNITS||"", POWER:r.POWER||"", LENSTYPE:r.LENSTYPE||"", PUNIT:r.PUNIT||"", BR:r.BR||"", NTAGN:r.NTAGN||"", CATEGORY:r.CATEGORY||"", DESCRIPTION:formatLens(r.DESCRIPTION||""), LENSCODE:r.LENSCODE||"", SELLINGPRICE:r.SELLINGPRICE||"", DELIVERYDATE:r.DELIVERYDATE||"", ORNUMBER:r.ORNUMBER||"", ORDATE:r.ORDATE||"", REMARKS:r.REMARKS||"", TAGPRICE:r.TAGPRICE||"", QR:r.QR||"", "SI NO.":String(params.siNo||""), "DATE AND TIME":now, "USER EMAIL":session.email, STATUS:"" };
-    const inserted = await supabaseRequest(getTable(BRANCH,"scanresults"), { method:"POST", headers:{ Prefer:"return=representation" }, body:payload });
-    const row = [payload.SDATE,payload.SUPPLIER,payload.DR,payload.COST,payload.ASG,payload.CB,payload.FD,payload.UNITS,payload.POWER,payload.LENSTYPE,payload.PUNIT,payload.BR,payload.NTAGN,payload.CATEGORY,payload.DESCRIPTION,payload.LENSCODE,payload.SELLINGPRICE,payload.DELIVERYDATE,payload.ORNUMBER,payload.ORDATE,payload.REMARKS,payload.TAGPRICE,payload.QR,payload["SI NO."],payload["DATE AND TIME"],payload["USER EMAIL"],payload.STATUS];
-    return { status:"ADDED TO SOLD", row:row, colJ:String(payload.LENSTYPE||""), colO:String(payload.DESCRIPTION||""), tag:String(payload.NTAGN||"") };
-  }
-
-  if (action === "searchSI") {
-    const siNo = String(params.siNo||"").trim();
-    if (!siNo) return { status:"OK", items:[] };
-    const rows = await supabaseRequest(getTable(BRANCH,"scanresults") + "?%22SI%20NO.%22=eq." + encodeURIComponent(siNo) + "&select=LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22&limit=100");
-    return { status:"OK", branch:BRANCH, searchedSI:siNo, count:rows.length, items:rows.map(r=>({colJ:String(r.LENSTYPE||""),colO:formatLens(r.DESCRIPTION||""),tag:String(r.NTAGN||""),siNo:String(r["SI NO."]||""),date:String(r["DATE AND TIME"]||"")})) };
-  }
-
-  if (action === "checkTag") {
-    const tag = String(params.tag||"").trim().toUpperCase();
-    const rows = await supabaseRequest(getTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(tag) + "&select=*&limit=1");
-    if (!rows.length) return { status:"NOT_FOUND" };
-    const stock=rows[0], barcode=normalizeBarcode(stock.BR+"-"+stock.NTAGN);
-    const sold=await supabaseRequest(getTable(BRANCH,"scanresults") + "?BR=eq."+encodeURIComponent(stock.BR)+"&NTAGN=eq."+encodeURIComponent(stock.NTAGN)+"&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1");
-    if(sold.length) return {status:"DUPLICATE",barcode,colJ:String(stock.LENSTYPE||""),colM:String(stock.NTAGN||""),colO:formatLens(stock.DESCRIPTION||"")};
-    return {status:"FOUND",barcode,colJ:String(stock.LENSTYPE||""),colM:String(stock.NTAGN||""),colO:formatLens(stock.DESCRIPTION||"")};
-  }
-
-  if (action === "checkAudit" || action === "audit" || action === "saveAudit") {
-    const barcode=decodeBarcode(params.barcode);
-    if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
-    const parts=barcode.split("-"); if(parts.length<2) return {status:"INVALID BARCODE"};
-    const br=parts[0], ntagn=parts.slice(1).join("-");
-    const auditRows=await supabaseRequest(getTable(BRANCH,"audit")+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
-    if(auditRows.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:auditRows[0]["DATE AND TIME"]};
-    const stockRows=await supabaseRequest(getTable(BRANCH,"stocks")+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=*&limit=1");
-    if(!stockRows.length) return {status:"NOT_FOUND"};
-    const r=stockRows[0];
-    if(action==="checkAudit" || action==="audit") return {status:"FOUND",row:[r.SDATE,r.SUPPLIER,r.DR,r.COST,r.ASG,r.CB,r.FD,r.UNITS,r.POWER,r.LENSTYPE,r.PUNIT,r.BR,r.NTAGN,r.CATEGORY,r.DESCRIPTION,r.LENSCODE,r.SELLINGPRICE,r.DELIVERYDATE,r.ORNUMBER,r.ORDATE,r.REMARKS,r.TAGPRICE,r.QR]};
-    const now=new Date().toLocaleString("en-US",{timeZone:"Asia/Manila",hour12:true});
-    const payload={SDATE:String(r.SDATE||""),SUPPLIER:String(r.SUPPLIER||""),DR:String(r.DR||""),COST:String(r.COST||""),ASG:String(r.ASG||""),CB:String(r.CB||""),FD:String(r.FD||""),UNITS:String(r.UNITS||""),POWER:String(r.POWER||""),LENSTYPE:String(r.LENSTYPE||""),PUNIT:String(r.PUNIT||""),BR:String(r.BR||""),NTAGN:String(r.NTAGN||""),CATEGORY:String(r.CATEGORY||""),DESCRIPTION:String(formatLens(r.DESCRIPTION||"")),LENSCODE:String(r.LENSCODE||""),SELLINGPRICE:String(r.SELLINGPRICE||""),DELIVERYDATE:String(r.DELIVERYDATE||""),ORNUMBER:String(r.ORNUMBER||""),ORDATE:String(r.ORDATE||""),REMARKS:String(r.REMARKS||""),TAGPRICE:String(r.TAGPRICE||""),QR:String(r.QR||""),"SI NO.":"","DATE AND TIME":now,"USER EMAIL":session.email,STATUS:"AUDITED"};
-    await supabaseRequest(getTable(BRANCH,"audit"),{method:"POST",headers:{Prefer:"return=representation"},body:payload});
-    return {status:"RECORDED",tag:r.NTAGN,colJ:r.LENSTYPE,colO:formatLens(r.DESCRIPTION||""),description:formatLens(r.DESCRIPTION||"")};
-  }
-
-  return {status:"INVALID ACTION"};
+function stockRowArray(s){
+  return [s.SDATE,s.SUPPLIER,s.DR,s.COST,s.ASG,s.CB,s.FD,s.UNITS,s.POWER,s.LENSTYPE,s.PUNIT,s.BR,s.NTAGN,s.CATEGORY,s.DESCRIPTION,s.LENSCODE,s.SELLINGPRICE,s.DELIVERYDATE,s.ORNUMBER,s.ORDATE,s.REMARKS,s.TAGPRICE,s.QR];
 }
+
+function manilaNow(){
+  return new Intl.DateTimeFormat("en-US", {timeZone:"Asia/Manila", month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(new Date());
+}
+
+async function getStockByBarcodeDirect(barcode){
+  const parts = normalizeBarcode(barcode).split("-");
+  if(parts.length < 2) return null;
+  const br = parts[0], ntagn = parts.slice(1).join("-");
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
+  return rows[0] || null;
+}
+
+async function isAlreadySoldDirect(barcode){
+  const parts = normalizeBarcode(barcode).split("-");
+  if(parts.length < 2) return null;
+  const br = parts[0], ntagn = parts.slice(1).join("-");
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1");
+  return rows[0] || null;
+}
+
+async function directCheck(rawBarcode){
+  await requireSupabaseAccess();
+  const scannedBarcode = normalizeBarcode(rawBarcode);
+  const barcode = decodeBarcode(scannedBarcode);
+  if(!validateBarcodeBranch(barcode, BRANCH)){
+    return {status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode)};
+  }
+  const sold = await isAlreadySoldDirect(barcode);
+  if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
+  const stock = await getStockByBarcodeDirect(barcode);
+  if(stock){ return {status:"FOUND", row:stockRowArray(stock), colJ:String(stock.LENSTYPE||""), colO:String(stock.DESCRIPTION||""), tag:String(stock.NTAGN||"")}; }
+  return {status:"NOT FOUND"};
+}
+
+async function directSave(rawBarcode, siNo){
+  const access = await requireSupabaseAccess();
+  const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
+  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+  if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
+  const stock = await getStockByBarcodeDirect(barcode);
+  if(!stock) return {status:"NOT FOUND"};
+  const row = stockRowArray(stock);
+  while(row.length < 27) row.push("");
+  row[14] = formatLens(row[14]);
+  row[23] = String(siNo || "").trim();
+  row[24] = manilaNow();
+  row[25] = access.email;
+  row[26] = "";
+  const payload = [{SDATE:row[0],SUPPLIER:row[1],DR:row[2],COST:row[3],ASG:row[4],CB:row[5],FD:row[6],UNITS:row[7],POWER:row[8],LENSTYPE:row[9],PUNIT:row[10],BR:row[11],NTAGN:row[12],CATEGORY:row[13],DESCRIPTION:row[14],LENSCODE:row[15],SELLINGPRICE:row[16],DELIVERYDATE:row[17],ORNUMBER:row[18],ORDATE:row[19],REMARKS:row[20],TAGPRICE:row[21],QR:row[22],"SI NO.":row[23],"DATE AND TIME":row[24],"USER EMAIL":row[25],STATUS:row[26]}];
+  await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
+  return {status:"ADDED TO SOLD",row};
+}
+
+async function directSearchSI(siNo){
+  await requireSupabaseAccess();
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?%22SI%20NO.%22=eq." + encodeURIComponent(siNo) + "&select=LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22&limit=100");
+  return {status:"OK",items:rows.map(r=>({colJ:String(r.LENSTYPE||""),colO:formatLens(String(r.DESCRIPTION||"")),tag:String(r.NTAGN||""),siNo:String(r["SI NO."]||""),date:String(r["DATE AND TIME"]||"")}))};
+}
+
+async function directCheckTag(tag){
+  await requireSupabaseAccess();
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(String(tag).trim().toUpperCase()) + "&select=*&limit=1");
+  if(!rows.length) return {status:"NOT_FOUND"};
+  const s=rows[0], barcode=normalizeBarcode(s.BR+"-"+s.NTAGN);
+  const sold=await isAlreadySoldDirect(barcode);
+  if(sold) return {status:"DUPLICATE",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
+  return {status:"FOUND",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
+}
+
+async function directSaveAudit(rawBarcode){
+  const access=await requireSupabaseAccess();
+  const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
+  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+  const parts=barcode.split("-");
+  if(parts.length<2) return {status:"INVALID BARCODE"};
+  const br=parts[0], ntagn=parts.slice(1).join("-");
+  const auditTable=branchTable(BRANCH,"audit");
+  const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
+  if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
+  const stock=await getStockByBarcodeDirect(barcode);
+  if(!stock) return {status:"NOT_FOUND"};
+  const payload=[{SDATE:String(stock.SDATE||""),SUPPLIER:String(stock.SUPPLIER||""),DR:String(stock.DR||""),COST:String(stock.COST||""),ASG:String(stock.ASG||""),CB:String(stock.CB||""),FD:String(stock.FD||""),UNITS:String(stock.UNITS||""),POWER:String(stock.POWER||""),LENSTYPE:String(stock.LENSTYPE||""),PUNIT:String(stock.PUNIT||""),BR:String(stock.BR||""),NTAGN:String(stock.NTAGN||""),CATEGORY:String(stock.CATEGORY||""),DESCRIPTION:String(formatLens(stock.DESCRIPTION||"")),LENSCODE:String(stock.LENSCODE||""),SELLINGPRICE:String(stock.SELLINGPRICE||""),DELIVERYDATE:String(stock.DELIVERYDATE||""),ORNUMBER:String(stock.ORNUMBER||""),ORDATE:String(stock.ORDATE||""),REMARKS:String(stock.REMARKS||""),TAGPRICE:String(stock.TAGPRICE||""),QR:String(stock.QR||""),"SI NO.":"","DATE AND TIME":manilaNow(),"USER EMAIL":access.email,STATUS:"AUDITED"}];
+  await sbRequest("/rest/v1/"+auditTable,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
+  return {status:"RECORDED",colO:String(stock.DESCRIPTION||""),colJ:String(stock.LENSTYPE||""),tag:String(stock.NTAGN||"")};
+}
+
+
+  
+  
+
 
 /* ================= BRANCH SELECTION ================= */
 
@@ -1271,16 +1277,25 @@ function resetLoginForm(){
   if(email) email.focus();
 }
 
-function selectBranch(branch){
+async function selectBranch(branch){
   branch = String(branch || "").trim().toUpperCase();
-  if(!BRANCH_NAMES[branch]){ alert("Invalid branch."); return; }
+
+  if(!BRANCH_NAMES[branch]){
+    alert("Invalid branch.");
+    return;
+  }
+
   BRANCH = branch;
   localStorage.setItem("inventorySelectedBranch", BRANCH);
+
   updateBranchUI();
-  document.getElementById("branchScreen").style.display="none";
-  document.getElementById("app").style.display="none";
-  document.getElementById("loginScreen").style.display="flex";
+
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+
   resetLoginForm();
+
 }
 
 function openApp(){
@@ -1664,7 +1679,16 @@ await scanner.start(
         tempCode = code;
         tempSi = siNo;
 
-        const data = await directAction("check", { barcode: code });
+        let data;
+        try {
+          data = await directCheck(code);
+        } catch (err) {
+          document.getElementById("result").innerHTML = `
+            <div class="card red">
+              ❌ ${err.message || err}
+            </div>`;
+          return;
+        }
 
       let row = data.row || [];
 
@@ -2129,7 +2153,7 @@ if (!auditQueue.includes(barcode)) {
 
   async function saveAudit(barcode){
 
-const data = await directAction("saveAudit", { barcode });
+const data = await directSaveAudit(barcode);
 
 
 if(data.status==="RECORDED"){
@@ -2183,7 +2207,13 @@ async function processAuditQueue() {
 
             const barcode = auditQueue.shift();
 
-            const saveData = await directAction("saveAudit", { barcode });
+            let saveData;
+            try {
+                saveData = await directSaveAudit(barcode);
+            } catch(e) {
+                document.getElementById("result").innerHTML = `<div class="card red">❌ ${e.message}</div>`;
+                continue;
+            }
 
 
 
@@ -2339,7 +2369,7 @@ if (saveBtn) {
 
   try {
 
-    const data = await directAction("save", { barcode: tempCode, siNo: tempSi });
+    const data = await directSave(tempCode, tempSi);
 
 
    let row = data.row || [];
@@ -2438,7 +2468,7 @@ async function searchSI() {
 
   try {
 
-    const data = await directAction("searchSI", { siNo });
+    const data = await directSearchSI(siNo);
 
     console.log("SEARCH SI RESPONSE:", data);
 
@@ -2635,7 +2665,7 @@ if(!tag){
   return;
 }
 
-const data = await directAction("checkTag", { tag });
+const data = await directCheckTag(tag);
 
 
 // ================= DUPLICATE =================
@@ -2762,50 +2792,11 @@ function vibrate() {
 document.addEventListener("click", initAudio, { once: true });
 
 async function logout() {
-
-
-const session =
-JSON.parse(
-localStorage.getItem("inventorySession_"+BRANCH)
-|| "{}"
-);
-
-
-const email=session.email || "";
-const sessionId=session.sessionId || "";
-
-
-// CLEAR LOCAL FIRST
-
-
-localStorage.removeItem(
-"inventorySession_"+BRANCH
-);
-
-localStorage.removeItem("loginTime_" + BRANCH);
-localStorage.removeItem("inventorySelectedBranch");
-
-
-// STOP CAMERA
-if(scanner){
-
-try{
-
-await scanner.stop();
-await scanner.clear();
-
-}catch(e){}
-
-scanner=null;
-
-}
-
-
-
-
-
-location.reload();
-
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+  localStorage.removeItem("inventorySelectedBranch");
+  try { await stopNormalScanner(); } catch(e) {}
+  location.reload();
 }
 
 function checkLoginExpiry(){
@@ -2851,28 +2842,55 @@ document.getElementById("otp").addEventListener("keydown",e=>{
 
 
 
-window.addEventListener("DOMContentLoaded", function(){
+window.addEventListener("DOMContentLoaded", async function(){
+
   checkLoginExpiry();
-  const savedBranch = localStorage.getItem("inventorySelectedBranch") || "";
+
+  const savedBranch =
+    localStorage.getItem("inventorySelectedBranch") || "";
+
   if(!BRANCH_NAMES[savedBranch]){
-    document.getElementById("branchScreen").style.display="flex";
-    document.getElementById("loginScreen").style.display="none";
-    document.getElementById("app").style.display="none";
+    document.getElementById("branchScreen").style.display = "flex";
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "none";
     return;
   }
+
   BRANCH = savedBranch;
   updateBranchUI();
-  const session = JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
-  if(session.email && session.sessionId){ openApp(); }
-  else{
-    document.getElementById("branchScreen").style.display="none";
-    document.getElementById("loginScreen").style.display="flex";
-    document.getElementById("app").style.display="none";
+
+  const session =
+    JSON.parse(
+      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+    );
+
+  const email = session.email || "";
+  const sessionId = session.sessionId || "";
+
+  if(!email || !sessionId){
+    document.getElementById("branchScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
     resetLoginForm();
+    return;
   }
+
+  try {
+    await requireSupabaseAccess();
+    openApp();
+  } catch (err) {
+    localStorage.removeItem("inventorySession_" + BRANCH);
+    document.getElementById("branchScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+    resetLoginForm();
+    document.getElementById("loginStatus").innerHTML =
+      "❌ " + (err.message === "EMAIL_DENIED" ? "Gmail not allowed for this branch." : "Session expired. Please login again.");
+  }
+
 });
 
-const siInput = document.getElementById("siNo");
+  const siInput = document.getElementById("siNo");
 
 siInput.addEventListener("input",function(){
 
