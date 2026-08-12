@@ -2506,7 +2506,7 @@ async function directCheck(rawBarcode){
 async function directSave(rawBarcode, siNo){
   const access = await requireSupabaseAccess();
   const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH"};
   if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
   const stock = await getStockByBarcodeDirect(barcode);
   if(!stock) return {status:"NOT FOUND"};
@@ -2541,7 +2541,7 @@ async function directCheckTag(tag){
 async function directSaveAudit(rawBarcode){
   const access=await requireSupabaseAccess();
   const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH"};
   const parts=barcode.split("-");
   if(parts.length<2) return {status:"INVALID BARCODE"};
   const br=parts[0], ntagn=parts.slice(1).join("-");
