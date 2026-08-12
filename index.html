@@ -2494,7 +2494,7 @@ async function directCheck(rawBarcode){
   const scannedBarcode = normalizeBarcode(rawBarcode);
   const barcode = decodeBarcode(scannedBarcode);
   if(!validateBarcodeBranch(barcode, BRANCH)){
-    return {status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode)};
+    return {status:"WRONG BRANCH"};
   }
   const sold = await isAlreadySoldDirect(barcode);
   if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
@@ -3034,15 +3034,13 @@ let tag = data.tag || row[12] || "";
                 </div>
             `;
         }
-        else if (data.status === "WRONG BRANCH") {
-            document.getElementById("result").innerHTML = `
-                <div class="card red">
-                    ❌ WRONG BRANCH<br><br>
-                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
-                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
-                </div>
-            `;
-        }
+ else if (data.status === "WRONG BRANCH") {
+    document.getElementById("result").innerHTML = `
+        <div class="card red">
+            ❌ WRONG BRANCH
+        </div>
+    `;
+}
         else if (data.status === "DUPLICATE") {
             document.getElementById("result").innerHTML = `
                 <div class="card red">
