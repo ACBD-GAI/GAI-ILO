@@ -899,37 +899,6 @@ class="btn-orange"
 onclick="refreshPage()">
 ♻ REFRESH
 </button>
-
-<button
-id="reportBtn"
-class="btn-blue"
-onclick="showReportDialog()"
-style="display:none;">
-📧 SEND REPORT
-</button>
-     <button
-id="updateStockBtn"
-class="btn-orange"
-onclick="document.getElementById('stockFile').click()"
-style="display:none;">
-📤 UPDATE STOCKS
-</button>
-
-     <button
-id="clearBtn"
-class="btn-orange"
-onclick="showClearDialog()"
-style="display:none;">
-🗑 CLEAR REPORT
-</button>
-
-<input
-type="file"
-id="stockFile"
-accept=".xlsx,.xls"
-style="display:none"
-onchange="uploadStockFile(this.files[0])">
-
 </div>
 
 
@@ -939,128 +908,7 @@ onchange="uploadStockFile(this.files[0])">
    
 
   </div>
-<div id="reportDialog" class="report-overlay">
 
-    <div class="report-modal">
-
-        <div class="report-title">
-            📧 Send Inventory Report
-        </div>
-
-     <select id="reportType" 
-style="
-width:100%;
-padding:14px;
-border-radius:12px;
-border:1px solid #ddd;
-font-size:16px;
-font-weight:bold;
-margin-bottom:20px;
-">
-
-<option value="sales">
-📊 Sales Report
-</option>
-
-<option value="reinventory">
-📦 Re-Inventory Report
-</option>
-
-</select>
-<div class="report-subtitle">
-    Choose recipient(s)
-</div>
-
-        <div class="recipient-card" data-email="remnvill@gmail.com">
-            <div class="recipient-icon">👤</div>
-
-            <div class="recipient-info">
-                <div class="recipient-name">
-                    Remn Vill
-                </div>
-
-                <div class="recipient-email">
-                    remnvill@gmail.com
-                </div>
-            </div>
-
-            <div class="checkmark">✓</div>
-        </div>
-
-        <div class="recipient-card" data-email="willremn@gmail.com">
-            <div class="recipient-icon">👤</div>
-
-            <div class="recipient-info">
-                <div class="recipient-name">
-                    Will Remn
-                </div>
-
-                <div class="recipient-email">
-                    willremn@gmail.com
-                </div>
-            </div>
-
-            <div class="checkmark">✓</div>
-        </div>
-
-        <div class="recipient-card" data-email="mmlorijo1990@gmail.com">
-            <div class="recipient-icon">👤</div>
-
-            <div class="recipient-info">
-                <div class="recipient-name">
-                    Mary May
-                </div>
-
-                <div class="recipient-email">
-                    mmlorijo1990@gmail.com
-                </div>
-            </div>
-
-            <div class="checkmark">✓</div>
-        </div>
-
-         <div class="recipient-card" data-email="fmfc_audit654@yahoo.com">
-            <div class="recipient-icon">👤</div>
-
-            <div class="recipient-info">
-                <div class="recipient-name">
-                    AUDIT
-                </div>
-
-                <div class="recipient-email">
-                    fmfc_audit654@yahoo.com
-                </div>
-            </div>
-
-            <div class="checkmark">✓</div>
-        </div>
-         <div class="recipient-card" data-email="fmfc_ho2016@yahoo.com">
-            <div class="recipient-icon">👤</div>
-
-            <div class="recipient-info">
-                <div class="recipient-name">
-                    Ma'am Che
-                </div>
-
-                <div class="recipient-email">
-                    fmfc_ho2016@yahoo.com
-                </div>
-            </div>
-
-            <div class="checkmark">✓</div>
-            </div>
-       
-
-        <button class="send-report-btn" onclick="sendSelectedReport()">
-            📧 SEND REPORT
-        </button>
-
-        <button class="cancel-report-btn" onclick="closeReportDialog()">
-CANCEL
-</button>
-
-</div>
-</div>
 
 
 <div id="tagDialog" class="report-overlay">
@@ -1137,45 +985,6 @@ CONTINUE SCANNING
 
 </div>
 
-<div id="clearDialog" class="report-overlay">
-
-<div class="report-modal">
-
-<div class="report-title">
-🗑 CLEAR REPORT
-</div>
-
-<div class="report-subtitle">
-Choose what to clear
-</div>
-
-<button
-class="btn-orange"
-onclick="clearReport('SCANRESULTS')">
-🗑 CLEAR SOLD-OUT REPORT
-</button>
-
-<button
-class="btn-orange"
-onclick="clearReport('AUDIT')"
-style="margin-top:10px;">
-🗑 CLEAR AUDITED REPORT
-</button>
-
-<button
-class="cancel-report-btn"
-onclick="closeClearDialog()">
-CANCEL
-</button>
-
-</div>
-
-</div>
-
-  
-
-
-  
 <script>
 
 
@@ -1223,77 +1032,208 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbygtQfll3WXwHg-p_uQRLVcfj1H2LfWrGawP5E0JF6yqdXld09BEiEmAxtCze_tpSIU/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz01WmwzTe0EYuUXjWYSF9-QCHfas9cVLuMRI9ZiBz6l54gaU5l3AtMRMVCEG4jQpK4/exec";
+
+const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDg3NjE3MSwiZXhwIjoyMTAwNDUyMTcxfQ.RfKJxtV06KMMNGHAqG0BhrYsjtee_eUq0m2ktrgUcxA";
 
 function getSessionParams(){
-
-const session =
-JSON.parse(
-localStorage.getItem("inventorySession_"+BRANCH)
-|| "{}"
-);
-
-
-return (
-"&branch=" + encodeURIComponent(BRANCH) +
-"&email=" + encodeURIComponent(session.email || "") +
-"&sessionId=" + encodeURIComponent(session.sessionId || "")
-);
-
+  const session = JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
+  return {
+    email: String(session.email || "").trim().toLowerCase(),
+    sessionId: String(session.sessionId || "")
+  };
 }
-function checkReportAccess(){
 
-  const session = JSON.parse(
-    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
-  );
+function supabaseHeaders(){
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: "Bearer " + SUPABASE_KEY,
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  };
+}
 
-  const email = (session.email || "").trim().toLowerCase();
+async function supabaseRequest(path, options={}){
+  const response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    method: options.method || "GET",
+    headers: { ...supabaseHeaders(), ...(options.headers || {}) },
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    cache: "no-store"
+  });
 
-  const reportBtn = document.getElementById("reportBtn");
-  const updateBtn = document.getElementById("updateStockBtn");
-
-  const REPORT_USERS = [
-    "remnvill@gmail.com",
-    "willremn@gmail.com",
-    "fmfc_audit654@yahoo.com",
-    "fmfc_ho2016@yahoo.com",
-    "mmlorijo1990@gmail.com"
-  ];
-
-  if(reportBtn){
-    reportBtn.style.display =
-      REPORT_USERS.includes(email) ? "block" : "none";
+  const text = await response.text();
+  let data = [];
+  try { data = text ? JSON.parse(text) : []; } catch (err) {
+    throw new Error("Supabase returned invalid JSON (HTTP " + response.status + ")");
   }
 
-const clearBtn = document.getElementById("clearBtn");
-
-if(clearBtn){
-    clearBtn.style.display =
-        STOCK_ADMIN.includes(email) ? "block" : "none";
-}
-  
-
-  if(updateBtn){
-    updateBtn.style.display =
-      STOCK_ADMIN.includes(email) ? "block" : "none";
+  if (!response.ok) {
+    const detail = typeof data === "object" ? (data.message || data.details || data.hint || text) : text;
+    throw new Error("Supabase HTTP " + response.status + ": " + detail);
   }
 
+  return data;
 }
 
-function checkStockAccess(){
+async function isAllowedUser(email, branch){
+  email = String(email || "").trim().toLowerCase();
+  branch = String(branch || "").trim().toUpperCase();
+  if (!email || !branch) return false;
 
-  const session = JSON.parse(
-    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+  const rows = await supabaseRequest(
+    "allowed_users?email=eq." + encodeURIComponent(email) + "&select=*"
   );
 
-  const email = (session.email || "").trim().toLowerCase();
+  if (!Array.isArray(rows) || rows.length === 0) return false;
 
-  return STOCK_ADMIN.includes(email);
-
+  return rows.some(row => {
+    const rowBranch = String(
+      row.branch ?? row.BRANCH ?? row.branch_code ?? row.BRANCH_CODE ?? ""
+    ).trim().toUpperCase();
+    return !rowBranch || rowBranch === "ALL" || rowBranch === branch;
+  });
 }
-  
-  
 
+function normalizeBarcode(value){
+  return String(value || "").trim().replace(/\s+/g, "").toUpperCase();
+}
+
+function decodeBarcode(code){
+  code = String(code || "").trim().toUpperCase();
+  if (code.indexOf("-") > -1) return normalizeBarcode(code);
+  if (code.length % 2 !== 0) return normalizeBarcode(code);
+
+  const secret = "GAI2026SECRET";
+  let result = "";
+  try {
+    for (let i = 0; i < code.length; i += 2) {
+      const value = parseInt(code.substr(i, 2), 16);
+      result += String.fromCharCode(value ^ secret.charCodeAt((i / 2) % secret.length));
+    }
+    return normalizeBarcode(result);
+  } catch (err) {
+    return normalizeBarcode(code);
+  }
+}
+
+function getBranchFromBarcode(barcode){
+  const parts = normalizeBarcode(barcode).split("-");
+  return parts.length >= 2 ? parts[0] : "";
+}
+
+function validateBarcodeBranch(barcode, branch){
+  return getBranchFromBarcode(barcode) === String(branch || "").trim().toUpperCase();
+}
+
+function getTable(branch, type){
+  const prefixes = {
+    GAI:"gai", CAS:"cas", BAC:"bac", BIN:"bin", BIS:"bis", CAD:"cad", DGT:"dgt",
+    KAB:"kab", KAL:"kal", PAS:"pas", POT:"pot", SAN:"san", TAB:"tab", TAN:"tan",
+    TIS:"tis", TOL:"tol"
+  };
+  branch = String(branch || "").trim().toUpperCase();
+  if (!prefixes[branch]) throw new Error("INVALID BRANCH");
+  return prefixes[branch] + "_" + String(type || "").toLowerCase();
+}
+
+function formatLens(value){
+  if (value === null || value === undefined) return "";
+  let str = String(value).trim();
+  if (str.includes("#ERROR") || str.includes("#VALUE")) return "0.00";
+  str = str.replace(/^\++/, "");
+  const hadPlus = String(value).trim().startsWith("+");
+  if (!isNaN(str) && str !== "" && !str.includes("/")) {
+    const num = Number(str);
+    return hadPlus ? "+" + num.toFixed(2) : num.toFixed(2);
+  }
+  if (str.includes("/")) return hadPlus ? "+" + str : str;
+  return hadPlus ? "+" + str : str;
+}
+
+async function directAction(action, params={}){
+  const session = getSessionParams();
+  if (!session.email || !session.sessionId) return { status:"NO SESSION" };
+
+  if (!(await isAllowedUser(session.email, BRANCH))) return { status:"EMAIL_DENIED" };
+
+  if (action === "check") {
+    const barcode = decodeBarcode(params.barcode);
+    if (!validateBarcodeBranch(barcode, BRANCH)) return { status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode) };
+    const parts = barcode.split("-");
+    if (parts.length < 2) return { status:"INVALID BARCODE" };
+    const br = parts[0], ntagn = parts.slice(1).join("-");
+
+    const sold = await supabaseRequest(
+      getTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1"
+    );
+    if (sold.length) return { status:"DUPLICATE", colJ:String(sold[0].LENSTYPE||""), colO:String(sold[0].DESCRIPTION||""), tag:String(sold[0].NTAGN||"") };
+
+    const stock = await supabaseRequest(
+      getTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1"
+    );
+    if (!stock.length) return { status:"NOT FOUND" };
+    const r = stock[0];
+    const row = [r.SDATE,r.SUPPLIER,r.DR,r.COST,r.ASG,r.CB,r.FD,r.UNITS,r.POWER,r.LENSTYPE,r.PUNIT,r.BR,r.NTAGN,r.CATEGORY,r.DESCRIPTION,r.LENSCODE,r.SELLINGPRICE,r.DELIVERYDATE,r.ORNUMBER,r.ORDATE,r.REMARKS,r.TAGPRICE,r.QR];
+    return { status:"FOUND", row, colJ:String(r.LENSTYPE||""), colO:String(r.DESCRIPTION||""), tag:String(r.NTAGN||"") };
+  }
+
+  if (action === "save") {
+    const barcode = decodeBarcode(params.barcode);
+    if (!validateBarcodeBranch(barcode, BRANCH)) return { status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode) };
+    const parts = barcode.split("-");
+    if (parts.length < 2) return { status:"INVALID BARCODE" };
+    const br = parts[0], ntagn = parts.slice(1).join("-");
+
+    const sold = await supabaseRequest(getTable(BRANCH,"scanresults") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
+    if (sold.length) return { status:"ALREADY SAVED" };
+
+    const stockRows = await supabaseRequest(getTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
+    if (!stockRows.length) return { status:"NOT FOUND" };
+    const r = stockRows[0];
+    const now = new Date().toLocaleString("en-US", { timeZone:"Asia/Manila", hour12:true });
+    const payload = { SDATE:r.SDATE||"", SUPPLIER:r.SUPPLIER||"", DR:r.DR||"", COST:r.COST||"", ASG:r.ASG||"", CB:r.CB||"", FD:r.FD||"", UNITS:r.UNITS||"", POWER:r.POWER||"", LENSTYPE:r.LENSTYPE||"", PUNIT:r.PUNIT||"", BR:r.BR||"", NTAGN:r.NTAGN||"", CATEGORY:r.CATEGORY||"", DESCRIPTION:formatLens(r.DESCRIPTION||""), LENSCODE:r.LENSCODE||"", SELLINGPRICE:r.SELLINGPRICE||"", DELIVERYDATE:r.DELIVERYDATE||"", ORNUMBER:r.ORNUMBER||"", ORDATE:r.ORDATE||"", REMARKS:r.REMARKS||"", TAGPRICE:r.TAGPRICE||"", QR:r.QR||"", "SI NO.":String(params.siNo||""), "DATE AND TIME":now, "USER EMAIL":session.email, STATUS:"" };
+    const inserted = await supabaseRequest(getTable(BRANCH,"scanresults"), { method:"POST", headers:{ Prefer:"return=representation" }, body:payload });
+    const row = [payload.SDATE,payload.SUPPLIER,payload.DR,payload.COST,payload.ASG,payload.CB,payload.FD,payload.UNITS,payload.POWER,payload.LENSTYPE,payload.PUNIT,payload.BR,payload.NTAGN,payload.CATEGORY,payload.DESCRIPTION,payload.LENSCODE,payload.SELLINGPRICE,payload.DELIVERYDATE,payload.ORNUMBER,payload.ORDATE,payload.REMARKS,payload.TAGPRICE,payload.QR,payload["SI NO."],payload["DATE AND TIME"],payload["USER EMAIL"],payload.STATUS];
+    return { status:"ADDED TO SOLD", row:row, colJ:String(payload.LENSTYPE||""), colO:String(payload.DESCRIPTION||""), tag:String(payload.NTAGN||"") };
+  }
+
+  if (action === "searchSI") {
+    const siNo = String(params.siNo||"").trim();
+    if (!siNo) return { status:"OK", items:[] };
+    const rows = await supabaseRequest(getTable(BRANCH,"scanresults") + "?%22SI%20NO.%22=eq." + encodeURIComponent(siNo) + "&select=LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22&limit=100");
+    return { status:"OK", branch:BRANCH, searchedSI:siNo, count:rows.length, items:rows.map(r=>({colJ:String(r.LENSTYPE||""),colO:formatLens(r.DESCRIPTION||""),tag:String(r.NTAGN||""),siNo:String(r["SI NO."]||""),date:String(r["DATE AND TIME"]||"")})) };
+  }
+
+  if (action === "checkTag") {
+    const tag = String(params.tag||"").trim().toUpperCase();
+    const rows = await supabaseRequest(getTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(tag) + "&select=*&limit=1");
+    if (!rows.length) return { status:"NOT_FOUND" };
+    const stock=rows[0], barcode=normalizeBarcode(stock.BR+"-"+stock.NTAGN);
+    const sold=await supabaseRequest(getTable(BRANCH,"scanresults") + "?BR=eq."+encodeURIComponent(stock.BR)+"&NTAGN=eq."+encodeURIComponent(stock.NTAGN)+"&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1");
+    if(sold.length) return {status:"DUPLICATE",barcode,colJ:String(stock.LENSTYPE||""),colM:String(stock.NTAGN||""),colO:formatLens(stock.DESCRIPTION||"")};
+    return {status:"FOUND",barcode,colJ:String(stock.LENSTYPE||""),colM:String(stock.NTAGN||""),colO:formatLens(stock.DESCRIPTION||"")};
+  }
+
+  if (action === "checkAudit" || action === "audit" || action === "saveAudit") {
+    const barcode=decodeBarcode(params.barcode);
+    if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
+    const parts=barcode.split("-"); if(parts.length<2) return {status:"INVALID BARCODE"};
+    const br=parts[0], ntagn=parts.slice(1).join("-");
+    const auditRows=await supabaseRequest(getTable(BRANCH,"audit")+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
+    if(auditRows.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:auditRows[0]["DATE AND TIME"]};
+    const stockRows=await supabaseRequest(getTable(BRANCH,"stocks")+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=*&limit=1");
+    if(!stockRows.length) return {status:"NOT_FOUND"};
+    const r=stockRows[0];
+    if(action==="checkAudit" || action==="audit") return {status:"FOUND",row:[r.SDATE,r.SUPPLIER,r.DR,r.COST,r.ASG,r.CB,r.FD,r.UNITS,r.POWER,r.LENSTYPE,r.PUNIT,r.BR,r.NTAGN,r.CATEGORY,r.DESCRIPTION,r.LENSCODE,r.SELLINGPRICE,r.DELIVERYDATE,r.ORNUMBER,r.ORDATE,r.REMARKS,r.TAGPRICE,r.QR]};
+    const now=new Date().toLocaleString("en-US",{timeZone:"Asia/Manila",hour12:true});
+    const payload={SDATE:String(r.SDATE||""),SUPPLIER:String(r.SUPPLIER||""),DR:String(r.DR||""),COST:String(r.COST||""),ASG:String(r.ASG||""),CB:String(r.CB||""),FD:String(r.FD||""),UNITS:String(r.UNITS||""),POWER:String(r.POWER||""),LENSTYPE:String(r.LENSTYPE||""),PUNIT:String(r.PUNIT||""),BR:String(r.BR||""),NTAGN:String(r.NTAGN||""),CATEGORY:String(r.CATEGORY||""),DESCRIPTION:String(formatLens(r.DESCRIPTION||"")),LENSCODE:String(r.LENSCODE||""),SELLINGPRICE:String(r.SELLINGPRICE||""),DELIVERYDATE:String(r.DELIVERYDATE||""),ORNUMBER:String(r.ORNUMBER||""),ORDATE:String(r.ORDATE||""),REMARKS:String(r.REMARKS||""),TAGPRICE:String(r.TAGPRICE||""),QR:String(r.QR||""),"SI NO.":"","DATE AND TIME":now,"USER EMAIL":session.email,STATUS:"AUDITED"};
+    await supabaseRequest(getTable(BRANCH,"audit"),{method:"POST",headers:{Prefer:"return=representation"},body:payload});
+    return {status:"RECORDED",tag:r.NTAGN,colJ:r.LENSTYPE,colO:formatLens(r.DESCRIPTION||""),description:formatLens(r.DESCRIPTION||"")};
+  }
+
+  return {status:"INVALID ACTION"};
+}
 
 /* ================= BRANCH SELECTION ================= */
 
@@ -1331,52 +1271,16 @@ function resetLoginForm(){
   if(email) email.focus();
 }
 
-async function selectBranch(branch){
+function selectBranch(branch){
   branch = String(branch || "").trim().toUpperCase();
-
-  if(!BRANCH_NAMES[branch]){
-    alert("Invalid branch.");
-    return;
-  }
-
+  if(!BRANCH_NAMES[branch]){ alert("Invalid branch."); return; }
   BRANCH = branch;
   localStorage.setItem("inventorySelectedBranch", BRANCH);
-
   updateBranchUI();
-
-  document.getElementById("branchScreen").style.display = "none";
-  document.getElementById("app").style.display = "none";
-  document.getElementById("loginScreen").style.display = "flex";
-
+  document.getElementById("branchScreen").style.display="none";
+  document.getElementById("app").style.display="none";
+  document.getElementById("loginScreen").style.display="flex";
   resetLoginForm();
-
-  const session = JSON.parse(
-    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
-  );
-
-  if(!session.email || !session.sessionId){
-    return;
-  }
-
-  try{
-    const url =
-      API_URL +
-      "?action=checkSession" +
-      "&branch=" + encodeURIComponent(BRANCH) +
-      "&email=" + encodeURIComponent(session.email) +
-      "&sessionId=" + encodeURIComponent(session.sessionId);
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if(data.status === "VALID"){
-      openApp();
-    }else{
-      localStorage.removeItem("inventorySession_" + BRANCH);
-    }
-  }catch(err){
-    openApp();
-  }
 }
 
 function openApp(){
@@ -1386,7 +1290,6 @@ function openApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
-  checkReportAccess();
 }
 
 async function changeBranch(){
@@ -1761,14 +1664,7 @@ await scanner.start(
         tempCode = code;
         tempSi = siNo;
 
-        const res = await fetch(
-            API_URL +
-            "?action=check" +
-            "&barcode=" + encodeURIComponent(code) +
-            getSessionParams()
-        );
-
-        const data = await res.json();
+        const data = await directAction("check", { barcode: code });
 
       let row = data.row || [];
 
@@ -2233,15 +2129,7 @@ if (!auditQueue.includes(barcode)) {
 
   async function saveAudit(barcode){
 
-const res = await fetch(
-API_URL+
-"?action=saveAudit"+
-"&barcode="+encodeURIComponent(barcode)+
-getSessionParams()
-);
-
-
-const data = await res.json();
+const data = await directAction("saveAudit", { barcode });
 
 
 if(data.status==="RECORDED"){
@@ -2295,40 +2183,7 @@ async function processAuditQueue() {
 
             const barcode = auditQueue.shift();
 
-            const res = await fetch(
-                API_URL +
-                "?action=saveAudit" +
-                "&barcode=" + encodeURIComponent(barcode) +
-                getSessionParams()
-            );
-
-
-            const text = await res.text();
-
-            console.log("SAVE AUDIT RAW RESPONSE:");
-            console.log(text);
-
-
-            let saveData;
-
-            try {
-
-                saveData = JSON.parse(text);
-
-            } catch(e) {
-
-                document.getElementById("result").innerHTML = `
-                <div class="card red">
-                    ❌ SERVER ERROR
-                    <br><br>
-                    <pre style="white-space:pre-wrap">
-                    ${text}
-                    </pre>
-                </div>
-                `;
-
-                continue;
-            }
+            const saveData = await directAction("saveAudit", { barcode });
 
 
 
@@ -2484,16 +2339,7 @@ if (saveBtn) {
 
   try {
 
-    const res = await fetch(
-      API_URL +
-      "?action=save" +
-      "&barcode=" + encodeURIComponent(tempCode) +
-      "&siNo=" + encodeURIComponent(tempSi) +
-      getSessionParams()
-    );
-
-
-    const data = await res.json();
+    const data = await directAction("save", { barcode: tempCode, siNo: tempSi });
 
 
    let row = data.row || [];
@@ -2592,14 +2438,7 @@ async function searchSI() {
 
   try {
 
-    const res = await fetch(
-      API_URL +
-      "?action=searchSI" +
-      "&siNo=" + encodeURIComponent(siNo) +
-      getSessionParams()
-    );
-
-    const data = await res.json();
+    const data = await directAction("searchSI", { siNo });
 
     console.log("SEARCH SI RESPONSE:", data);
 
@@ -2796,14 +2635,7 @@ if(!tag){
   return;
 }
 
-const res = await fetch(
-  API_URL +
-  "?action=checkTag" +
-  "&tag=" + encodeURIComponent(tag) +
-  getSessionParams()
-);
-
-const data = await res.json();
+const data = await directAction("checkTag", { tag });
 
 
 // ================= DUPLICATE =================
@@ -2969,21 +2801,7 @@ scanner=null;
 }
 
 
-try{
 
-await fetch(
-API_URL+
-"?action=logout"+
-"&branch="+encodeURIComponent(BRANCH)+
-"&email="+encodeURIComponent(email)+
-"&sessionId="+encodeURIComponent(sessionId)
-);
-
-}catch(e){
-
-console.log(e);
-
-}
 
 
 location.reload();
@@ -3033,80 +2851,28 @@ document.getElementById("otp").addEventListener("keydown",e=>{
 
 
 
-window.addEventListener("DOMContentLoaded", async function(){
-
+window.addEventListener("DOMContentLoaded", function(){
   checkLoginExpiry();
-
-  const savedBranch =
-    localStorage.getItem("inventorySelectedBranch") || "";
-
+  const savedBranch = localStorage.getItem("inventorySelectedBranch") || "";
   if(!BRANCH_NAMES[savedBranch]){
-    document.getElementById("branchScreen").style.display = "flex";
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "none";
+    document.getElementById("branchScreen").style.display="flex";
+    document.getElementById("loginScreen").style.display="none";
+    document.getElementById("app").style.display="none";
     return;
   }
-
   BRANCH = savedBranch;
   updateBranchUI();
-
-  const session =
-    JSON.parse(
-      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
-    );
-
-  const email = session.email || "";
-  const sessionId = session.sessionId || "";
-
-  if(!email || !sessionId){
-    document.getElementById("branchScreen").style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("app").style.display = "none";
+  const session = JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
+  if(session.email && session.sessionId){ openApp(); }
+  else{
+    document.getElementById("branchScreen").style.display="none";
+    document.getElementById("loginScreen").style.display="flex";
+    document.getElementById("app").style.display="none";
     resetLoginForm();
-    return;
   }
-
-  try {
-
-    const url =
-      API_URL +
-      "?action=checkSession" +
-      "&branch=" + encodeURIComponent(BRANCH) +
-      "&email=" + encodeURIComponent(email) +
-      "&sessionId=" + encodeURIComponent(sessionId);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    const res = await fetch(url, {
-      signal: controller.signal
-    });
-
-    clearTimeout(timeout);
-
-    const data = await res.json();
-
-    if(data.status === "VALID"){
-      openApp();
-    }
-    else {
-      localStorage.removeItem("inventorySession_" + BRANCH);
-      document.getElementById("branchScreen").style.display = "none";
-      document.getElementById("loginScreen").style.display = "flex";
-      document.getElementById("app").style.display = "none";
-      resetLoginForm();
-    }
-
-  } catch(error){
-
-    console.log("Session check failed:", error);
-
-    openApp();
-  }
-
 });
 
-  const siInput = document.getElementById("siNo");
+const siInput = document.getElementById("siNo");
 
 siInput.addEventListener("input",function(){
 
@@ -3126,468 +2892,6 @@ btn.style.opacity="1";
 }
 
 });
-
-function showReportDialog() {
-
-    // Clear previous selections
-    document.querySelectorAll(".recipient-card").forEach(card => {
-        card.classList.remove("selected");
-    });
-
-    document.getElementById("reportDialog").style.display = "flex";
-
-}
-
-function closeReportDialog() {
-
-    document.getElementById("reportDialog").style.display = "none";
-
-}
-
-
-// CLICK CARD TO SELECT
-document.querySelectorAll(".recipient-card").forEach(card => {
-
-    card.addEventListener("click", function () {
-
-        this.classList.toggle("selected");
-
-    });
-
-});
-
-
-async function sendSelectedReport() {
-
-    const selectedCards =
-        document.querySelectorAll(".recipient-card.selected");
-
-    if (selectedCards.length === 0) {
-
-        alert("Please select at least one recipient.");
-
-        return;
-
-    }
-
-    const emails = [...selectedCards]
-        .map(card => card.dataset.email)
-        .join(",");
-
-
-    closeReportDialog();
-  document.querySelectorAll(".recipient-card").forEach(card=>{
-    card.classList.remove("selected");
-});
-
-
-    showReportMessage(`
-        <div class="spinner"></div>
-        <div class="saving-text">
-            Sending report...
-        </div>
-    `);
-
-
-    try {
-
-const reportType =
-document.getElementById("reportType").value;
-
-const res = await fetch(
-
-            API_URL +
-            "?action=sendReport" +
-            "&type=" + encodeURIComponent(reportType) +
-            "&emails=" + encodeURIComponent(emails) +
-            getSessionParams()
-
-        );
-
-        const data = await res.json();
-
-        if (data.status === "REPORT SENT") {
-
-            showReportMessage(`
-                ✅ <b>REPORT SENT</b><br><br>
-                📧 Sent to:<br>
-                <small>${emails.replaceAll(",", "<br>")}</small>
-            `);
-
-        } else {
-
-            showReportMessage("❌ " + data.status);
-
-        }
-
-    } catch (err) {
-
-        showReportMessage("❌ SERVER ERROR");
-
-        console.log(err);
-
-    }
-
-}
-
-
-  function showReportMessage(message){
-
-  const result =
-  document.getElementById("result");
-
-
-  result.innerHTML = `
-
-  <div class="card green scan-animate"
-  style="
-  text-align:center;
-  font-size:18px;
-  padding:25px;
-  ">
-
-  ${message}
-
-  </div>
-
-  `;
-
-}
-
-function showClearDialog(){
-    document.getElementById("clearDialog").style.display = "flex";
-}
-
-function closeClearDialog(){
-    document.getElementById("clearDialog").style.display = "none";
-}
-
-async function clearReport(sheet){
-
-    const displayName =
-        sheet === "SCANRESULTS" ? "Sold Out" :
-        sheet === "AUDIT" ? "Re-Inventory" :
-        sheet;
-
-    if(!confirm(
-        "Clear all records from " + displayName + "?\n\nThis cannot be undone."
-    )) return;
-
-   if (sheet === "SCANRESULTS") {
-
-        const password = prompt(
-            "Enter administrator password to clear the Sold Out report:"
-        );
-
-        if (password === null) return;
-
-        if (password !== "12345") {
-            alert("❌ Incorrect password.");
-            return;
-        }
-    }
-  
-
-    closeClearDialog();
-
-    document.getElementById("result").innerHTML = `
-    <div class="card saving">
-        <div class="spinner"></div>
-        Clearing report...
-    </div>`;
-
-    try{
-
-        const res = await fetch(
-            API_URL +
-            "?action=clearReport" +
-            "&sheet=" + encodeURIComponent(sheet) +
-            getSessionParams()
-        );
-
-        const data = await res.json();
-
-        if(data.status=="OK"){
-
-            document.getElementById("result").innerHTML = `
-            <div class="card green">
-                ✅ REPORT CLEARED
-            </div>`;
-
-        }else{
-
-            document.getElementById("result").innerHTML = `
-            <div class="card red">
-                ❌ ${data.status}
-            </div>`;
-
-        }
-
-    }catch(err){
-
-        document.getElementById("result").innerHTML = `
-        <div class="card red">
-            ❌ SERVER ERROR
-        </div>`;
-
-    }
-}
-
-
-
-  
- async function uploadStockFile(file){
-
-    if(!file){
-        alert("❌ No file selected");
-        return;
-    }
-
-
-    if(!checkStockAccess()){
-
-        alert("❌ NO ACCESS");
-        return;
-
-    }
-
-
-    // Check file type
-    const allowed = [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel"
-    ];
-
-    if(!allowed.includes(file.type)){
-
-        alert("❌ Please upload Excel file only");
-
-        return;
-
-    }
-
-
-    // Optional size check
-    if(file.size > 10 * 1024 * 1024){
-
-        alert(
-          "❌ File too large\n\nMaximum 10MB"
-        );
-
-        return;
-
-    }
-
-
-    const reader = new FileReader();
-
-
-    reader.onload = async function(e){
-
-        try {
-
-
-            // REMOVE DATA URL HEADER
-            const base64 =
-            e.target.result.split(",")[1];
-
-
-            const params =
-            new URLSearchParams();
-
-
-            params.append(
-                "action",
-                "uploadStock"
-            );
-
-
-            
-            params.append(
-                "branch",
-                BRANCH
-            );
-
-            params.append(
-                "file",
-                base64
-            );
-
-
-            params.append(
-                "fileName",
-                file.name
-            );
-
-
-            const session =
-            JSON.parse(
-            localStorage.getItem(
-                "inventorySession_"+BRANCH
-            ) || "{}"
-            );
-
-          console.log("SESSION OBJECT:", session);
-console.log("EMAIL:", session.email);
-console.log("SESSION ID:", session.sessionId);
-console.log("LOCAL STORAGE KEY:", "inventorySession_" + BRANCH);
-
-
-            params.append(
-                "email",
-                session.email || ""
-            );
-
-
-            params.append(
-                "sessionId",
-                session.sessionId || ""
-            );
-
-
-            document.getElementById("result").innerHTML = `
-
-            <div class="card saving">
-
-            <div class="spinner"></div>
-
-            Uploading stock file...
-
-            </div>
-
-            `;
-
-
-
-            const res = await fetch(
-                API_URL,
-                {
-                    method:"POST",
-
-                    headers:{
-                        "Content-Type":
-                        "application/x-www-form-urlencoded;charset=UTF-8"
-                    },
-
-                    body:params.toString()
-
-                }
-            );
-
-
-
-         const text = await res.text();
-
-console.log("RAW SERVER RESPONSE:");
-console.log(text);
-
-let data;
-
-try{
-    data = JSON.parse(text);
-}catch(e){
-    document.getElementById("result").innerHTML = `
-        <div class="card red">
-            ❌ SERVER DID NOT RETURN JSON
-            <br><br>
-            <pre style="white-space:pre-wrap;font-size:12px;">${text}</pre>
-        </div>
-    `;
-    return;
-}
-
-console.log("UPLOAD RESPONSE:", data);
-
-
-
-           if(data.status === "OK"){
-
-
-    document.getElementById("result").innerHTML = `
-
-    <div class="card green scan-animate">
-
-    ✅ STOCK UPDATED
-
-    <br><br>
-
-    ITEMS:
-    <b>${data.rows}</b>
-
-    </div>
-
-    `;
-
-
-    // reset only the file input
-    document.getElementById("stockFile").value = "";
-
-
-}
-            else{
-
-
-                document.getElementById("result").innerHTML = `
-<div class="card red">
-❌ UPLOAD FAILED
-<br><br>
-<b>Status:</b> ${data.status}<br>
-<b>HTTP:</b> ${data.code || "-"}<br><br>
-<pre style="white-space:pre-wrap;font-size:12px;">
-${data.error || ""}
-</pre>
-</div>
-`;
-
-
-            }
-
-
-
-        }
-        catch(err){
-
-
-            console.error(
-                "UPLOAD ERROR:",
-                err
-            );
-
-
-            document.getElementById("result").innerHTML = `
-
-            <div class="card red">
-
-            ❌ UPLOAD ERROR
-
-            <br><br>
-
-            ${err.message}
-
-            </div>
-
-            `;
-
-
-        }
-
-
-    };
-
-
-    reader.onerror = function(){
-
-        alert(
-          "❌ Cannot read file"
-        );
-
-    };
-
-
-    reader.readAsDataURL(file);
-
-
-}
 
 function askQuitAudit(pending){
 
