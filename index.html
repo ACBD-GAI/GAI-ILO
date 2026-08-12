@@ -1,195 +1,747 @@
+
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-
 <style>
-:root{
-  --bg:#f4f7fb;
-  --surface:rgba(255,255,255,.88);
-  --surface-solid:#fff;
-  --text:#172033;
-  --muted:#6b7280;
-  --primary:#2563eb;
-  --primary-2:#1d4ed8;
-  --accent:#f97316;
-  --success:#16a34a;
-  --danger:#dc2626;
-  --border:rgba(15,23,42,.09);
-  --shadow:0 18px 50px rgba(15,23,42,.10);
-  --radius:18px;
+body {
+  font-family: Arial;
+  margin: 0;
+  background: #eef2f7;
 }
-
-*{box-sizing:border-box}
-html,body{min-height:100%;margin:0}
-body{
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-  color:var(--text);
-  background:
-    radial-gradient(circle at 10% 0%,rgba(37,99,235,.10),transparent 28%),
-    radial-gradient(circle at 90% 10%,rgba(249,115,22,.08),transparent 25%),
-    var(--bg);
-}
-button,input,select{font:inherit}
-button{border:0}
-button:disabled{cursor:not-allowed!important;transform:none!important;opacity:.5!important}
-
+  
 .header{
-  display:flex;justify-content:space-between;align-items:center;
-  gap:14px;padding:12px 18px;
-  background:rgba(255,255,255,.82);
-  color:var(--text);
-  border-bottom:1px solid var(--border);
-  backdrop-filter:blur(18px);
-  position:sticky;top:0;z-index:1000;
-  box-shadow:0 8px 30px rgba(15,23,42,.05);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    padding:10px 15px;
+
+    background:linear-gradient(135deg,#2196f3,#1976d2);
+    color:white;
+
+    position:sticky;
+    top:0;
+    z-index:1000;
 }
-.header-left{display:flex;align-items:center;gap:11px;min-width:0}
+
+.header-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
 .header-left img{
-  width:42px;height:42px;object-fit:contain;background:#fff;
-  border-radius:12px;padding:4px;border:1px solid var(--border);
+    width:40px;
+    height:40px;
+    background:#fff;
+    border-radius:8px;
+    padding:3px;
 }
-.header-left h3{margin:0;font-size:16px;font-weight:800;letter-spacing:.2px}
+
+.header-left h3{
+    margin:0;
+    font-size:18px;
+    font-weight:bold;
+}
+
 .logout-btn{
-  width:auto!important;margin:0!important;padding:9px 14px!important;
-  background:#fff!important;color:var(--danger)!important;
-  border:1px solid rgba(220,38,38,.16)!important;border-radius:12px!important;
-  font-weight:800;box-shadow:none!important;
-}
-.container{width:min(760px,100%);margin:auto;padding:18px 14px 40px}
+    width:auto;
+    margin:0;
+    padding:8px 14px;
 
-#reader,#auditReader{
-  width:100%;max-width:420px;margin:12px auto;
-  border-radius:20px;overflow:hidden;
-  background:#0b1220;box-shadow:var(--shadow);
-}
-#reader video,#auditReader video{width:100%!important;object-fit:cover}
+    background:#fff;
+    color:#1976d2;
 
-input,select{
-  padding:14px 15px;width:100%;display:block;margin:10px auto 0;
-  font-size:16px;color:var(--text);background:#fff;
-  border:1px solid var(--border);border-radius:14px;
-  outline:none;transition:.2s;
-}
-input:focus,select:focus{
-  border-color:rgba(37,99,235,.5);
-  box-shadow:0 0 0 4px rgba(37,99,235,.10);
-}
-.si-input{width:100%;max-width:520px;text-align:center}
-button{
-  padding:13px 15px;width:100%;margin-top:10px;
-  border-radius:14px;font-weight:800;cursor:pointer;
-  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
-  box-shadow:0 8px 20px rgba(15,23,42,.08);
-}
-button:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(15,23,42,.12)}
-button:active{transform:translateY(0) scale(.99)}
-.btn-blue{
-  background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;
-}
-.btn-orange{
-  background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff;
-}
-.card,.no-results,.saving{
-  padding:18px;border-radius:var(--radius);margin-top:13px;
-  background:var(--surface-solid);border:1px solid var(--border);
-  box-shadow:0 12px 35px rgba(15,23,42,.07);
-}
-.green{border-left:5px solid var(--success)}
-.red{border-left:5px solid var(--danger)}
-.saving{
-  border-left:5px solid var(--primary);
-  text-align:center;padding:26px;
-  background:linear-gradient(135deg,#eff6ff,#fff);
-  color:var(--primary-2);font-weight:800;
-}
-.no-results{text-align:center;color:var(--muted);font-weight:800}
-.spinner{
-  width:36px;height:36px;margin:0 auto 11px;
-  border:4px solid #dbeafe;border-top-color:var(--primary);
-  border-radius:50%;animation:spin .8s linear infinite;
-}
-.saving-text{font-size:16px;letter-spacing:.2px}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@keyframes popIn{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
-.scan-animate{animation:popIn .28s ease-out,fadeIn .28s ease-out}
-.button-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.button-grid button{width:100%}
+    border:none;
+    border-radius:10px;
 
-#loginScreen,#branchScreen{
-  position:fixed!important;inset:0;
-  padding:22px!important;
+    font-weight:bold;
+    cursor:pointer;
+
+    box-shadow:none;
+}
+/* CONTAINER */
+.container {
+  padding: 15px;
+}
+
+/* SCANNER */
+#reader {
+  width: 100%;
+  max-width: 360px;
+  margin: auto;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+/* INPUT */
+input {
+  padding: 14px;
+  width: 50%;
+  display: block;
+  margin: 12px auto 0 auto;
+
+  font-size: 16px;
+  text-align: center;
+
+  border-radius: 12px;
+  border: none;
+
+  box-sizing: border-box;
+}
+
+/* BUTTONS */
+button {
+  padding: 14px;
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  border-radius: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.18);
+}
+
+button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-blue {
+  background: linear-gradient(135deg, #2196f3, #1976d2);
+  color: white;
+}
+
+.btn-orange {
+  background: linear-gradient(135deg, #ff7043, #ff5722);
+  color: white;
+}
+
+/* CARD */
+.card {
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 12px;
+  background: white;
+}
+  
+
+.green {
+  border-left: 6px solid #2ecc71;
+}
+
+.red {
+  border-left: 6px solid #e74c3c;
+}
+  /* SAVING CARD */
+.saving {
+  border-left: 6px solid #2196f3;
+  text-align: center;
+  padding: 25px;
+  background: linear-gradient(135deg, #e3f2fd, #ffffff);
+  color: #1976d2;
+  font-weight: bold;
+}
+
+/* SPINNER */
+.spinner {
+  width: 35px;
+  height: 35px;
+  margin: 0 auto 10px;
+  border: 4px solid #cfe8ff;
+  border-top: 4px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* TEXT STYLE */
+.saving-text {
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+/* ANIMATION */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+  .no-results {
+  text-align: center;
+  margin-top: 20px;
+  padding: 20px;
+  font-weight: bold;
+  color: #666;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* optional smooth appearance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+  /* SCAN SUCCESS ANIMATION CARD */
+.scan-animate {
+  animation: popIn 0.35s ease-out, glow 1s ease-in-out;
+  transform-origin: center;
+}
+
+/* POP IN EFFECT */
+@keyframes popIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* GLOW EFFECT */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0 rgba(46, 204, 113, 0);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(46, 204, 113, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+
+  /* ================= LOGIN DESIGN ================= */
+
+  
+
+#loginScreen {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+   position:fixed;
+  overflow:hidden;
+}
+
+
+/* LOGIN CARD */
+#loginScreen::before {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 420px;
+  background: white;
+  border-radius: 25px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  z-index: 0;
+}
+#loginScreen > * {
+  position: relative;
+  z-index: 1;
+}
+  
+
+
+/* TITLE */
+#loginScreen h2 {
+  color: #1976d2;
+  margin-bottom: 25px;
+  font-size: 26px;
+}
+
+
+/* LOGIN INPUTS */
+#loginScreen input {
+  width: 280px;
+  max-width: 80%;
+  padding: 15px;
+  margin-top: 12px;
+
+  border-radius: 14px;
+  border: 1px solid #ddd;
+
+  background: #f8fbff;
+
+  text-align: center;
+  font-size: 16px;
+
+  outline: none;
+  transition: 0.3s;
+}
+
+
+#loginScreen input:focus {
+
+  border-color:#2196f3;
+
+  box-shadow:
+  0 0 0 3px rgba(33,150,243,0.2);
+
+}
+
+
+/* LOGIN BUTTONS */
+#loginScreen button {
+
+  width:280px;
+  max-width:80%;
+
+  padding:15px;
+
+  margin-top:15px;
+
+  border-radius:15px;
+
+  font-size:16px;
+
   background:
-    radial-gradient(circle at 15% 10%,rgba(37,99,235,.20),transparent 30%),
-    radial-gradient(circle at 90% 85%,rgba(249,115,22,.14),transparent 28%),
-    linear-gradient(135deg,#eff6ff,#f8fafc)!important;
-  overflow:auto;z-index:9999;
+  linear-gradient(135deg,#2196f3,#1565c0);
+
+  color:white;
+
+  box-shadow:
+  0 8px 18px rgba(25,118,210,0.35);
+
 }
-#loginScreen{display:none;align-items:center;justify-content:center;flex-direction:column}
-#loginScreen::before,#branchScreen::before{
-  content:"";position:absolute;width:430px;height:430px;border-radius:50%;
-  background:rgba(255,255,255,.42);filter:blur(4px);z-index:0;
+
+
+/* BUTTON HOVER */
+#loginScreen button:hover {
+
+  transform:translateY(-3px);
+
+  box-shadow:
+  0 12px 25px rgba(25,118,210,0.45);
+
 }
-#loginScreen>* ,#branchScreen>*{position:relative;z-index:1}
-#loginScreen h2,.branch-card h2{
-  color:var(--primary-2);margin:0 0 18px;font-size:27px;font-weight:900;
+
+
+/* STATUS MESSAGE */
+#loginStatus {
+
+  margin-top:15px;
+
+  font-weight:bold;
+
+  color:#555;
+
 }
-#loginScreen input{width:min(360px,92vw);background:rgba(255,255,255,.9)}
-#loginScreen button{width:min(360px,92vw)}
-#loginStatus{width:min(360px,92vw);text-align:center;margin-top:14px;font-weight:700}
-.login-warning{
-  margin-top:14px;padding:13px 15px;background:#fff7ed;color:#9a3412;
-  border:1px solid #fed7aa;border-left:5px solid var(--accent);
-  border-radius:14px;font-weight:800;text-align:center;
+
+  /* ALREADY LOGGED IN WARNING */
+
+.login-warning {
+  margin-top:15px;
+  padding:12px 18px;
+
+  background:linear-gradient(135deg,#fff3cd,#ffe082);
+
+  color:#8a5a00;
+
+  border-left:5px solid #ff9800;
+
+  border-radius:12px;
+
+  font-weight:bold;
+  font-size:15px;
+
+  text-align:center;
+
+  box-shadow:0 5px 15px rgba(255,152,0,0.25);
+
+  animation:warningPop 0.3s ease;
 }
-.selected-branch-label{
-  width:min(360px,92vw);padding:11px 14px;margin:0 auto 4px;
-  border-radius:12px;background:#dbeafe;color:#1d4ed8;text-align:center;font-weight:900;
+
+
+@keyframes warningPop {
+
+  from {
+    opacity:0;
+    transform:translateY(-10px);
+  }
+
+  to {
+    opacity:1;
+    transform:translateY(0);
+  }
+
 }
-.change-branch-btn{
-  width:auto!important;padding:8px 12px!important;margin:0 0 0 8px!important;
-  background:rgba(37,99,235,.10)!important;color:var(--primary-2)!important;
-  box-shadow:none!important;font-size:12px!important;
-}
-#loginScreen .change-branch-btn{background:#fff!important}
-.branch-card{
-  width:min(440px,94vw);background:rgba(255,255,255,.90);
-  border:1px solid var(--border);border-radius:24px;padding:28px;
-  box-shadow:var(--shadow);text-align:center;backdrop-filter:blur(15px);
-}
-.branch-card p{margin:0 0 18px;color:var(--muted)}
-.branch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;width:100%}
-.branch-option{margin:0;padding:13px;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff}
+
+  /* ================= REPORT DIALOG ================= */
 
 .report-overlay{
-  position:fixed;inset:0;display:none;justify-content:center;align-items:center;
-  padding:18px;z-index:99999;
-  background:rgba(15,23,42,.56);backdrop-filter:blur(12px);
+
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+
+display:none;
+justify-content:center;
+align-items:center;
+
+
+
+z-index:99999;
+
+animation:fadeReport .25s;
 }
+
+@keyframes fadeReport{
+
+from{
+opacity:0;
+}
+
+to{
+opacity:1;
+}
+
+}
+
 .report-modal{
-  width:min(430px,100%);max-height:88vh;overflow-y:auto;
-  background:#fff;border:1px solid var(--border);border-radius:22px;padding:20px;
-  box-shadow:0 30px 80px rgba(15,23,42,.25);
-  animation:popIn .22s ease-out;
-}
-.report-title{font-size:20px;font-weight:900;color:var(--primary-2);text-align:center}
-.report-subtitle{margin:8px 0 18px;text-align:center;color:var(--muted)}
-.cancel-report-btn{background:#f1f5f9;color:#475569;margin-top:10px}
-#auditCounter{text-align:center;font-weight:900;margin:10px;font-size:16px;color:var(--primary-2)}
 
-@media(max-width:560px){
-  .header{padding:10px 12px}
-  .header-left h3{font-size:14px}
-  .change-branch-btn{display:none}
-  .button-grid{grid-template-columns:1fr}
-  .container{padding:13px 10px 30px}
-  .branch-card{padding:22px 16px}
+width:320px;
+max-width:90%;
+
+max-height:85vh;
+overflow-y:auto;
+
+background:#fff;
+
+border-radius:18px;
+
+padding:18px;
+
+box-shadow:0 20px 45px rgba(0,0,0,.25);
+
+animation:popReport .25s;
+
 }
+
+@keyframes popReport{
+
+from{
+
+transform:scale(.85);
+opacity:0;
+
+}
+
+to{
+
+transform:scale(1);
+opacity:1;
+
+}
+
+}
+
+.report-title{
+
+font-size:20px;
+font-weight:bold;
+color:#1976d2;
+
+text-align:center;
+
+}
+
+.report-subtitle{
+
+margin-top:8px;
+margin-bottom:22px;
+
+text-align:center;
+color:#777;
+
+}
+
+.recipient-card{
+
+display:flex;
+align-items:center;
+
+padding:10px 12px;
+
+margin-bottom:8px;
+
+border:1.5px solid #e5e5e5;
+
+border-radius:14px;
+
+cursor:pointer;
+
+transition:.25s;
+
+position:relative;
+
+}
+
+
+.recipient-icon{
+
+width:38px;
+height:38px;
+
+border-radius:50%;
+
+background:#2196f3;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-size:18px;
+
+color:#fff;
+
+margin-right:10px;
+
+flex-shrink:0;
+
+}
+
+
+.recipient-name{
+
+font-weight:bold;
+font-size:14px;
+
+}
+
+
+.recipient-email{
+
+font-size:11px;
+
+color:#777;
+
+margin-top:2px;
+
+}
+
+
+.checkmark{
+
+margin-left:auto;
+
+font-size:18px;
+
+color:#2196f3;
+
+opacity:0;
+
+transform:scale(.5);
+
+transition:.25s;
+
+}
+  .checkmark{
+
+margin-left:auto;
+
+font-size:22px;
+
+color:#2196f3;
+
+opacity:0;
+
+transform:scale(.5);
+
+transition:.25s;
+
+}
+
+.recipient-card.selected .checkmark{
+
+opacity:1;
+
+transform:scale(1);
+
+}
+
+.send-report-btn{
+
+margin-top:10px;
+
+background:linear-gradient(135deg,#2196f3,#1565c0);
+
+color:#fff;
+
+font-size:17px;
+
+}
+
+.cancel-report-btn{
+
+background:#f2f2f2;
+
+color:#555;
+
+margin-top:10px;
+
+}
+  .report-overlay{
+    background:
+    linear-gradient(
+      135deg,
+      rgba(25,118,210,.35),
+      rgba(0,0,0,.55)
+    );
+
+    backdrop-filter: blur(10px);
+}
+
+  .button-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.button-grid button{
+  width:100%;
+}
+
+  .si-input {
+  width:50%;
+  display:block;
+  margin:12px auto 0 auto;
+
+  text-align:center;
+  padding:14px;
+
+  font-size:16px;
+
+  border-radius:12px;
+  border:none;
+
+  box-sizing:border-box;
+}
+  
+
+/* ================= BRANCH SELECTOR ================= */
+#branchScreen{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg,#e3f2fd,#bbdefb);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+.branch-card{
+  width:340px;
+  max-width:90vw;
+  background:#fff;
+  border-radius:25px;
+  padding:28px 24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.18);
+  text-align:center;
+}
+
+.branch-card h2{
+  margin:0 0 8px;
+  color:#1976d2;
+  font-size:26px;
+}
+
+.branch-card p{
+  margin:0 0 20px;
+  color:#666;
+}
+
+.branch-option{
+  width:100%;
+  margin-top:10px;
+  padding:15px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#2196f3,#1565c0);
+  color:#fff;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 7px 16px rgba(25,118,210,.25);
+  transition:.2s;
+}
+
+.branch-option:hover{
+  transform:translateY(-2px);
+}
+
+.branch-option small{
+  display:block;
+  margin-top:3px;
+  opacity:.9;
+  font-weight:normal;
+}
+
+.branch-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  width:340px;
+  max-width:90vw;
+  margin:0 auto;
+}
+
+.branch-grid .branch-option{
+  margin-top:0;
+  padding:13px 8px;
+}
+
+.selected-branch-label{
+  width:280px;
+  max-width:80%;
+  padding:11px 14px;
+  margin:0 auto 5px;
+  box-sizing:border-box;
+  border-radius:12px;
+  background:#e3f2fd;
+  color:#1565c0;
+  text-align:center;
+  font-weight:bold;
+}
+
+.change-branch-btn{
+  width:auto !important;
+  padding:8px 12px !important;
+  margin:0 0 0 8px !important;
+  background:rgba(255,255,255,.18) !important;
+  color:#fff !important;
+  box-shadow:none !important;
+  font-size:12px !important;
+}
+
+#branchTitle{
+  text-transform:uppercase;
+}
+
 </style>
-
 </head>
+
 <body>
 
 
@@ -348,6 +900,35 @@ onclick="refreshPage()">
 ♻ REFRESH
 </button>
 
+<button
+id="reportBtn"
+class="btn-blue"
+onclick="showReportDialog()"
+style="display:none;">
+📧 SEND REPORT
+</button>
+     <button
+id="updateStockBtn"
+class="btn-orange"
+onclick="document.getElementById('stockFile').click()"
+style="display:none;">
+📤 UPDATE STOCKS
+</button>
+
+     <button
+id="clearBtn"
+class="btn-orange"
+onclick="showClearDialog()"
+style="display:none;">
+🗑 CLEAR REPORT
+</button>
+
+<input
+type="file"
+id="stockFile"
+accept=".xlsx,.xls"
+style="display:none"
+onchange="uploadStockFile(this.files[0])">
 
 </div>
 
@@ -358,7 +939,128 @@ onclick="refreshPage()">
    
 
   </div>
+<div id="reportDialog" class="report-overlay">
 
+    <div class="report-modal">
+
+        <div class="report-title">
+            📧 Send Inventory Report
+        </div>
+
+     <select id="reportType" 
+style="
+width:100%;
+padding:14px;
+border-radius:12px;
+border:1px solid #ddd;
+font-size:16px;
+font-weight:bold;
+margin-bottom:20px;
+">
+
+<option value="sales">
+📊 Sales Report
+</option>
+
+<option value="reinventory">
+📦 Re-Inventory Report
+</option>
+
+</select>
+<div class="report-subtitle">
+    Choose recipient(s)
+</div>
+
+        <div class="recipient-card" data-email="remnvill@gmail.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Remn Vill
+                </div>
+
+                <div class="recipient-email">
+                    remnvill@gmail.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+
+        <div class="recipient-card" data-email="willremn@gmail.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Will Remn
+                </div>
+
+                <div class="recipient-email">
+                    willremn@gmail.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+
+        <div class="recipient-card" data-email="mmlorijo1990@gmail.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Mary May
+                </div>
+
+                <div class="recipient-email">
+                    mmlorijo1990@gmail.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+
+         <div class="recipient-card" data-email="fmfc_audit654@yahoo.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    AUDIT
+                </div>
+
+                <div class="recipient-email">
+                    fmfc_audit654@yahoo.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+        </div>
+         <div class="recipient-card" data-email="fmfc_ho2016@yahoo.com">
+            <div class="recipient-icon">👤</div>
+
+            <div class="recipient-info">
+                <div class="recipient-name">
+                    Ma'am Che
+                </div>
+
+                <div class="recipient-email">
+                    fmfc_ho2016@yahoo.com
+                </div>
+            </div>
+
+            <div class="checkmark">✓</div>
+            </div>
+       
+
+        <button class="send-report-btn" onclick="sendSelectedReport()">
+            📧 SEND REPORT
+        </button>
+
+        <button class="cancel-report-btn" onclick="closeReportDialog()">
+CANCEL
+</button>
+
+</div>
+</div>
 
 
 <div id="tagDialog" class="report-overlay">
@@ -381,7 +1083,7 @@ placeholder="Enter Tag Number"
 
 
 <button 
-class="btn-blue"
+class="send-report-btn"
 onclick="searchTagNumber()">
 SEARCH
 </button>
@@ -434,204 +1136,181 @@ CONTINUE SCANNING
 </div>
 
 </div>
+
+<div id="clearDialog" class="report-overlay">
+
+<div class="report-modal">
+
+<div class="report-title">
+🗑 CLEAR REPORT
+</div>
+
+<div class="report-subtitle">
+Choose what to clear
+</div>
+
+<button
+class="btn-orange"
+onclick="clearReport('SCANRESULTS')">
+🗑 CLEAR SOLD-OUT REPORT
+</button>
+
+<button
+class="btn-orange"
+onclick="clearReport('AUDIT')"
+style="margin-top:10px;">
+🗑 CLEAR AUDITED REPORT
+</button>
+
+<button
+class="cancel-report-btn"
+onclick="closeClearDialog()">
+CANCEL
+</button>
+
+</div>
+
+</div>
+
+  
+
+
+  
 <script>
-/* =========================================================
-   INVENTORY SCANNER — SUPABASE DIRECT DATA LAYER
-   LOGIN ONLY = GOOGLE APPS SCRIPT
-========================================================= */
-
-const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4NzYxNzEsImV4cCI6MjEwMDQ1MjE3MX0.PFAW_RDcYwhNpeBic3CnrNBD2ndKqSi-8wbeH8AbXvM";
 
 
-const LOGIN_API_URL =
-  "https://script.google.com/macros/s/AKfycbykMp_30NRV0JUqbyRlcq8s0bkkdDRBZKeRBCmBmGIqswm9xnOyEImeEVfjVYerXYjP/exec";
-
-const BRANCH_NAMES = {
-  GAI:"GAI BRANCH", CAS:"CAS BRANCH", BAC:"BAC BRANCH", BIN:"BIN BRANCH",
-  BIS:"BIS BRANCH", CAD:"CAD BRANCH", DGT:"DGT BRANCH", KAB:"KAB BRANCH",
-  KAL:"KAL BRANCH", PAS:"PAS BRANCH", POT:"POT BRANCH", SAN:"SAN BRANCH",
-  TAB:"TAB BRANCH", TAN:"TAN BRANCH", TIS:"TIS BRANCH", TOL:"TOL BRANCH"
-};
-
-const BRANCH_CONFIG = {
-  GAI:{prefix:"gai"}, CAS:{prefix:"cas"}, BAC:{prefix:"bac"}, BIN:{prefix:"bin"},
-  BIS:{prefix:"bis"}, CAD:{prefix:"cad"}, DGT:{prefix:"dgt"}, KAB:{prefix:"kab"},
-  KAL:{prefix:"kal"}, PAS:{prefix:"pas"}, POT:{prefix:"pot"}, SAN:{prefix:"san"},
-  TAB:{prefix:"tab"}, TAN:{prefix:"tan"}, TIS:{prefix:"tis"}, TOL:{prefix:"tol"}
-};
-
+let auditBusy = false;
+let auditCount = 0;
 
 let BRANCH = localStorage.getItem("inventorySelectedBranch") || "";
+
+const BRANCH_NAMES = {
+  GAI: "GAI BRANCH",
+  CAS: "CAS BRANCH",
+  BAC: "BAC BRANCH",
+  BIN: "BIN BRANCH",
+  BIS: "BIS BRANCH",
+  CAD: "CAD BRANCH",
+  DGT: "DGT BRANCH",
+  KAB: "KAB BRANCH",
+  KAL: "KAL BRANCH",
+  PAS: "PAS BRANCH",
+  POT: "POT BRANCH",
+  SAN: "SAN BRANCH",
+  TAB: "TAB BRANCH",
+  TAN: "TAN BRANCH",
+  TIS: "TIS BRANCH",
+  TOL: "TOL BRANCH"
+};
+let auditMode = false;
 let scanner = null;
-let auditScanner = null;
 let isScanning = false;
-let auditScanning = false;
 let isSaving = false;
-let auditCount = 0;
+
+let lastAuditBarcode = "";
 let tempCode = "";
 let tempSi = "";
+
+/* ===== NEW FOR CONTINUOUS RE-INVENTORY ===== */
 let auditQueue = [];
 let auditProcessing = false;
 let auditRecent = new Map();
-let quitAuditResolve = null;
-let audioCtx = null;
+/* =========================================== */
 
-/* ================= SUPABASE REST ================= */
+const STOCK_ADMIN = [
+  "remnvill@gmail.com",
+  "fmfc_audit654@yahoo.com"
+];
 
-function sbHeaders(extra={}){
-  if(!SUPABASE_URL || !SUPABASE_ANON_KEY ||
-     SUPABASE_ANON_KEY === "PASTE_YOUR_SUPABASE_ANON_KEY_HERE"){
-    throw new Error("Add your Supabase ANON/PUBLISHABLE key in SUPABASE_ANON_KEY.");
-  }
-  return {
-    apikey: SUPABASE_ANON_KEY,
-    Authorization: "Bearer " + SUPABASE_ANON_KEY,
-    ...extra
-  };
+
+const API_URL = "https://script.google.com/macros/s/AKfycbxvItqq57F7LG4sK-DWQzcxx3I0jEpQpRqX17bQMEr2d5nnBXkJyP1yswYuO2JgDs6V/exec";
+
+function getSessionParams(){
+
+const session =
+JSON.parse(
+localStorage.getItem("inventorySession_"+BRANCH)
+|| "{}"
+);
+
+
+return (
+"&branch=" + encodeURIComponent(BRANCH) +
+"&email=" + encodeURIComponent(session.email || "") +
+"&sessionId=" + encodeURIComponent(session.sessionId || "")
+);
+
 }
+function checkReportAccess(){
 
-async function sbFetch(table, query="", options={}){
-  const url = SUPABASE_URL + "/rest/v1/" + table + query;
-  const res = await fetch(url,{
-    ...options,
-    headers:sbHeaders({
-      ...(options.headers || {}),
-      "Content-Type":"application/json"
-    })
-  });
-
-  const text = await res.text();
-  let data = null;
-  try{ data = text ? JSON.parse(text) : null; }catch(e){ data = text; }
-
-  if(!res.ok){
-    const message =
-      typeof data === "object" && data?.message ? data.message :
-      typeof data === "object" && data?.error ? data.error :
-      text || ("Supabase HTTP " + res.status);
-    const err = new Error(message);
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-  return data;
-}
-
-function table(branch,type){
-  branch = String(branch || "").trim().toUpperCase();
-  if(!BRANCH_CONFIG[branch]) throw new Error("Invalid branch.");
-  return BRANCH_CONFIG[branch].prefix + "_" + type.toLowerCase();
-}
-
-function normalizeBarcode(value){
-  return String(value || "").trim().replace(/\s+/g,"").toUpperCase();
-}
-
-function getBranchFromBarcode(barcode){
-  const parts = normalizeBarcode(barcode).split("-");
-  return parts.length >= 2 ? parts[0] : "";
-}
-
-function validateBarcodeBranch(barcode,branch){
-  return getBranchFromBarcode(barcode) === String(branch).trim().toUpperCase();
-}
-
-function formatLens(value){
-  if(value === null || value === undefined) return "";
-  let str = String(value).trim();
-  if(str.includes("#ERROR") || str.includes("#VALUE")) return "0.00";
-  const hadPlus = str.startsWith("+");
-  str = str.replace(/^\++/,"");
-  if(str !== "" && !str.includes("/") && !isNaN(str)){
-    const n = Number(str);
-    return hadPlus ? "+" + n.toFixed(2) : n.toFixed(2);
-  }
-  return hadPlus ? "+" + str : str;
-}
-
-function manilaNow(){
-  return new Intl.DateTimeFormat("en-US",{
-    timeZone:"Asia/Manila",
-    month:"2-digit",day:"2-digit",year:"numeric",
-    hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true
-  }).format(new Date());
-}
-
-async function getStockByBarcode(barcode,branch=BRANCH){
-  barcode = normalizeBarcode(barcode);
-  const parts = barcode.split("-");
-  if(parts.length < 2) return null;
-  const br = parts[0];
-  const ntagn = parts.slice(1).join("-");
-  const q =
-    "?BR=eq." + encodeURIComponent(br) +
-    "&NTAGN=eq." + encodeURIComponent(ntagn) +
-    "&select=*&limit=1";
-  const rows = await sbFetch(table(branch,"stocks"),q);
-  return rows?.[0] || null;
-}
-
-async function isAlreadySold(barcode,branch=BRANCH){
-  barcode = normalizeBarcode(barcode);
-  const parts = barcode.split("-");
-  if(parts.length < 2) return null;
-  const br = parts[0];
-  const ntagn = parts.slice(1).join("-");
-  const q =
-    "?BR=eq." + encodeURIComponent(br) +
-    "&NTAGN=eq." + encodeURIComponent(ntagn) +
-    "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1";
-  const rows = await sbFetch(table(branch,"scanresults"),q);
-  return rows?.[0] || null;
-}
-
-async function checkTagDirect(tag,branch=BRANCH){
-  tag = String(tag || "").trim().toUpperCase();
-  const q =
-    "?BR=eq." + encodeURIComponent(branch) +
-    "&NTAGN=eq." + encodeURIComponent(tag) +
-    "&select=*&limit=1";
-  const rows = await sbFetch(table(branch,"stocks"),q);
-  if(!rows?.length) return {status:"NOT_FOUND"};
-  const stock = rows[0];
-  const barcode = normalizeBarcode(stock.BR + "-" + stock.NTAGN);
-  const sold = await isAlreadySold(barcode,branch);
-  if(sold){
-    return {
-      status:"DUPLICATE",barcode,
-      colJ:String(stock.LENSTYPE || ""),
-      colM:String(stock.NTAGN || ""),
-      colO:formatLens(stock.DESCRIPTION || "")
-    };
-  }
-  return {
-    status:"FOUND",barcode,
-    colJ:String(stock.LENSTYPE || ""),
-    colM:String(stock.NTAGN || ""),
-    colO:formatLens(stock.DESCRIPTION || "")
-  };
-}
-
-/* ================= ACCESS/UI ================= */
-
-function getSession(){
-  return JSON.parse(
+  const session = JSON.parse(
     localStorage.getItem("inventorySession_" + BRANCH) || "{}"
   );
+
+  const email = (session.email || "").trim().toLowerCase();
+
+  const reportBtn = document.getElementById("reportBtn");
+  const updateBtn = document.getElementById("updateStockBtn");
+
+  const REPORT_USERS = [
+    "remnvill@gmail.com",
+    "willremn@gmail.com",
+    "fmfc_audit654@yahoo.com",
+    "fmfc_ho2016@yahoo.com",
+    "mmlorijo1990@gmail.com"
+  ];
+
+  if(reportBtn){
+    reportBtn.style.display =
+      REPORT_USERS.includes(email) ? "block" : "none";
+  }
+
+const clearBtn = document.getElementById("clearBtn");
+
+if(clearBtn){
+    clearBtn.style.display =
+        STOCK_ADMIN.includes(email) ? "block" : "none";
+}
+  
+
+  if(updateBtn){
+    updateBtn.style.display =
+      STOCK_ADMIN.includes(email) ? "block" : "none";
+  }
+
 }
 
-function emailOf(){
-  return String(getSession().email || "").trim().toLowerCase();
-}
+function checkStockAccess(){
 
+  const session = JSON.parse(
+    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+  );
+
+  const email = (session.email || "").trim().toLowerCase();
+
+  return STOCK_ADMIN.includes(email);
+
+}
+  
+  
+
+
+/* ================= BRANCH SELECTION ================= */
 
 function updateBranchUI(){
   if(!BRANCH || !BRANCH_NAMES[BRANCH]) return;
+
   const label = document.getElementById("loginBranchLabel");
   const title = document.getElementById("branchTitle");
-  if(label) label.textContent = BRANCH + " — " + BRANCH_NAMES[BRANCH];
-  if(title) title.textContent = BRANCH_NAMES[BRANCH];
+
+  if(label){
+    label.textContent = BRANCH + " — " + BRANCH_NAMES[BRANCH];
+  }
+
+  if(title){
+    title.textContent = BRANCH_NAMES[BRANCH];
+  }
+
   document.title = "Inventory - " + BRANCH_NAMES[BRANCH];
 }
 
@@ -639,745 +1318,2280 @@ function resetLoginForm(){
   const otp = document.getElementById("otp");
   const verify = document.getElementById("verifyBtn");
   const status = document.getElementById("loginStatus");
+
+  if(otp){
+    otp.value = "";
+    otp.style.display = "none";
+  }
+
+  if(verify) verify.style.display = "none";
+  if(status) status.innerHTML = "";
+
   const email = document.getElementById("email");
-  if(otp){ otp.value=""; otp.style.display="none"; }
-  if(verify) verify.style.display="none";
-  if(status) status.innerHTML="";
   if(email) email.focus();
 }
 
 async function selectBranch(branch){
   branch = String(branch || "").trim().toUpperCase();
-  if(!BRANCH_NAMES[branch]) return alert("Invalid branch.");
+
+  if(!BRANCH_NAMES[branch]){
+    alert("Invalid branch.");
+    return;
+  }
+
   BRANCH = branch;
-  localStorage.setItem("inventorySelectedBranch",BRANCH);
+  localStorage.setItem("inventorySelectedBranch", BRANCH);
+
   updateBranchUI();
 
-  document.getElementById("branchScreen").style.display="none";
-  document.getElementById("app").style.display="none";
-  document.getElementById("loginScreen").style.display="flex";
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+
   resetLoginForm();
 
-  const session = getSession();
-  if(!session.email || !session.sessionId) return;
+  const session = JSON.parse(
+    localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+  );
+
+  if(!session.email || !session.sessionId){
+    return;
+  }
 
   try{
-    const data = await loginApi("checkSession",{
-      branch:BRANCH,email:session.email,sessionId:session.sessionId
-    });
-    if(data.status === "VALID") openApp();
-    else localStorage.removeItem("inventorySession_" + BRANCH);
-  }catch(e){
-    /* Do not silently bypass session validation. */
-    forceLogout("Unable to verify session. Please log in again.");
+    const url =
+      API_URL +
+      "?action=checkSession" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(session.email) +
+      "&sessionId=" + encodeURIComponent(session.sessionId);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(data.status === "VALID"){
+      openApp();
+    }else{
+      localStorage.removeItem("inventorySession_" + BRANCH);
+    }
+  }catch(err){
+    openApp();
   }
 }
 
 function openApp(){
   updateBranchUI();
-  document.getElementById("branchScreen").style.display="none";
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("app").style.display="block";
+
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  checkReportAccess();
 }
 
 async function changeBranch(){
-  await stopNormalScanner();
-  await stopAuditScanner(false);
-  BRANCH="";
+  if(scanner){
+    try{
+      await scanner.stop();
+      await scanner.clear();
+    }catch(e){}
+    scanner = null;
+    isScanning = false;
+  }
+
+  BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
-  document.getElementById("app").style.display="none";
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("branchScreen").style.display="flex";
-  clearUI();
+
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("branchScreen").style.display = "flex";
+
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("searchResult").innerHTML = "";
 }
 
-/* ================= LOGIN — APPS SCRIPT ONLY ================= */
 
-async function loginApi(action,params={}){
-  const qs = new URLSearchParams({action,...params});
-  const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(),15000);
-  try{
-    const res = await fetch(LOGIN_API_URL + "?" + qs.toString(),{
-      signal:controller.signal
-    });
-    const text = await res.text();
-    try{return JSON.parse(text);}
-    catch(e){throw new Error("Login server returned invalid JSON.");}
-  }finally{
-    clearTimeout(timer);
-  }
-}
-
+/* ================= LOGIN ================= */
 async function sendOTP(){
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  if(!email) return alert("Enter Gmail");
-  if(!BRANCH) return alert("Select branch first.");
 
-  const status = document.getElementById("loginStatus");
-  status.innerText = "Sending OTP...";
+try {
 
-  try{
-    const data = await loginApi("sendOTP",{branch:BRANCH,email});
-    if(data.status === "OTP_SENT"){
-      if(data.alreadyLoggedIn){
-        status.innerHTML = `
-          <div class="login-warning">
-            ⚠ Account already logged in.<br><br>
-            <button onclick="forceLogin()" style="background:#f97316;color:#fff;padding:10px 16px;border:0;border-radius:10px;font-weight:800;">
-              FORCE LOGOUT OTHER DEVICE
-            </button>
-          </div>`;
-      }else{
-        status.innerText="✅ OTP sent to Gmail";
-      }
-      document.getElementById("otp").style.display="block";
-      document.getElementById("verifyBtn").style.display="block";
-      document.getElementById("otp").focus();
-    }else if(data.status === "BRANCH_DENIED"){
-      status.innerText="❌ Your account is not allowed for " + BRANCH + ".";
-    }else if(data.status === "EMAIL_DENIED"){
-      status.innerText="❌ Gmail not allowed.";
-    }else{
-      status.innerText="❌ " + (data.status || "Login error.");
-    }
-  }catch(err){
-    forceLogout("❌ Login server unavailable. You have been logged out. Please log in again.");
-  }
+const email = document.getElementById("email").value.trim();
+
+if(!email){
+  alert("Enter Gmail");
+  return;
 }
 
-async function verifyOTP(){
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const otp = document.getElementById("otp").value.trim();
-  if(!email || !otp) return alert("Enter email and OTP.");
+const res = await fetch(
+API_URL +
+"?action=sendOTP" +
+"&branch=" + encodeURIComponent(BRANCH) +
+"&email=" + encodeURIComponent(email)
+);
 
-  try{
-    const data = await loginApi("verifyOTP",{branch:BRANCH,email,otp});
-    if(data.status === "OK"){
-      localStorage.setItem("inventorySession_" + BRANCH,JSON.stringify({
-        email,sessionId:data.sessionId,branch:data.branch || BRANCH,time:Date.now()
-      }));
-      localStorage.setItem("loginTime_" + BRANCH,Date.now());
-      openApp();
-      return;
+// ===== DEBUG SERVER RESPONSE =====
+const text = await res.text();
+
+console.log("SEND OTP RAW RESPONSE:");
+console.log(text);
+
+let data;
+
+try{
+    data = JSON.parse(text);
+}
+catch(e){
+
+    document.getElementById("loginStatus").innerHTML = `
+    <div style="color:red">
+    ❌ SERVER RETURNED HTML
+    <br><br>
+    <pre style="
+        white-space:pre-wrap;
+        font-size:12px;
+        max-height:300px;
+        overflow:auto;
+        background:#f5f5f5;
+        padding:10px;
+        border-radius:8px;
+    ">
+${text.replace(/</g,"&lt;")}
+    </pre>
+    </div>
+    `;
+
+    console.log(text);
+    return;
+}
+// ================================
+
+if (data.status === "OTP_SENT") {
+
+    if (data.alreadyLoggedIn) {
+
+      document.getElementById("loginStatus").innerHTML =
+      `
+      <div class="login-warning">
+      ⚠ Account already logged in.<br><br>
+
+      <button
+      onclick="forceLogin()"
+      style="
+      background:#ff9800;
+      color:white;
+      padding:10px 20px;
+      border:none;
+      border-radius:10px;
+      font-weight:bold;
+      cursor:pointer;
+      ">
+      FORCE LOGOUT OTHER DEVICE
+      </button>
+
+      </div>
+      `;
+
+    } else {
+
+      document.getElementById("loginStatus").innerText =
+      "✅ OTP sent to Gmail";
+
     }
-    if(data.status === "ALREADY_LOGGED_IN"){
-      if(confirm("Already logged in.\nForce logout other device?")) forceLogin();
-      return;
-    }
+
+    const otpBox = document.getElementById("otp");
+
+    otpBox.style.display = "block";
+    document.getElementById("verifyBtn").style.display = "block";
+
+    otpBox.focus();
+    otpBox.select();
+
+}
+else if(data.status === "EMAIL_DENIED"){
+
     document.getElementById("loginStatus").innerText =
-      data.status === "INVALID" ? "❌ Wrong OTP." :
-      data.status === "BRANCH_DENIED" ? "❌ Your account is not allowed for " + BRANCH + "." :
-      data.status === "EMAIL_DENIED" ? "❌ Gmail not allowed." :
-      "❌ Login failed.";
-  }catch(err){
-    forceLogout("Unable to connect to login server. You have been logged out.");
-  }
+    "❌ Gmail not allowed.";
+
+}
+else{
+
+    document.getElementById("loginStatus").innerText =
+    "❌ Login error.";
+
 }
 
-async function forceLogin(){
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const otp = document.getElementById("otp").value.trim();
-  try{
-    const data = await loginApi("forceLogin",{branch:BRANCH,email,otp});
-    if(data.status === "OK"){
-      localStorage.setItem("inventorySession_" + BRANCH,JSON.stringify({
-        email,sessionId:data.sessionId,branch:data.branch || BRANCH,time:Date.now()
-      }));
-      localStorage.setItem("loginTime_" + BRANCH,Date.now());
-      openApp();
-    }else{
-      alert("Force login failed. Please request a new OTP.");
+}
+catch(err){
+
+document.getElementById("loginStatus").innerHTML =
+`
+<div style="color:red">
+❌ ERROR:<br>
+${err}
+</div>
+`;
+
+console.log(err);
+
+}
+
+}
+async function verifyOTP() {
+
+  try {
+
+    const email = document.getElementById("email").value.trim();
+    const otp = document.getElementById("otp").value.trim();
+
+    const res = await fetch(
+  API_URL +
+  "?action=verifyOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
+  "&email=" + encodeURIComponent(email) +
+  "&otp=" + encodeURIComponent(otp)
+);
+
+const text = await res.text();
+
+console.log(text);
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.log(text);
+
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Server returned invalid response.<br>Please try again.";
+
+      return;
     }
-  }catch(e){
-    forceLogout("Unable to connect to login server. You have been logged out.");
+
+    if (data.status === "OK") {
+
+      localStorage.setItem(
+        "inventorySession_" + BRANCH,
+        JSON.stringify({
+          email,
+          sessionId: data.sessionId,
+          time: Date.now()
+        })
+      );
+
+      localStorage.setItem("loginTime_" + BRANCH, Date.now());
+
+      openApp();
+      return;
+    }
+
+    if (data.status === "ALREADY_LOGGED_IN") {
+
+      if (confirm("Already logged in.\nForce logout other device?")) {
+        forceLogin();
+      }
+
+      return;
+    }
+
+    if (data.status === "INVALID") {
+
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Wrong OTP.";
+
+      return;
+    }
+
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Login failed.";
+
+  }
+
+  catch(err){
+
+    console.error(err);
+
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Cannot connect to server.";
+
+  }
+
+}
+
+  async function forceLogin() {
+
+  const email = document.getElementById("email").value;
+  const otp = document.getElementById("otp").value;
+
+  const res = await fetch(
+    API_URL +
+    "?action=forceLogin" +
+    "&branch=" + encodeURIComponent(BRANCH) +
+    "&email=" + encodeURIComponent(email) +
+    "&otp=" + encodeURIComponent(otp)
+  );
+
+  const data = await res.json();
+
+  if (data.status === "OK") {
+
+    localStorage.setItem("inventoryLoggedIn", "true");
+localStorage.setItem(
+"inventorySession_"+BRANCH,
+JSON.stringify({
+email: email,
+sessionId: data.sessionId,
+time: Date.now()
+})
+);
+    
+    localStorage.setItem("loginTime_" + BRANCH, Date.now());
+    
+    
+
+    openApp();
+
+  } else {
+
+    alert("Force login failed. Please request a new OTP.");
+
+  }
+
+}
+
+
+  
+  
+
+
+function setUIScanning(state) {
+  const btn = document.getElementById("scanBtn");
+  const siBox = document.getElementById("siNo");
+  const reader = document.getElementById("reader");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  if (state) {
+    btn.innerHTML = "⛔ STOP SCANNING";
+    siBox.disabled = true;
+    reader.style.display = "block";
+    refreshBtn.disabled = true;
+    refreshBtn.style.opacity = "0.5";
+  } else {
+    btn.innerHTML = "📷 START SCAN";
+    siBox.disabled = false;
+    reader.style.display = "none";
+    refreshBtn.disabled = false;
+    refreshBtn.style.opacity = "1";
   }
 }
 
-function forceLogout(message=""){
-  localStorage.removeItem("inventorySession_" + BRANCH);
-  localStorage.removeItem("loginTime_" + BRANCH);
-  stopNormalScanner();
-  stopAuditScanner(false);
-  document.getElementById("app").style.display="none";
-  document.getElementById("branchScreen").style.display="none";
-  document.getElementById("loginScreen").style.display="flex";
-  resetLoginForm();
-  document.getElementById("loginStatus").innerText =
-    message || "You have been logged out. Please log in again.";
-}
 
-/* ================= NORMAL SCANNER ================= */
 
-function setUIScanning(state){
-  const btn=document.getElementById("scanBtn");
-  const siBox=document.getElementById("siNo");
-  const reader=document.getElementById("reader");
-  const refreshBtn=document.getElementById("refreshBtn");
-  if(state){
-    btn.innerHTML="⛔ STOP SCANNING";
-    siBox.disabled=true; reader.style.display="block";
-    refreshBtn.disabled=true;
-  }else{
-    btn.innerHTML="📷 START SCAN";
-    siBox.disabled=false; reader.style.display="none";
-    refreshBtn.disabled=false;
-  }
-}
+async function toggleScan() {
+  const siNo = document.getElementById("siNo").value;
+  if (!siNo) return alert("Enter SI No");
 
-async function toggleScan(){
-  const siNo=document.getElementById("siNo").value.trim();
-  if(!siNo) return alert("Enter SI No");
-
-  if(isScanning){
-    await stopNormalScanner();
+  if (isScanning) {
+    isScanning = false;
+    setUIScanning(false);
+    if (scanner) {
+      await scanner.stop();
+      await scanner.clear();
+      scanner = null;
+    }
     return;
   }
 
-  await stopAuditScanner(false);
   clearUI();
-  isScanning=true;
+  isScanning = true;
   setUIScanning(true);
 
-  try{
-    const devices=await Html5Qrcode.getCameras();
-    if(!devices.length) throw new Error("No camera detected");
+const devices = await Html5Qrcode.getCameras();
 
-    let cameraId=devices[0].id;
-    for(const d of devices){
-      const label=(d.label||"").toLowerCase();
-      if(label.includes("back") || label.includes("rear")){cameraId=d.id;break;}
-    }
+if(!devices.length){
+  alert("No camera detected");
+  isScanning = false;
+  setUIScanning(false);
+  return;
+}
 
-    scanner=new Html5Qrcode("reader");
-    await scanner.start(
-      {deviceId:{exact:cameraId}},
-      {
-        fps:20,qrbox:{width:300,height:300},aspectRatio:1,
-        videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}
-      },
-      async code=>{
-        if(!isScanning) return;
-        isScanning=false;
-        try{await scanner.stop();await scanner.clear();}catch(e){}
-        scanner=null;setUIScanning(false);
-        beep();vibrate();
-        tempCode=code;tempSi=siNo;
+let cameraId = devices[0].id;
 
-        try{
-          const barcode=normalizeBarcode(code);
-          if(!validateBarcodeBranch(barcode,BRANCH)){
-            showResult(`
-              <div class="card red">
-                ❌ WRONG BRANCH<br><br>
-                Selected: <b>${BRANCH}</b><br>
-                QR Branch: <b>${getBranchFromBarcode(barcode)||"UNKNOWN"}</b>
-              </div>`);
-            return;
-          }
-          const sold=await isAlreadySold(barcode,BRANCH);
-          if(sold){
-            showResult(`
-              <div class="card red">
-                🛑 ALREADY SOLD<br><br>
-                <b>${escapeHtml(formatLens(sold.DESCRIPTION||""))}</b><br>
-                ${sold.LENSTYPE ? `<small>${escapeHtml(sold.LENSTYPE)}</small><br>`:""}
-                <small>🏷 Tag: <b>${escapeHtml(sold.NTAGN||"")}</b></small>
-              </div>`);
-            return;
-          }
-          const stock=await getStockByBarcode(barcode,BRANCH);
-          if(stock){
-            showResult(`
-              <div class="card green scan-animate">
-                ✅ AVAILABLE<br><br>
-                <b>${escapeHtml(formatLens(stock.DESCRIPTION||""))}</b><br>
-                ${stock.LENSTYPE ? `<small>${escapeHtml(stock.LENSTYPE)}</small><br>`:""}
-                <small>🏷 Tag: <b>${escapeHtml(stock.NTAGN||"")}</b></small><br>
-                <button id="saveBtn" class="btn-blue" onclick="saveYes()">ADD TO SOLD</button>
-                <button class="btn-orange" onclick="cancelNo()">CANCEL</button>
-              </div>`);
-          }else{
-            showResult(`<div class="no-results">❌ NOT FOUND</div>`);
-          }
-        }catch(err){
-          showResult(`<div class="card red">❌ ${escapeHtml(err.message)}</div>`);
-        }
-      }
-    );
-    await enhanceCamera("reader",2);
-  }catch(err){
-    await stopNormalScanner();
-    alert(err.message || "Cannot start camera.");
+for (let d of devices) {
+  const label = (d.label || "").toLowerCase();
+
+  if (label.includes("back") || label.includes("rear")) {
+    cameraId = d.id;
+    break;
   }
 }
 
-async function stopNormalScanner(){
+ scanner = new Html5Qrcode("reader");
+
+await scanner.start(
+    {
+        deviceId: { exact: cameraId }
+    },
+    {
+        fps: 20,
+        qrbox: {
+            width: 300,
+            height: 300
+        },
+        aspectRatio: 1.0,
+        videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+        }
+    },
+    async (code) => {
+
+        if (!isScanning) return;
+
+        isScanning = false;
+        await scanner.stop();
+        await scanner.clear();
+        scanner = null;
+        setUIScanning(false);
+
+        beep();
+        vibrate();
+
+        tempCode = code;
+        tempSi = siNo;
+
+        const res = await fetch(
+            API_URL +
+            "?action=check" +
+            "&barcode=" + encodeURIComponent(code) +
+            getSessionParams()
+        );
+
+        const data = await res.json();
+
+      let row = data.row || [];
+
+let colJ = data.colJ || row[9] || "";
+let colO = data.colO || row[14] || "";
+
+let tag = data.tag || row[12] || "";
+
+        if (data.status === "FOUND") {
+            document.getElementById("result").innerHTML = `
+                <div class="card green scan-animate">
+                    ✅ AVAILABLE<br><br>
+                    <b>${colO}</b><br>
+                    ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${tag}</b></small><br>
+                    
+
+                    <button id="saveBtn"
+                        class="btn-blue"
+                        onclick="saveYes()">
+                        ADD TO SOLD
+                    </button>
+
+                    <button class="btn-orange"
+                        onclick="cancelNo()">
+                        CANCEL
+                    </button>
+                </div>
+            `;
+        }
+        else if (data.status === "WRONG BRANCH") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ WRONG BRANCH<br><br>
+                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
+                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
+                </div>
+            `;
+        }
+        else if (data.status === "DUPLICATE") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    🛑 ALREADY SOLD<br><br>
+                    <b>${colO}</b><br>
+                    ${colJ ? `<small>${colJ}</small><br>` : ""}
+                    <small>🏷 Tag: <b>${tag || ""}</b></small><br>
+                   
+                </div>
+            `;
+        }
+        else {
+            document.getElementById("result").innerHTML = `
+                <div class="no-results">
+                    ❌ NOT FOUND
+                </div><br>
+                <b>${colO}</b><br>
+                ${colJ ? `<small>${colJ}</small>` : ""}
+            `;
+        }
+    }
+);
+
+// ================= CAMERA IMPROVEMENTS =================
+
+try {
+
+    const video = document.querySelector("#reader video");
+
+    if (video && video.srcObject) {
+
+        const track = video.srcObject.getVideoTracks()[0];
+
+        if (track) {
+
+            const capabilities = track.getCapabilities();
+
+            // Continuous autofocus
+            if (
+                capabilities.focusMode &&
+                capabilities.focusMode.includes("continuous")
+            ) {
+                await track.applyConstraints({
+                    advanced: [{
+                        focusMode: "continuous"
+                    }]
+                });
+
+                console.log("Continuous autofocus enabled");
+            }
+
+            // Auto zoom if supported
+       if (capabilities.zoom) {
+
+    const desiredZoom = 2.0;  
+
+    await track.applyConstraints({
+        advanced: [{
+            zoom: desiredZoom
+        }]
+    });
+
+                console.log("Camera zoom enabled");
+            }
+
+        }
+
+    }
+
+}
+catch (e) {
+
+    console.log("Camera features not supported:", e);
+
+}
+}
+
+  async function stopNormalScanner(){
+
   if(scanner){
-    try{await scanner.stop();await scanner.clear();}catch(e){}
+
+    try{
+      await scanner.stop();
+      await scanner.clear();
+    }
+    catch(e){
+      console.log("Normal scanner stop:", e);
+    }
+
     scanner=null;
   }
+
   isScanning=false;
+
   setUIScanning(false);
+
 }
 
-/* ================= AUDIT / RE-INVENTORY ================= */
+  let auditScanner = null;
+let auditScanning = false;
 
-async function toggleAuditScan(){
+
+  
+
+async function toggleAuditScan() {
+
+  const btn = document.getElementById("auditScanBtn");
+  const scanBtn = document.getElementById("scanBtn");
+
+
+  // STOP NORMAL SCANNER FIRST
   await stopNormalScanner();
-  const btn=document.getElementById("auditScanBtn");
-  const scanBtn=document.getElementById("scanBtn");
 
-  if(auditScanning){
-    if(auditQueue.length || auditProcessing){
-      const pending=auditQueue.length+(auditProcessing?1:0);
-      const quit=await askQuitAudit(pending);
-      if(!quit) return;
+
+
+
+  // ================= STOP AUDIT =================
+
+if (auditScanning) {
+
+  // Warn if there are still queued items
+  if (auditQueue.length > 0 || auditProcessing) {
+
+    const pending = auditQueue.length + (auditProcessing ? 1 : 0);
+
+   const quit = await askQuitAudit(pending);
+
+if (!quit) {
+    return;
+}
+  }
+
+  auditScanning = false;
+
+  btn.innerHTML = "🔄 RE-INVENTORY";
+
+  scanBtn.disabled = false;
+  scanBtn.style.opacity = "1";
+  scanBtn.style.cursor = "pointer";
+
+  if (auditScanner) {
+    try {
+      await auditScanner.stop();
+      await auditScanner.clear();
+    } catch (e) {
+      console.log(e);
     }
-    await stopAuditScanner(true);
+
+    auditScanner = null;
+  }
+
+  document.getElementById("auditReader").style.display = "none";
+
+document.getElementById("auditCounter").style.display = "none";
+document.getElementById("auditCounter").innerHTML = "Scanned : 0";
+
+return;
+
+  return;
+}
+
+
+  // ================= START AUDIT =================
+
+
+  auditScanning = true;
+ auditQueue.length = 0;
+auditProcessing = false;
+auditRecent.clear();
+
+auditCount = 0;
+
+document.getElementById("auditCounter").style.display = "block";
+
+document.getElementById("auditCounter").innerHTML =
+"Scanned : 0";
+
+
+  btn.innerHTML = "⏹ STOP AUDIT";
+
+
+  scanBtn.disabled = true;
+  scanBtn.style.opacity = "0.5";
+  scanBtn.style.cursor = "not-allowed";
+
+
+  document.getElementById("auditReader").style.display="block";
+
+
+
+  const cameras = await Html5Qrcode.getCameras();
+
+
+  if(!cameras.length){
+
+    alert("No camera detected");
+
+    auditScanning=false;
+
+    btn.innerHTML="🔄 RE-INVENTORY";
+
+    return;
+
+  }
+
+
+
+  let cameraId = cameras[0].id;
+
+
+
+  for(let cam of cameras){
+
+    let label=(cam.label || "").toLowerCase();
+
+
+    if(label.includes("back") || label.includes("rear")){
+
+      cameraId=cam.id;
+      break;
+
+    }
+
+  }
+
+
+
+  auditScanner = new Html5Qrcode("auditReader");
+
+
+
+  try {
+
+
+    await auditScanner.start(
+
+      {
+        deviceId:{
+          exact:cameraId
+        }
+      },
+
+
+      {
+
+        fps:20,
+
+        qrbox:{
+          width:300,
+          height:300
+        },
+
+        aspectRatio:1,
+
+
+        videoConstraints:{
+
+          facingMode:"environment",
+
+          width:{
+            ideal:1920
+          },
+
+          height:{
+            ideal:1080
+          }
+
+        }
+
+      },
+
+
+     async (decodedText) => {
+
+    if (!auditScanning) return;
+
+    const barcode = decodedText.trim().toUpperCase();
+
+    // Ignore same barcode within 2 seconds
+    const now = Date.now();
+    const last = auditRecent.get(barcode) || 0;
+
+    if (now - last < 2000) return;
+
+    auditRecent.set(barcode, now);
+
+    // Cleanup old entries
+    for (const [k, t] of auditRecent) {
+        if (now - t > 10000) {
+            auditRecent.delete(k);
+        }
+    }
+
+    // Immediate feedback
+    beep();
+    vibrate();
+
+    // Don't queue the same barcode twice
+if (!auditQueue.includes(barcode)) {
+    auditQueue.push(barcode);
+    processAuditQueue();
+}
+
+}
+
+);      
+
+
+
+    // CAMERA AUTO FOCUS + ZOOM
+
+    try{
+
+
+      const video=document.querySelector("#auditReader video");
+
+
+      if(video && video.srcObject){
+
+
+        const track =
+        video.srcObject.getVideoTracks()[0];
+
+
+        if(track){
+
+
+          const capabilities =
+          track.getCapabilities();
+
+
+
+          if(
+            capabilities.focusMode &&
+            capabilities.focusMode.includes("continuous")
+          ){
+
+
+            await track.applyConstraints({
+
+              advanced:[
+                {
+                  focusMode:"continuous"
+                }
+              ]
+
+            });
+
+
+          }
+
+
+
+          if(capabilities.zoom){
+
+
+            await track.applyConstraints({
+
+              advanced:[
+                {
+                  zoom:2
+                }
+              ]
+
+            });
+
+
+          }
+
+
+        }
+
+      }
+
+
+    }
+
+    catch(e){
+
+      console.log(
+        "Audit camera enhancement:",
+        e
+      );
+
+    }
+
+
+
+  }
+
+  catch(e){
+
+
+    console.log(
+      "AUDIT CAMERA ERROR:",
+      e
+    );
+
+
+    alert(
+      "Cannot start audit camera:\n"+e
+    );
+
+
+    auditScanning=false;
+
+    btn.innerHTML="🔄 RE-INVENTORY";
+
+
+    document.getElementById("auditReader").style.display="none";
+    document.getElementById("auditCounter").style.display = "none";
+
+
+  }
+
+
+}
+  
+  
+
+  
+
+
+  async function saveAudit(barcode){
+
+const res = await fetch(
+API_URL+
+"?action=saveAudit"+
+"&barcode="+encodeURIComponent(barcode)+
+getSessionParams()
+);
+
+
+const data = await res.json();
+
+
+if(data.status==="RECORDED"){
+
+
+auditCount++;
+
+
+document.getElementById("auditCounter").innerHTML =
+"Scanned : " + auditCount;
+
+
+
+document.getElementById("result").innerHTML=`
+<div class="card green scan-animate">
+
+✅ AUDIT RECORDED
+
+<br><br>
+
+<b>${data.colO}</b><br>
+
+${data.colJ}
+<small>🏷 Tag: <b>${data.tag || ""}</b></small><br>
+<br><br>
+
+
+
+</div>
+
+`;
+
+}
+
+else{
+
+alert(data.status);
+
+}
+
+}
+async function processAuditQueue() {
+
+    if (auditProcessing) return;
+
+    auditProcessing = true;
+
+    try {
+
+        while (auditQueue.length > 0) {
+
+            const barcode = auditQueue.shift();
+
+            const res = await fetch(
+                API_URL +
+                "?action=saveAudit" +
+                "&barcode=" + encodeURIComponent(barcode) +
+                getSessionParams()
+            );
+
+
+            const text = await res.text();
+
+            console.log("SAVE AUDIT RAW RESPONSE:");
+            console.log(text);
+
+
+            let saveData;
+
+            try {
+
+                saveData = JSON.parse(text);
+
+            } catch(e) {
+
+                document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ SERVER ERROR
+                    <br><br>
+                    <pre style="white-space:pre-wrap">
+                    ${text}
+                    </pre>
+                </div>
+                `;
+
+                continue;
+            }
+
+
+
+            switch (saveData.status) {
+
+
+                case "RECORDED":
+
+                    auditCount++;
+
+                    document.getElementById("auditCounter").innerHTML =
+                    "Scanned : " + auditCount;
+
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card green scan-animate">
+
+                    ✅ AUDIT RECORDED
+
+                    <br><br>
+
+                    <b>${saveData.colO || ""}</b><br>
+
+                    ${saveData.colJ || ""}
+
+                    <br>
+
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                break;
+
+
+
+                case "ALREADY_AUDITED":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red">
+
+                    🛑 ALREADY AUDITED
+
+                    <br><br>
+
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                break;
+
+
+
+                case "NOT_FOUND":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red">
+                    ❌ NOT FOUND
+                    </div>
+                    `;
+
+                break;
+
+
+
+                default:
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red">
+                    ❌ ${saveData.status || "UNKNOWN ERROR"}
+
+                    <br><br>
+
+                    ${JSON.stringify(saveData)}
+
+                    </div>
+                    `;
+
+            }
+
+
+        }
+
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        document.getElementById("result").innerHTML = `
+        <div class="card red">
+        ❌ ${err.message}
+        </div>
+        `;
+
+    }
+    finally{
+
+        auditProcessing=false;
+
+    }
+
+}
+  
+
+  
+async function saveYes() {
+
+  console.log("========== saveYes() ==========");
+  console.log("tempCode:", tempCode);
+  console.log("tempSi:", tempSi);
+  console.log("isSaving:", isSaving);
+
+  if(!tempCode || !tempSi){
+
+  alert(
+    "Missing data\nBarcode: " + tempCode +
+    "\nSI: " + tempSi
+  );
+
+  return;
+
+}
+
+  
+
+if (isSaving) return;
+
+isSaving = true;
+
+const saveBtn = document.getElementById("saveBtn");
+
+if (saveBtn) {
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = "⏳ SAVING...";
+  saveBtn.style.opacity = "0.6";
+  saveBtn.style.cursor = "not-allowed";
+}
+
+
+  document.getElementById("result").innerHTML = `
+    <div class="card saving">
+      <div class="spinner"></div>
+      <div class="saving-text">
+        Saving data...
+      </div>
+    </div>
+  `;
+
+
+  try {
+
+    const res = await fetch(
+      API_URL +
+      "?action=save" +
+      "&barcode=" + encodeURIComponent(tempCode) +
+      "&siNo=" + encodeURIComponent(tempSi) +
+      getSessionParams()
+    );
+
+
+    const data = await res.json();
+
+
+   let row = data.row || [];
+
+let colJ = data.colJ || row[9] || "";
+let colO = data.colO || row[14] || "";
+
+let tag = data.tag || row[12] || "";
+
+
+    if (data.status === "ERROR") {
+
+    document.getElementById("result").innerHTML = `
+    <div class="card red">
+
+    ❌ ERROR
+
+    <br><br>
+
+    ${data.error}
+
+    <br><br>
+
+    
+
+    </div>
+    `;
+
+    isSaving = false;
+    return;
+}
+
+// SUCCESS
+document.getElementById("result").innerHTML = `
+<div class="card green scan-animate">
+
+✅ ADDED TO SOLD
+
+<br><br>
+
+<b>${colO}</b><br>
+
+${colJ ? `<small>${colJ}</small><br>` : ""}
+<small>🏷 Tag: <b>${row[12] || ""}</b></small><br>
+
+
+
+</div>
+`;
+
+tempCode = "";
+tempSi = "";
+
+}
+catch(err){
+
+    console.error(err);
+
+    document.getElementById("result").innerHTML = `
+    <div class="card red">
+        ❌ SAVE FAILED
+        <br><br>
+        ${err.message}
+    </div>
+    `;
+
+}
+finally{
+
+    isSaving = false;
+
+}
+}
+
+async function searchSI() {
+  clearUI();
+
+  const siNo = document.getElementById("siNo").value;
+
+  const res = await fetch(
+  API_URL +
+  "?action=searchSI" +
+  "&siNo=" + encodeURIComponent(siNo) +
+  getSessionParams()
+);
+  const data = await res.json();
+
+  const out = document.getElementById("searchResult");
+
+  if (!data.items?.length) {
+    out.innerHTML = `
+  <div class="no-results">
+    ❌ No results found
+  </div>
+`;
     return;
   }
 
-  auditScanning=true;
-  auditQueue=[];
-  auditProcessing=false;
-  auditRecent.clear();
-  auditCount=0;
-
-  document.getElementById("auditCounter").style.display="block";
-  document.getElementById("auditCounter").innerText="Scanned : 0";
-  document.getElementById("auditReader").style.display="block";
-  btn.innerHTML="⏹ STOP AUDIT";
-  scanBtn.disabled=true;
-
-  try{
-    const cameras=await Html5Qrcode.getCameras();
-    if(!cameras.length) throw new Error("No camera detected");
-
-    let cameraId=cameras[0].id;
-    for(const cam of cameras){
-      const label=(cam.label||"").toLowerCase();
-      if(label.includes("back")||label.includes("rear")){cameraId=cam.id;break;}
-    }
-
-    auditScanner=new Html5Qrcode("auditReader");
-    await auditScanner.start(
-      {deviceId:{exact:cameraId}},
-      {
-        fps:20,qrbox:{width:300,height:300},aspectRatio:1,
-        videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}
-      },
-      async decodedText=>{
-        if(!auditScanning) return;
-        const barcode=normalizeBarcode(decodedText);
-        const now=Date.now();
-        const last=auditRecent.get(barcode)||0;
-        if(now-last<2000) return;
-        auditRecent.set(barcode,now);
-        for(const [k,t] of auditRecent) if(now-t>10000) auditRecent.delete(k);
-        beep();vibrate();
-        if(!auditQueue.includes(barcode)){
-          auditQueue.push(barcode);
-          processAuditQueue();
-        }
-      }
-    );
-    await enhanceCamera("auditReader",2);
-  }catch(e){
-    await stopAuditScanner(true);
-    alert("Cannot start audit camera:\n"+e.message);
-  }
-}
-
-async function stopAuditScanner(reset=true){
-  auditScanning=false;
-  if(auditScanner){
-    try{await auditScanner.stop();await auditScanner.clear();}catch(e){}
-    auditScanner=null;
-  }
-  if(reset){
-    auditQueue=[];auditProcessing=false;auditRecent.clear();auditCount=0;
-  }
-  const reader=document.getElementById("auditReader");
-  const counter=document.getElementById("auditCounter");
-  const btn=document.getElementById("auditScanBtn");
-  const scanBtn=document.getElementById("scanBtn");
-  if(reader) reader.style.display="none";
-  if(counter){counter.style.display="none";counter.innerText="Scanned : 0";}
-  if(btn) btn.innerHTML="🔄 RE-INVENTORY";
-  if(scanBtn){scanBtn.disabled=false;scanBtn.style.opacity="1";}
-}
-
-async function saveAuditDirect(barcode){
-  const clean=normalizeBarcode(barcode);
-  if(!validateBarcodeBranch(clean,BRANCH)){
-    return {status:"WRONG BRANCH"};
-  }
-  const parts=clean.split("-");
-  if(parts.length<2) return {status:"INVALID BARCODE"};
-  const br=parts[0],ntagn=parts.slice(1).join("-");
-
-  const existing=await sbFetch(
-    table(BRANCH,"audit"),
-    "?BR=eq."+encodeURIComponent(br)+
-    "&NTAGN=eq."+encodeURIComponent(ntagn)+
-    "&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1"
-  );
-  if(existing?.length){
-    return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
-  }
-
-  const stock=await getStockByBarcode(clean,BRANCH);
-  if(!stock) return {status:"NOT_FOUND"};
-
-  const payload=[{
-    SDATE:String(stock.SDATE||""),SUPPLIER:String(stock.SUPPLIER||""),
-    DR:String(stock.DR||""),COST:String(stock.COST||""),
-    ASG:String(stock.ASG||""),CB:String(stock.CB||""),FD:String(stock.FD||""),
-    UNITS:String(stock.UNITS||""),POWER:String(stock.POWER||""),
-    LENSTYPE:String(stock.LENSTYPE||""),PUNIT:String(stock.PUNIT||""),
-    BR:String(stock.BR||""),NTAGN:String(stock.NTAGN||""),
-    CATEGORY:String(stock.CATEGORY||""),
-    DESCRIPTION:String(formatLens(stock.DESCRIPTION||"")),
-    LENSCODE:String(stock.LENSCODE||""),SELLINGPRICE:String(stock.SELLINGPRICE||""),
-    DELIVERYDATE:String(stock.DELIVERYDATE||""),ORNUMBER:String(stock.ORNUMBER||""),
-    ORDATE:String(stock.ORDATE||""),REMARKS:String(stock.REMARKS||""),
-    TAGPRICE:String(stock.TAGPRICE||""),QR:String(stock.QR||""),
-    "SI NO.":"","DATE AND TIME":manilaNow(),
-    "USER EMAIL":emailOf(),STATUS:"AUDITED"
-  }];
-
-  await sbFetch(table(BRANCH,"audit"),"",{
-    method:"POST",
-    headers:{"Prefer":"return=representation"},
-    body:JSON.stringify(payload)
-  });
-
-  return {
-    status:"RECORDED",
-    tag:stock.NTAGN,
-    colJ:stock.LENSTYPE,
-    colO:formatLens(stock.DESCRIPTION)
-  };
-}
-
-async function processAuditQueue(){
-  if(auditProcessing) return;
-  auditProcessing=true;
-  try{
-    while(auditQueue.length){
-      const barcode=auditQueue.shift();
-      try{
-        const data=await saveAuditDirect(barcode);
-        if(data.status==="RECORDED"){
-          auditCount++;
-          document.getElementById("auditCounter").innerText="Scanned : "+auditCount;
-          showResult(`
-            <div class="card green scan-animate">
-              ✅ AUDIT RECORDED<br><br>
-              <b>${escapeHtml(data.colO||"")}</b><br>
-              ${escapeHtml(data.colJ||"")}<br>
-              🏷 Tag: <b>${escapeHtml(data.tag||"")}</b>
-            </div>`);
-        }else if(data.status==="ALREADY_AUDITED"){
-          showResult(`<div class="card red">🛑 ALREADY AUDITED<br><br>🏷 Tag: <b>${escapeHtml(data.tag||"")}</b></div>`);
-        }else{
-          showResult(`<div class="card red">❌ ${escapeHtml(data.status||"UNKNOWN ERROR")}</div>`);
-        }
-      }catch(err){
-        showResult(`<div class="card red">❌ ${escapeHtml(err.message)}</div>`);
-      }
-    }
-  }finally{auditProcessing=false}
-}
-
-/* ================= SAVE SOLD ================= */
-
-async function saveYes(){
-  if(!tempCode || !tempSi) return alert("Missing barcode or SI No.");
-  if(isSaving) return;
-  isSaving=true;
-  const btn=document.getElementById("saveBtn");
-  if(btn){btn.disabled=true;btn.innerHTML="⏳ SAVING...";}
-
-  document.getElementById("result").innerHTML=`
-    <div class="card saving"><div class="spinner"></div><div class="saving-text">Saving data...</div></div>`;
-
-  try{
-    const barcode=normalizeBarcode(tempCode);
-    if(!validateBarcodeBranch(barcode,BRANCH)){
-      throw new Error("Wrong branch.");
-    }
-
-    const existing=await isAlreadySold(barcode,BRANCH);
-    if(existing){
-      showResult(`<div class="card red">🛑 ALREADY SAVED</div>`);
-      return;
-    }
-
-    const stock=await getStockByBarcode(barcode,BRANCH);
-    if(!stock) throw new Error("Stock item not found.");
-
-    const payload=[{
-      SDATE:stock.SDATE,SUPPLIER:stock.SUPPLIER,DR:stock.DR,COST:stock.COST,
-      ASG:stock.ASG,CB:stock.CB,FD:stock.FD,UNITS:stock.UNITS,POWER:stock.POWER,
-      LENSTYPE:stock.LENSTYPE,PUNIT:stock.PUNIT,BR:stock.BR,NTAGN:stock.NTAGN,
-      CATEGORY:stock.CATEGORY,DESCRIPTION:formatLens(stock.DESCRIPTION||""),
-      LENSCODE:stock.LENSCODE,SELLINGPRICE:stock.SELLINGPRICE,
-      DELIVERYDATE:stock.DELIVERYDATE,ORNUMBER:stock.ORNUMBER,ORDATE:stock.ORDATE,
-      REMARKS:stock.REMARKS,TAGPRICE:stock.TAGPRICE,QR:stock.QR,
-      "SI NO.":tempSi,"DATE AND TIME":manilaNow(),
-      "USER EMAIL":emailOf(),STATUS:""
-    }];
-
-    await sbFetch(table(BRANCH,"scanresults"),"",{
-      method:"POST",
-      headers:{"Prefer":"return=representation"},
-      body:JSON.stringify(payload)
-    });
-
-    showResult(`
-      <div class="card green scan-animate">
-        ✅ ADDED TO SOLD<br><br>
-        <b>${escapeHtml(formatLens(stock.DESCRIPTION||""))}</b><br>
-        ${stock.LENSTYPE ? `<small>${escapeHtml(stock.LENSTYPE)}</small><br>`:""}
-        <small>🏷 Tag: <b>${escapeHtml(stock.NTAGN||"")}</b></small>
-      </div>`);
-    tempCode="";tempSi="";
-  }catch(err){
-    showResult(`<div class="card red">❌ SAVE FAILED<br><br>${escapeHtml(err.message)}</div>`);
-  }finally{isSaving=false}
-}
-
-/* ================= SEARCH ================= */
-
-async function searchSI(){
-  clearUI();
-  const siNo=document.getElementById("siNo").value.trim();
-  if(!siNo) return alert("Enter SI No");
-
-  try{
-    const q =
-      "?%22SI%20NO.%22=eq."+encodeURIComponent(siNo)+
-      "&select=LENSTYPE,DESCRIPTION,NTAGN,%22DATE%20AND%20TIME%22"+
-      "&limit=100";
-    const rows=await sbFetch(table(BRANCH,"scanresults"),q);
-    const out=document.getElementById("searchResult");
-    if(!rows?.length){
-      out.innerHTML=`<div class="no-results">❌ No results found</div>`;
-      return;
-    }
-    out.innerHTML=rows.map((item,idx)=>`
-      <div class="card">
-        #${idx+1}<br>
-        <b>${escapeHtml(formatLens(item.DESCRIPTION||""))}</b><br>
-        ${item.LENSTYPE?`<small>${escapeHtml(item.LENSTYPE)}</small><br>`:""}
-        <small>🏷 Tag: <b>${escapeHtml(item.NTAGN||"")}</b></small><br>
-        <small>📅 ${escapeHtml(item["DATE AND TIME"]||"No Date")}</small>
-      </div>`).join("");
-  }catch(err){
-    document.getElementById("searchResult").innerHTML=
-      `<div class="card red">❌ ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-function showTagDialog(){
-  document.getElementById("tagNumberInput").value="";
-  document.getElementById("tagDialog").style.display="flex";
-}
-function closeTagDialog(){document.getElementById("tagDialog").style.display="none"}
-
-async function searchTagNumber(){
-  const tag=document.getElementById("tagNumberInput").value.trim();
-  const siNo=document.getElementById("siNo").value.trim();
-  if(!siNo) return alert("Enter SI No first");
-  if(!tag) return alert("Enter Tag Number");
-
-  try{
-    const data=await checkTagDirect(tag,BRANCH);
-    if(data.status==="DUPLICATE"){
-      showResult(`
-        <div class="card red">
-          🛑 ALREADY SOLD<br><br>
-          <b>${escapeHtml(data.colO||"")}</b><br>
-          ${data.colJ?`<small>${escapeHtml(data.colJ)}</small><br>`:""}
-          🏷 TAG: <b>${escapeHtml(tag)}</b>
-        </div>`);
-    }else if(data.status==="FOUND"){
-      tempCode=data.barcode;tempSi=siNo;
-      showResult(`
-        <div class="card green scan-animate">
-          ✅ AVAILABLE<br><br>
-          <b>${escapeHtml(data.colO||"")}</b><br>
-          ${data.colJ?`<small>${escapeHtml(data.colJ)}</small><br>`:""}
-          🏷 TAG: <b>${escapeHtml(tag)}</b><br><br>
-          <button id="saveBtn" class="btn-blue" onclick="saveYes()">ADD TO SOLD</button>
-          <button class="btn-orange" onclick="cancelNo()">CANCEL</button>
-        </div>`);
-    }else{
-      showResult(`<div class="no-results">❌ TAG NUMBER NOT FOUND</div>`);
-    }
-    closeTagDialog();
-  }catch(err){
-    showResult(`<div class="card red">❌ ${escapeHtml(err.message)}</div>`);
-  }
+  out.innerHTML = data.items.map((item, idx) => `
+    <div class="card">
+      #${idx + 1}<br>
+      <b>${item.colO}</b><br>
+      ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
+      <small>🏷 Tag: <b>${item.tag}</b></small><br>
+      <small>📅 ${item.date || "No Date"}</small>
+    </div>
+  `).join("");
 }
 
 /* ================= UTIL ================= */
 
-function showResult(html){document.getElementById("result").innerHTML=html}
-function clearUI(){
-  document.getElementById("result").innerHTML="";
-  document.getElementById("searchResult").innerHTML="";
-}
-function cancelNo(){
-  showResult(`<div class="no-results">❌ CANCELLED</div>`);
-}
-function escapeHtml(value){
-  return String(value??"").replace(/[&<>"']/g,c=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
+function clearUI() {
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("searchResult").innerHTML = "";
 }
 
-async function refreshPage(){
-  await stopNormalScanner();
-  await stopAuditScanner(true);
-  document.getElementById("tagNumberInput").value="";
-  document.getElementById("siNo").value="";
-  const tagBtn=document.getElementById("tagBtn");
-  if(tagBtn){tagBtn.disabled=true;tagBtn.style.opacity=".5"}
+function cancelNo() {
+  document.getElementById("result").innerHTML = `
+  <div class="no-results">
+    ❌ CANCELLED
+  </div>
+`;
+}
+
+async function refreshPage() {
+
+ // STOP NORMAL CAMERA
+if(scanner){
+
+try{
+
+await scanner.stop();
+await scanner.clear();
+
+}catch(e){}
+
+scanner=null;
+
+}
+
+
+// STOP AUDIT CAMERA
+if(auditScanner){
+
+try{
+
+await auditScanner.stop();
+await auditScanner.clear();
+
+}catch(e){}
+
+auditScanner=null;
+
+}
+
+auditScanning=false;
+
+  auditCount=0;
+
+document.getElementById("auditCounter").style.display = "none";
+
+document.getElementById("auditCounter").innerHTML =
+"Scanned : 0";
+
+  isScanning = false;
+
+  setUIScanning(false);
+
+  // Stop audit scanner if running
+if(auditScanner){
+  try{
+    await auditScanner.stop();
+    await auditScanner.clear();
+  }
+  catch(e){
+    console.log(e);
+  }
+
+  auditScanner = null;
+}
+
+auditScanning = false;
+auditBusy = false;
+
+document.getElementById("auditReader").style.display = "none";
+document.getElementById("auditScanBtn").innerHTML = "🔄 RE-INVENTORY";
+
+  document.getElementById("scanBtn").disabled = false;
+document.getElementById("scanBtn").style.opacity = "1";
+document.getElementById("scanBtn").style.cursor = "pointer";
+
+
+  // Clear inputs
+  document.getElementById("tagNumberInput").value = "";
+
+  document.getElementById("siNo").value = "";
+
+
+  // Disable tag button
+  const tagBtn = document.getElementById("tagBtn");
+
+  if(tagBtn){
+    tagBtn.disabled = true;
+    tagBtn.style.opacity = "0.5";
+  }
+
+
+  // Clear results
   clearUI();
+
+
+  // Put cursor back to SI
   document.getElementById("siNo").focus();
+
+}
+function showTagDialog(){
+
+    document.getElementById("tagNumberInput").value = "";
+    document.getElementById("tagDialog").style.display = "flex";
+
 }
 
-async function enhanceCamera(id,zoom=2){
-  try{
-    const video=document.querySelector("#"+id+" video");
-    if(!video?.srcObject) return;
-    const track=video.srcObject.getVideoTracks()[0];
-    if(!track) return;
-    const caps=track.getCapabilities?.()||{};
-    const advanced=[];
-    if(caps.focusMode?.includes("continuous")) advanced.push({focusMode:"continuous"});
-    if(caps.zoom) advanced.push({zoom});
-    if(advanced.length) await track.applyConstraints({advanced});
-  }catch(e){console.log("Camera enhancement:",e)}
+
+function closeTagDialog(){
+
+document.getElementById("tagDialog").style.display="none";
+
 }
 
-function askQuitAudit(pending){
-  document.getElementById("quitAuditMessage").innerHTML=`
-    ⚠ <b>${pending}</b> queued item(s) are still waiting to be processed.<br><br>
-    If you stop now, those items <b>will NOT be saved.</b><br><br>
-    Do you really want to stop Re-Inventory?`;
-  document.getElementById("quitAuditDialog").style.display="flex";
-  return new Promise(resolve=>{quitAuditResolve=resolve});
+
+async function searchTagNumber(){
+
+
+const tag =
+document.getElementById("tagNumberInput")
+.value.trim();
+
+const siNo =
+document.getElementById("siNo")
+.value.trim();
+
+if(!siNo){
+  alert("Enter SI No first");
+  return;
 }
-function confirmQuitAudit(){
-  document.getElementById("quitAuditDialog").style.display="none";
-  if(quitAuditResolve){quitAuditResolve(true);quitAuditResolve=null}
-}
-function cancelQuitAudit(){
-  document.getElementById("quitAuditDialog").style.display="none";
-  if(quitAuditResolve){quitAuditResolve(false);quitAuditResolve=null}
+
+if(!tag){
+  alert("Enter Tag Number");
+  return;
 }
 
-/* ================= SOUND / VIBRATION ================= */
+const res = await fetch(
+  API_URL +
+  "?action=checkTag" +
+  "&tag=" + encodeURIComponent(tag) +
+  getSessionParams()
+);
 
-function initAudio(){
-  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+const data = await res.json();
+
+
+// ================= DUPLICATE =================
+if(data.status==="DUPLICATE"){
+
+document.getElementById("result").innerHTML=`
+
+<div class="card red">
+
+🛑 ALREADY SOLD
+
+<br><br>
+
+<b>${data.colO}</b><br>
+
+${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
+
+🏷 TAG:
+<b>${tag}</b>
+
+</div>
+
+`;
+
+closeTagDialog();
+return;
+
 }
-function beep(){
-  try{
-    initAudio();
-    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
-    osc.type="square";osc.frequency.value=900;gain.gain.value=.15;
-    osc.connect(gain);gain.connect(audioCtx.destination);
-    osc.start();osc.stop(audioCtx.currentTime+.12);
-  }catch(e){}
+
+
+// ================= FOUND =================
+if(data.status==="FOUND"){
+
+tempCode=data.barcode;
+tempSi=siNo;
+
+document.getElementById("result").innerHTML=`
+
+<div class="card green scan-animate">
+
+✅ AVAILABLE<br><br>
+
+<b>${data.colO}</b><br>
+
+${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
+
+🏷 TAG:
+<b>${tag}</b>
+
+<br><br>
+
+<button
+id="saveBtn"
+class="btn-blue"
+onclick="saveYes()">
+
+ADD TO SOLD
+
+</button>
+
+<button
+class="btn-orange"
+onclick="cancelNo()">
+
+CANCEL
+
+</button>
+
+</div>
+
+`;
+
+closeTagDialog();
+return;
+
 }
-function vibrate(){if(navigator.vibrate) navigator.vibrate([150,80,150])}
-document.addEventListener("click",initAudio,{once:true});
 
-/* ================= LOGOUT ================= */
 
-async function logout(){
-  const session=getSession();
-  const email=session.email||"";
-  const sessionId=session.sessionId||"";
-  const branch=BRANCH;
+// ================= NOT FOUND =================
 
-  localStorage.removeItem("inventorySession_"+branch);
-  localStorage.removeItem("loginTime_"+branch);
-  localStorage.removeItem("inventorySelectedBranch");
+document.getElementById("result").innerHTML=`
 
-  await stopNormalScanner();
-  await stopAuditScanner(true);
+<div class="no-results">
 
-  try{
-    await loginApi("logout",{branch,email,sessionId});
-  }catch(e){console.log("Logout server call:",e)}
+❌ TAG NUMBER NOT FOUND
 
-  location.reload();
+</div>
+
+`;
+
+closeTagDialog();
+
+}  
+
+
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function beep() {
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "square";
+  osc.frequency.value = 900;
+  gain.gain.value = 0.15;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.12);
+}
+
+function vibrate() {
+  if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+}
+
+document.addEventListener("click", initAudio, { once: true });
+
+async function logout() {
+
+
+const session =
+JSON.parse(
+localStorage.getItem("inventorySession_"+BRANCH)
+|| "{}"
+);
+
+
+const email=session.email || "";
+const sessionId=session.sessionId || "";
+
+
+// CLEAR LOCAL FIRST
+
+
+localStorage.removeItem(
+"inventorySession_"+BRANCH
+);
+
+localStorage.removeItem("loginTime_" + BRANCH);
+localStorage.removeItem("inventorySelectedBranch");
+
+
+// STOP CAMERA
+if(scanner){
+
+try{
+
+await scanner.stop();
+await scanner.clear();
+
+}catch(e){}
+
+scanner=null;
+
+}
+
+
+try{
+
+await fetch(
+API_URL+
+"?action=logout"+
+"&branch="+encodeURIComponent(BRANCH)+
+"&email="+encodeURIComponent(email)+
+"&sessionId="+encodeURIComponent(sessionId)
+);
+
+}catch(e){
+
+console.log(e);
+
+}
+
+
+location.reload();
+
 }
 
 function checkLoginExpiry(){
-  const loginTime=localStorage.getItem("loginTime_"+BRANCH);
-  if(!loginTime) return;
-  const maxTime=13*60*60*1000;
-  if(Date.now()-Number(loginTime)>maxTime){
-    Object.keys(localStorage).forEach(k=>{
-      if(k.startsWith("inventorySession_")) localStorage.removeItem(k);
-    });
-    localStorage.removeItem("loginTime_"+BRANCH);
-    forceLogout("Session expired. Please login again.");
-  }
-}
 
-/* ================= INIT ================= */
+  const loginTime = localStorage.getItem("loginTime_" + BRANCH);
 
-document.addEventListener("DOMContentLoaded",async()=>{
-  document.getElementById("email").addEventListener("keydown",e=>{
-    if(e.key==="Enter") sendOTP();
-  });
-  document.getElementById("otp").addEventListener("keydown",e=>{
-    if(e.key==="Enter") verifyOTP();
-  });
-  document.getElementById("siNo").addEventListener("input",function(){
-    const btn=document.getElementById("tagBtn");
-    btn.disabled=!this.value.trim();
-    btn.style.opacity=this.value.trim()?"1":".5";
-  });
-checkLoginExpiry();
-
-  if(!BRANCH_NAMES[BRANCH]){
-    document.getElementById("branchScreen").style.display="flex";
-    document.getElementById("loginScreen").style.display="none";
-    document.getElementById("app").style.display="none";
+  if(!loginTime){
     return;
   }
 
-  updateBranchUI();
-  const session=getSession();
+  const now = Date.now();
 
-  if(!session.email || !session.sessionId){
-    document.getElementById("branchScreen").style.display="none";
-    document.getElementById("loginScreen").style.display="flex";
-    document.getElementById("app").style.display="none";
+  const maxTime = 13 * 60 * 60 * 1000; // 13 hours
+  if(now - Number(loginTime) > maxTime){
+
+    
+   Object.keys(localStorage).forEach(key=>{
+
+if(key.startsWith("inventorySession_")){
+
+localStorage.removeItem(key);
+
+}
+
+});
+    localStorage.removeItem("loginTime_" + BRANCH);
+   
+
+    alert("Session expired. Please login again.");
+
+    location.reload();
+
+  }
+
+}
+  document.getElementById("email").addEventListener("keydown",e=>{
+    if(e.key==="Enter") sendOTP();
+});
+
+document.getElementById("otp").addEventListener("keydown",e=>{
+    if(e.key==="Enter") verifyOTP();
+});
+
+
+
+window.addEventListener("DOMContentLoaded", async function(){
+
+  checkLoginExpiry();
+
+  const savedBranch =
+    localStorage.getItem("inventorySelectedBranch") || "";
+
+  if(!BRANCH_NAMES[savedBranch]){
+    document.getElementById("branchScreen").style.display = "flex";
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "none";
+    return;
+  }
+
+  BRANCH = savedBranch;
+  updateBranchUI();
+
+  const session =
+    JSON.parse(
+      localStorage.getItem("inventorySession_" + BRANCH) || "{}"
+    );
+
+  const email = session.email || "";
+  const sessionId = session.sessionId || "";
+
+  if(!email || !sessionId){
+    document.getElementById("branchScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
     resetLoginForm();
     return;
   }
 
-  try{
-    const data=await loginApi("checkSession",{
-      branch:BRANCH,email:session.email,sessionId:session.sessionId
+  try {
+
+    const url =
+      API_URL +
+      "?action=checkSession" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email) +
+      "&sessionId=" + encodeURIComponent(sessionId);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch(url, {
+      signal: controller.signal
     });
-    if(data.status==="VALID") openApp();
-    else forceLogout("Session expired. Please login again.");
-  }catch(e){
-    forceLogout("Unable to verify session. Please login again.");
+
+    clearTimeout(timeout);
+
+    const data = await res.json();
+
+    if(data.status === "VALID"){
+      openApp();
+    }
+    else {
+      localStorage.removeItem("inventorySession_" + BRANCH);
+      document.getElementById("branchScreen").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("app").style.display = "none";
+      resetLoginForm();
+    }
+
+  } catch(error){
+
+    console.log("Session check failed:", error);
+
+    openApp();
   }
+
 });
+
+  const siInput = document.getElementById("siNo");
+
+siInput.addEventListener("input",function(){
+
+const btn=document.getElementById("tagBtn");
+
+if(this.value.trim()==""){
+
+btn.disabled=true;
+btn.style.opacity="0.5";
+
+}
+else{
+
+btn.disabled=false;
+btn.style.opacity="1";
+
+}
+
+});
+
+function showReportDialog() {
+
+    // Clear previous selections
+    document.querySelectorAll(".recipient-card").forEach(card => {
+        card.classList.remove("selected");
+    });
+
+    document.getElementById("reportDialog").style.display = "flex";
+
+}
+
+function closeReportDialog() {
+
+    document.getElementById("reportDialog").style.display = "none";
+
+}
+
+
+// CLICK CARD TO SELECT
+document.querySelectorAll(".recipient-card").forEach(card => {
+
+    card.addEventListener("click", function () {
+
+        this.classList.toggle("selected");
+
+    });
+
+});
+
+
+async function sendSelectedReport() {
+
+    const selectedCards =
+        document.querySelectorAll(".recipient-card.selected");
+
+    if (selectedCards.length === 0) {
+
+        alert("Please select at least one recipient.");
+
+        return;
+
+    }
+
+    const emails = [...selectedCards]
+        .map(card => card.dataset.email)
+        .join(",");
+
+
+    closeReportDialog();
+  document.querySelectorAll(".recipient-card").forEach(card=>{
+    card.classList.remove("selected");
+});
+
+
+    showReportMessage(`
+        <div class="spinner"></div>
+        <div class="saving-text">
+            Sending report...
+        </div>
+    `);
+
+
+    try {
+
+const reportType =
+document.getElementById("reportType").value;
+
+const res = await fetch(
+
+            API_URL +
+            "?action=sendReport" +
+            "&type=" + encodeURIComponent(reportType) +
+            "&emails=" + encodeURIComponent(emails) +
+            getSessionParams()
+
+        );
+
+        const data = await res.json();
+
+        if (data.status === "REPORT SENT") {
+
+            showReportMessage(`
+                ✅ <b>REPORT SENT</b><br><br>
+                📧 Sent to:<br>
+                <small>${emails.replaceAll(",", "<br>")}</small>
+            `);
+
+        } else {
+
+            showReportMessage("❌ " + data.status);
+
+        }
+
+    } catch (err) {
+
+        showReportMessage("❌ SERVER ERROR");
+
+        console.log(err);
+
+    }
+
+}
+
+
+  function showReportMessage(message){
+
+  const result =
+  document.getElementById("result");
+
+
+  result.innerHTML = `
+
+  <div class="card green scan-animate"
+  style="
+  text-align:center;
+  font-size:18px;
+  padding:25px;
+  ">
+
+  ${message}
+
+  </div>
+
+  `;
+
+}
+
+function showClearDialog(){
+    document.getElementById("clearDialog").style.display = "flex";
+}
+
+function closeClearDialog(){
+    document.getElementById("clearDialog").style.display = "none";
+}
+
+async function clearReport(sheet){
+
+    const displayName =
+        sheet === "SCANRESULTS" ? "Sold Out" :
+        sheet === "AUDIT" ? "Re-Inventory" :
+        sheet;
+
+    if(!confirm(
+        "Clear all records from " + displayName + "?\n\nThis cannot be undone."
+    )) return;
+
+   if (sheet === "SCANRESULTS") {
+
+        const password = prompt(
+            "Enter administrator password to clear the Sold Out report:"
+        );
+
+        if (password === null) return;
+
+        if (password !== "12345") {
+            alert("❌ Incorrect password.");
+            return;
+        }
+    }
+  
+
+    closeClearDialog();
+
+    document.getElementById("result").innerHTML = `
+    <div class="card saving">
+        <div class="spinner"></div>
+        Clearing report...
+    </div>`;
+
+    try{
+
+        const res = await fetch(
+            API_URL +
+            "?action=clearReport" +
+            "&sheet=" + encodeURIComponent(sheet) +
+            getSessionParams()
+        );
+
+        const data = await res.json();
+
+        if(data.status=="OK"){
+
+            document.getElementById("result").innerHTML = `
+            <div class="card green">
+                ✅ REPORT CLEARED
+            </div>`;
+
+        }else{
+
+            document.getElementById("result").innerHTML = `
+            <div class="card red">
+                ❌ ${data.status}
+            </div>`;
+
+        }
+
+    }catch(err){
+
+        document.getElementById("result").innerHTML = `
+        <div class="card red">
+            ❌ SERVER ERROR
+        </div>`;
+
+    }
+}
+
+
+
+  
+ async function uploadStockFile(file){
+
+    if(!file){
+        alert("❌ No file selected");
+        return;
+    }
+
+
+    if(!checkStockAccess()){
+
+        alert("❌ NO ACCESS");
+        return;
+
+    }
+
+
+    // Check file type
+    const allowed = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel"
+    ];
+
+    if(!allowed.includes(file.type)){
+
+        alert("❌ Please upload Excel file only");
+
+        return;
+
+    }
+
+
+    // Optional size check
+    if(file.size > 10 * 1024 * 1024){
+
+        alert(
+          "❌ File too large\n\nMaximum 10MB"
+        );
+
+        return;
+
+    }
+
+
+    const reader = new FileReader();
+
+
+    reader.onload = async function(e){
+
+        try {
+
+
+            // REMOVE DATA URL HEADER
+            const base64 =
+            e.target.result.split(",")[1];
+
+
+            const params =
+            new URLSearchParams();
+
+
+            params.append(
+                "action",
+                "uploadStock"
+            );
+
+
+            
+            params.append(
+                "branch",
+                BRANCH
+            );
+
+            params.append(
+                "file",
+                base64
+            );
+
+
+            params.append(
+                "fileName",
+                file.name
+            );
+
+
+            const session =
+            JSON.parse(
+            localStorage.getItem(
+                "inventorySession_"+BRANCH
+            ) || "{}"
+            );
+
+          console.log("SESSION OBJECT:", session);
+console.log("EMAIL:", session.email);
+console.log("SESSION ID:", session.sessionId);
+console.log("LOCAL STORAGE KEY:", "inventorySession_" + BRANCH);
+
+
+            params.append(
+                "email",
+                session.email || ""
+            );
+
+
+            params.append(
+                "sessionId",
+                session.sessionId || ""
+            );
+
+
+            document.getElementById("result").innerHTML = `
+
+            <div class="card saving">
+
+            <div class="spinner"></div>
+
+            Uploading stock file...
+
+            </div>
+
+            `;
+
+
+
+            const res = await fetch(
+                API_URL,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/x-www-form-urlencoded;charset=UTF-8"
+                    },
+
+                    body:params.toString()
+
+                }
+            );
+
+
+
+         const text = await res.text();
+
+console.log("RAW SERVER RESPONSE:");
+console.log(text);
+
+let data;
+
+try{
+    data = JSON.parse(text);
+}catch(e){
+    document.getElementById("result").innerHTML = `
+        <div class="card red">
+            ❌ SERVER DID NOT RETURN JSON
+            <br><br>
+            <pre style="white-space:pre-wrap;font-size:12px;">${text}</pre>
+        </div>
+    `;
+    return;
+}
+
+console.log("UPLOAD RESPONSE:", data);
+
+
+
+           if(data.status === "OK"){
+
+
+    document.getElementById("result").innerHTML = `
+
+    <div class="card green scan-animate">
+
+    ✅ STOCK UPDATED
+
+    <br><br>
+
+    ITEMS:
+    <b>${data.rows}</b>
+
+    </div>
+
+    `;
+
+
+    // reset only the file input
+    document.getElementById("stockFile").value = "";
+
+
+}
+            else{
+
+
+                document.getElementById("result").innerHTML = `
+<div class="card red">
+❌ UPLOAD FAILED
+<br><br>
+<b>Status:</b> ${data.status}<br>
+<b>HTTP:</b> ${data.code || "-"}<br><br>
+<pre style="white-space:pre-wrap;font-size:12px;">
+${data.error || ""}
+</pre>
+</div>
+`;
+
+
+            }
+
+
+
+        }
+        catch(err){
+
+
+            console.error(
+                "UPLOAD ERROR:",
+                err
+            );
+
+
+            document.getElementById("result").innerHTML = `
+
+            <div class="card red">
+
+            ❌ UPLOAD ERROR
+
+            <br><br>
+
+            ${err.message}
+
+            </div>
+
+            `;
+
+
+        }
+
+
+    };
+
+
+    reader.onerror = function(){
+
+        alert(
+          "❌ Cannot read file"
+        );
+
+    };
+
+
+    reader.readAsDataURL(file);
+
+
+}
+
+function askQuitAudit(pending){
+
+    document.getElementById("quitAuditMessage").innerHTML = `
+        ⚠ <b>${pending}</b> queued item(s) are still waiting to be processed.<br><br>
+
+        If you stop now, those items <b>will NOT be saved.</b><br><br>
+
+        Do you really want to stop Re-Inventory?
+    `;
+
+    document.getElementById("quitAuditDialog").style.display="flex";
+
+    return new Promise(resolve=>{
+        quitAuditResolve = resolve;
+    });
+
+}
+
+function confirmQuitAudit(){
+
+    document.getElementById("quitAuditDialog").style.display="none";
+
+    if(quitAuditResolve){
+        quitAuditResolve(true);
+        quitAuditResolve=null;
+    }
+
+}
+
+function cancelQuitAudit(){
+
+    document.getElementById("quitAuditDialog").style.display="none";
+
+    if(quitAuditResolve){
+        quitAuditResolve(false);
+        quitAuditResolve=null;
+    }
+
+}
+
+
+  
+  
+
+  
+
+
+
+  
+
+  
 </script>
 
 </body>
 </html>
+
+<!-- redeploy -->
