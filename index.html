@@ -1507,7 +1507,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwjLT_L8Obx5led5JSOvc2j8seFiT-Uy7ICCJ18WSKf0Ngrgq-wcT8XZ2j9Z49VKA1e/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyEM2ZGrduwjwCK6EHuAErZR69Ac-weMVIhsGIp54lS52SlLVGKe1DqvWzhyD07aXg/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -1554,36 +1554,46 @@ function currentSession() {
   return JSON.parse(localStorage.getItem("inventorySession_" + BRANCH) || "{}");
 }
 
-async function requireSupabaseAccess() {
+async function validateServerSession(showMessage = true) {
   const session = currentSession();
   const email = String(session.email || "").trim().toLowerCase();
   const sessionId = String(session.sessionId || "").trim();
 
-  if (!BRANCH || !email || !sessionId) throw new Error("SESSION EXPIRED");
+  if (!BRANCH || !email || !sessionId) {
+    throw new Error("SESSION_REVOKED");
+  }
 
-  const sessionRes = await fetch(
-    API_URL +
+  const url = API_URL +
     "?action=validateSession" +
     "&branch=" + encodeURIComponent(BRANCH) +
     "&email=" + encodeURIComponent(email) +
-    "&sessionId=" + encodeURIComponent(sessionId)
-  );
+    "&sessionId=" + encodeURIComponent(sessionId);
 
-  const sessionText = await sessionRes.text();
-  let sessionData;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  let data;
+
   try {
-    sessionData = JSON.parse(sessionText);
+    data = JSON.parse(text);
   } catch (e) {
-    throw new Error("SESSION CHECK FAILED");
+    throw new Error("SERVER_RESPONSE_ERROR");
   }
 
-  if (sessionData.status !== "OK") {
-    throw new Error(
-      sessionData.status === "EMAIL_DENIED"
-        ? "EMAIL_DENIED"
-        : "SESSION_REVOKED"
-    );
+  if (data.status === "ACTIVE") return true;
+  if (data.status === "EMAIL_DENIED") throw new Error("EMAIL_DENIED");
+  if (data.status === "SESSION_REVOKED" || data.status === "INVALID_SESSION") {
+    throw new Error("SESSION_REVOKED");
   }
+  throw new Error(data.error || "SESSION_CHECK_FAILED");
+}
+
+async function requireSupabaseAccess() {
+  // Apps Script owns the login session. Supabase owns branch authorization.
+  await validateServerSession();
+
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  if (!BRANCH || !email || !session.sessionId) throw new Error("SESSION_REVOKED");
 
   const rows = await sbRequest("/rest/v1/allowed_users?email=eq." + encodeURIComponent(email) + "&select=*");
   if (!Array.isArray(rows) || !rows.length) throw new Error("EMAIL_DENIED");
@@ -1601,8 +1611,47 @@ async function requireSupabaseAccess() {
     return String(raw).split(/[,|;]/).map(x=>x.trim().toUpperCase()).includes(BRANCH);
   });
   if (!allowed) throw new Error("EMAIL_DENIED");
+  return {email, branch:BRANCH};
+}
 
-  return {email, branch:BRANCH, sessionId};
+function handleSessionRevoked(reason) {
+  clearInterval(sessionHeartbeatTimer);
+  sessionHeartbeatTimer = null;
+
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+
+  try { stopNormalScanner(); } catch(e) {}
+
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("branchScreen").style.display = "none";
+  resetLoginForm();
+
+  document.getElementById("loginStatus").innerHTML =
+    reason === "FORCED"
+      ? "⚠ Your session was logged out from another device."
+      : "❌ Your session is no longer active. Please login again.";
+}
+
+let sessionHeartbeatTimer = null;
+let sessionHeartbeatBusy = false;
+
+function startSessionHeartbeat() {
+  clearInterval(sessionHeartbeatTimer);
+  sessionHeartbeatTimer = setInterval(async function() {
+    if (sessionHeartbeatBusy || document.getElementById("app").style.display === "none") return;
+    sessionHeartbeatBusy = true;
+    try {
+      await validateServerSession(false);
+    } catch (err) {
+      if (err.message === "SESSION_REVOKED" || err.message === "INVALID_SESSION") {
+        handleSessionRevoked("FORCED");
+      }
+    } finally {
+      sessionHeartbeatBusy = false;
+    }
+  }, 30000);
 }
 
 function normalizeBarcode(value) {
@@ -1812,21 +1861,28 @@ function openApp(){
 
 async function changeBranch(){
   const oldBranch = BRANCH;
-  const session = currentSession();
+  const oldSession = currentSession();
 
-  try{
-    if(oldBranch && session.email && session.sessionId){
+  clearInterval(sessionHeartbeatTimer);
+  sessionHeartbeatTimer = null;
+
+  try {
+    if (oldBranch && oldSession.email && oldSession.sessionId) {
       await fetch(
         API_URL +
-        "?action=logoutSession" +
+        "?action=logout" +
         "&branch=" + encodeURIComponent(oldBranch) +
-        "&email=" + encodeURIComponent(session.email) +
-        "&sessionId=" + encodeURIComponent(session.sessionId)
+        "&email=" + encodeURIComponent(oldSession.email) +
+        "&sessionId=" + encodeURIComponent(oldSession.sessionId),
+        { cache: "no-store" }
       );
     }
-  }catch(e){
-    console.warn("Server branch logout failed:", e);
+  } catch(e) {
+    console.warn("Branch-change server logout failed.", e);
   }
+
+  localStorage.removeItem("inventorySession_" + oldBranch);
+  localStorage.removeItem("loginTime_" + oldBranch);
 
   if(scanner){
     try{
@@ -1837,14 +1893,8 @@ async function changeBranch(){
     isScanning = false;
   }
 
-  if(oldBranch){
-    localStorage.removeItem("inventorySession_" + oldBranch);
-    localStorage.removeItem("loginTime_" + oldBranch);
-  }
-
   BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
-  localStorage.removeItem("inventoryLoggedIn");
 
   document.getElementById("app").style.display = "none";
   document.getElementById("loginScreen").style.display = "none";
@@ -1857,220 +1907,164 @@ async function changeBranch(){
 
 /* ================= LOGIN ================= */
 async function sendOTP(){
+  const button = document.querySelector('#loginScreen button.btn-blue');
+  const status = document.getElementById("loginStatus");
+  const email = document.getElementById("email").value.trim().toLowerCase();
 
-try {
-
-const email = document.getElementById("email").value.trim();
-
-if(!email){
-  alert("Enter Gmail");
-  return;
-}
-
-const res = await fetch(
-API_URL +
-"?action=sendOTP" +
-"&branch=" + encodeURIComponent(BRANCH) +
-"&email=" + encodeURIComponent(email)
-);
-
-// ===== DEBUG SERVER RESPONSE =====
-const text = await res.text();
-
-console.log("SEND OTP RAW RESPONSE:");
-console.log(text);
-
-let data;
-
-try{
-    data = JSON.parse(text);
-}
-catch(e){
-
-    document.getElementById("loginStatus").innerHTML = `
-    <div style="color:red">
-    ❌ SERVER RETURNED HTML
-    <br><br>
-    <pre style="
-        white-space:pre-wrap;
-        font-size:12px;
-        max-height:300px;
-        overflow:auto;
-        background:#f5f5f5;
-        padding:10px;
-        border-radius:8px;
-    ">
-${text.replace(/</g,"&lt;")}
-    </pre>
-    </div>
-    `;
-
-    console.log(text);
+  if (!email) {
+    alert("Enter Gmail");
     return;
-}
-// ================================
+  }
+  if (!BRANCH) {
+    status.innerText = "❌ Please select a branch first.";
+    return;
+  }
 
-if (data.status === "OTP_SENT") {
-
-    if (data.alreadyLoggedIn) {
-
-      document.getElementById("loginStatus").innerHTML =
-      `
-      <div class="login-warning">
-      ⚠ Account already logged in.<br><br>
-
-      <button
-      onclick="forceLogin()"
-      style="
-      background:#ff9800;
-      color:white;
-      padding:10px 20px;
-      border:none;
-      border-radius:10px;
-      font-weight:bold;
-      cursor:pointer;
-      ">
-      FORCE LOGOUT OTHER DEVICE
-      </button>
-
-      </div>
-      `;
-
-    } else {
-
-      document.getElementById("loginStatus").innerText =
-      "✅ OTP sent to Gmail";
-
-    }
-
-    const otpBox = document.getElementById("otp");
-
-    otpBox.style.display = "block";
-    document.getElementById("verifyBtn").style.display = "block";
-
-    otpBox.focus();
-    otpBox.select();
-
-}
-else if(data.status === "EMAIL_DENIED"){
-
-    document.getElementById("loginStatus").innerText =
-    "❌ Gmail not allowed.";
-
-}
-else{
-
-    document.getElementById("loginStatus").innerText =
-    "❌ Login error.";
-
-}
-
-}
-catch(err){
-
-document.getElementById("loginStatus").innerHTML =
-`
-<div style="color:red">
-❌ ERROR:<br>
-${err}
-</div>
-`;
-
-console.log(err);
-
-}
-
-}
-async function verifyOTP() {
+  if (button) {
+    button.disabled = true;
+    button.style.opacity = "0.6";
+  }
+  status.innerText = "Sending OTP...";
 
   try {
-
-    const email = document.getElementById("email").value.trim();
-    const otp = document.getElementById("otp").value.trim();
-
     const res = await fetch(
-  API_URL +
-  "?action=verifyOTP" +
-  "&branch=" + encodeURIComponent(BRANCH) +
-  "&email=" + encodeURIComponent(email) +
-  "&otp=" + encodeURIComponent(otp)
-);
+      API_URL +
+      "?action=sendOTP" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email),
+      { cache: "no-store" }
+    );
 
-const text = await res.text();
+    const text = await res.text();
+    console.log("SEND OTP RAW RESPONSE:", text);
 
-console.log(text);
     let data;
-
     try {
       data = JSON.parse(text);
-    } catch (e) {
-      console.log(text);
+    } catch(e) {
+      status.innerHTML = "❌ Server returned an invalid response. Please try again.";
+      return;
+    }
 
-      document.getElementById("loginStatus").innerHTML =
-      "❌ Server returned invalid response.<br>Please try again.";
+    if (data.status === "OTP_SENT") {
+      status.innerHTML = data.alreadyLoggedIn
+        ? `<div class="login-warning">⚠ Account already logged in on another device.<br><br>Enter the OTP, then use <b>FORCE LOGOUT OTHER DEVICE</b>.</div>`
+        : "✅ OTP sent to Gmail";
 
+      const otpBox = document.getElementById("otp");
+      otpBox.style.display = "block";
+      document.getElementById("verifyBtn").style.display = "block";
+      otpBox.focus();
+      otpBox.select();
+      return;
+    }
+
+    if (data.status === "EMAIL_DENIED") {
+      status.innerText = "❌ Gmail not allowed for this branch.";
+      return;
+    }
+
+    status.innerHTML = "❌ Login error: " + escapeLoginText(data.error || data.status || "Unknown server error");
+  } catch(err) {
+    console.error("sendOTP error", err);
+    status.innerText = "❌ Cannot connect to login server. Please try again.";
+  } finally {
+    if (button) {
+      setTimeout(function(){
+        button.disabled = false;
+        button.style.opacity = "1";
+      }, 1200);
+    }
+  }
+}
+
+function escapeLoginText(value) {
+  return String(value || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+async function verifyOTP() {
+  const status = document.getElementById("loginStatus");
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const otp = document.getElementById("otp").value.trim();
+
+  if (!email || !otp) {
+    status.innerText = "❌ Enter the OTP.";
+    return;
+  }
+
+  status.innerText = "Verifying OTP...";
+
+  try {
+    const res = await fetch(
+      API_URL +
+      "?action=verifyOTP" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email) +
+      "&otp=" + encodeURIComponent(otp),
+      { cache: "no-store" }
+    );
+
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) {
+      status.innerText = "❌ Server returned an invalid response. Please try again.";
       return;
     }
 
     if (data.status === "OK") {
-
-      localStorage.setItem(
-        "inventorySession_" + BRANCH,
-        JSON.stringify({
-          email,
-          sessionId: data.sessionId,
-          time: Date.now()
-        })
-      );
-
+      localStorage.setItem("inventorySession_" + BRANCH, JSON.stringify({
+        email: email,
+        sessionId: data.sessionId,
+        time: Date.now()
+      }));
       localStorage.setItem("loginTime_" + BRANCH, Date.now());
 
+      await requireSupabaseAccess();
       openApp();
+      startSessionHeartbeat();
       return;
     }
 
     if (data.status === "ALREADY_LOGGED_IN") {
-
-      if (confirm("Already logged in.\nForce logout other device?")) {
-        forceLogin();
-      }
-
+      status.innerHTML = `
+        <div class="login-warning">
+          ⚠ Account already logged in on another device.<br><br>
+          <button onclick="forceLogin()" style="background:#ff9800;color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">
+            FORCE LOGOUT OTHER DEVICE
+          </button>
+        </div>`;
       return;
     }
 
     if (data.status === "INVALID") {
-
-      document.getElementById("loginStatus").innerHTML =
-      "❌ Wrong OTP.";
-
+      status.innerText = "❌ Wrong or expired OTP.";
       return;
     }
 
-    document.getElementById("loginStatus").innerHTML =
-    "❌ Login failed.";
-
+    status.innerText = "❌ Login failed: " + (data.error || data.status || "Unknown error");
+  } catch(err) {
+    console.error("verifyOTP error", err);
+    status.innerText = "❌ Cannot connect to login server. Please try again.";
   }
-
-  catch(err){
-
-    console.error(err);
-
-    document.getElementById("loginStatus").innerHTML =
-    "❌ Cannot connect to server.";
-
-  }
-
 }
 
-  async function forceLogin() {
-
-  const email = document.getElementById("email").value.trim();
+async function forceLogin() {
+  const status = document.getElementById("loginStatus");
+  const email = document.getElementById("email").value.trim().toLowerCase();
   const otp = document.getElementById("otp").value.trim();
 
   if (!email || !otp) {
-    alert("Please enter the OTP first.");
+    status.innerText = "❌ Enter the OTP first.";
     return;
   }
+
+  status.innerText = "Forcing logout of the other device...";
 
   try {
     const res = await fetch(
@@ -2078,48 +2072,41 @@ console.log(text);
       "?action=forceLogin" +
       "&branch=" + encodeURIComponent(BRANCH) +
       "&email=" + encodeURIComponent(email) +
-      "&otp=" + encodeURIComponent(otp)
+      "&otp=" + encodeURIComponent(otp),
+      { cache: "no-store" }
     );
 
     const text = await res.text();
     let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      throw new Error("Invalid server response.");
+    try { data = JSON.parse(text); }
+    catch(e) {
+      status.innerText = "❌ Server returned an invalid response. Please try again.";
+      return;
     }
 
     if (data.status === "OK") {
-      localStorage.setItem("inventoryLoggedIn", "true");
-      localStorage.setItem(
-        "inventorySession_" + BRANCH,
-        JSON.stringify({
-          email: email,
-          sessionId: data.sessionId,
-          time: Date.now()
-        })
-      );
+      localStorage.setItem("inventorySession_" + BRANCH, JSON.stringify({
+        email: email,
+        sessionId: data.sessionId,
+        time: Date.now()
+      }));
       localStorage.setItem("loginTime_" + BRANCH, Date.now());
+
+      await requireSupabaseAccess();
       openApp();
+      startSessionHeartbeat();
       return;
     }
 
     if (data.status === "INVALID") {
-      alert("Force logout failed: wrong or expired OTP. Please request a new OTP.");
+      status.innerText = "❌ Wrong or expired OTP.";
       return;
     }
 
-    if (data.status === "EMAIL_DENIED") {
-      alert("Gmail not allowed for this branch.");
-      return;
-    }
-
-    alert("Force logout failed. Please request a new OTP.");
-
-  } catch (err) {
-    console.error(err);
-    alert("Cannot connect to login server.");
+    status.innerText = "❌ Force login failed: " + (data.error || data.status || "Unknown error");
+  } catch(err) {
+    console.error("forceLogin error", err);
+    status.innerText = "❌ Cannot connect to login server. Please try again.";
   }
 }
 
@@ -3335,63 +3322,37 @@ document.addEventListener("click", initAudio, { once: true });
 
 async function logout() {
   const session = currentSession();
+  clearInterval(sessionHeartbeatTimer);
+  sessionHeartbeatTimer = null;
 
   try {
-    if (BRANCH && session.email && session.sessionId) {
+    if (session.email && session.sessionId && BRANCH) {
       await fetch(
         API_URL +
-        "?action=logoutSession" +
+        "?action=logout" +
         "&branch=" + encodeURIComponent(BRANCH) +
         "&email=" + encodeURIComponent(session.email) +
-        "&sessionId=" + encodeURIComponent(session.sessionId)
+        "&sessionId=" + encodeURIComponent(session.sessionId),
+        { cache: "no-store" }
       );
     }
-  } catch (e) {
-    console.warn("Server logout failed:", e);
+  } catch(e) {
+    console.warn("Server logout failed; clearing local session anyway.", e);
   }
 
   localStorage.removeItem("inventorySession_" + BRANCH);
   localStorage.removeItem("loginTime_" + BRANCH);
-  localStorage.removeItem("inventoryLoggedIn");
   localStorage.removeItem("inventorySelectedBranch");
-
   try { await stopNormalScanner(); } catch(e) {}
   location.reload();
 }
 
 function checkLoginExpiry(){
-
-  const loginTime = localStorage.getItem("loginTime_" + BRANCH);
-
-  if(!loginTime){
-    return;
-  }
-
-  const now = Date.now();
-
-  const maxTime = 13 * 60 * 60 * 1000; // 13 hours
-  if(now - Number(loginTime) > maxTime){
-
-    
-   Object.keys(localStorage).forEach(key=>{
-
-if(key.startsWith("inventorySession_")){
-
-localStorage.removeItem(key);
-
+  // INTENTIONALLY NO LOGIN SESSION EXPIRY.
+  // The session remains active until normal Logout or Force Logout.
+  return;
 }
 
-});
-    localStorage.removeItem("loginTime_" + BRANCH);
-   
-
-    alert("Session expired. Please login again.");
-
-    location.reload();
-
-  }
-
-}
   document.getElementById("email").addEventListener("keydown",e=>{
     if(e.key==="Enter") sendOTP();
 });
@@ -3438,47 +3399,21 @@ window.addEventListener("DOMContentLoaded", async function(){
   try {
     await requireSupabaseAccess();
     openApp();
+    startSessionHeartbeat();
   } catch (err) {
     localStorage.removeItem("inventorySession_" + BRANCH);
+    localStorage.removeItem("loginTime_" + BRANCH);
     document.getElementById("branchScreen").style.display = "none";
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("app").style.display = "none";
     resetLoginForm();
     document.getElementById("loginStatus").innerHTML =
-      "❌ " + (
-        err.message === "EMAIL_DENIED"
-          ? "Gmail not allowed for this branch."
-          : err.message === "SESSION_REVOKED"
-            ? "This session was logged out from another device. Please login again."
-            : "Session expired. Please login again."
-      );
+      err.message === "EMAIL_DENIED"
+        ? "❌ Gmail not allowed for this branch."
+        : "⚠ This login session is no longer active. Please login again.";
   }
 
 });
-
-// ================= SERVER SESSION HEARTBEAT =================
-// Detects FORCE LOGOUT even if the old device is idle.
-setInterval(async function(){
-  if(!BRANCH) return;
-
-  const app = document.getElementById("app");
-  if(!app || app.style.display === "none") return;
-
-  try {
-    await requireSupabaseAccess();
-  } catch(err) {
-    if(err.message === "SESSION_REVOKED" || err.message === "SESSION EXPIRED"){
-      localStorage.removeItem("inventorySession_" + BRANCH);
-      localStorage.removeItem("loginTime_" + BRANCH);
-      localStorage.removeItem("inventoryLoggedIn");
-
-      try { await stopNormalScanner(); } catch(e) {}
-
-      alert("Your session was logged out from another device. Please login again.");
-      location.reload();
-    }
-  }
-}, 30000);
 
   const siInput = document.getElementById("siNo");
 
