@@ -352,11 +352,14 @@ onclick="refreshPage()">
 </div>
 
 
+
    <div id="searchResult"></div>
 
    
 
   </div>
+
+
 
 <div id="tagDialog" class="report-overlay">
 
@@ -440,8 +443,9 @@ CONTINUE SCANNING
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2dXJobmFybGx2ZmlucGRrZmtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4NzYxNzEsImV4cCI6MjEwMDQ1MjE3MX0.PFAW_RDcYwhNpeBic3CnrNBD2ndKqSi-8wbeH8AbXvM";
 
+
 const LOGIN_API_URL =
-  "https://script.google.com/macros/s/AKfycbwpBXrfleDbrN2y-MwdLhRysYE2lgIDY9FlKGFkPHyC5WWAQ2DXgMGaK9NPsMT-tNYi/exec";
+  "https://script.google.com/macros/s/AKfycbykMp_30NRV0JUqbyRlcq8s0bkkdDRBZKeRBCmBmGIqswm9xnOyEImeEVfjVYerXYjP/exec";
 
 const BRANCH_NAMES = {
   GAI:"GAI BRANCH", CAS:"CAS BRANCH", BAC:"BAC BRANCH", BIN:"BIN BRANCH",
@@ -456,6 +460,7 @@ const BRANCH_CONFIG = {
   KAL:{prefix:"kal"}, PAS:{prefix:"pas"}, POT:{prefix:"pot"}, SAN:{prefix:"san"},
   TAB:{prefix:"tab"}, TAN:{prefix:"tan"}, TIS:{prefix:"tis"}, TOL:{prefix:"tol"}
 };
+
 
 let BRANCH = localStorage.getItem("inventorySelectedBranch") || "";
 let scanner = null;
@@ -620,7 +625,6 @@ function emailOf(){
   return String(getSession().email || "").trim().toLowerCase();
 }
 
-function checkReportAccess(){}
 
 function updateBranchUI(){
   if(!BRANCH || !BRANCH_NAMES[BRANCH]) return;
@@ -661,7 +665,7 @@ async function selectBranch(branch){
     const data = await loginApi("checkSession",{
       branch:BRANCH,email:session.email,sessionId:session.sessionId
     });
-    if(data.status === "VALID" || data.ok === true) openApp();
+    if(data.status === "VALID") openApp();
     else localStorage.removeItem("inventorySession_" + BRANCH);
   }catch(e){
     /* Do not silently bypass session validation. */
@@ -674,7 +678,6 @@ function openApp(){
   document.getElementById("branchScreen").style.display="none";
   document.getElementById("loginScreen").style.display="none";
   document.getElementById("app").style.display="block";
-
 }
 
 async function changeBranch(){
@@ -716,7 +719,7 @@ async function sendOTP(){
 
   try{
     const data = await loginApi("sendOTP",{branch:BRANCH,email});
-    if(data.status === "OTP_SENT" || data.ok === true){
+    if(data.status === "OTP_SENT"){
       if(data.alreadyLoggedIn){
         status.innerHTML = `
           <div class="login-warning">
@@ -731,6 +734,8 @@ async function sendOTP(){
       document.getElementById("otp").style.display="block";
       document.getElementById("verifyBtn").style.display="block";
       document.getElementById("otp").focus();
+    }else if(data.status === "BRANCH_DENIED"){
+      status.innerText="❌ Your account is not allowed for " + BRANCH + ".";
     }else if(data.status === "EMAIL_DENIED"){
       status.innerText="❌ Gmail not allowed.";
     }else{
@@ -748,9 +753,9 @@ async function verifyOTP(){
 
   try{
     const data = await loginApi("verifyOTP",{branch:BRANCH,email,otp});
-    if(data.status === "OK" || data.ok === true){
+    if(data.status === "OK"){
       localStorage.setItem("inventorySession_" + BRANCH,JSON.stringify({
-        email,sessionId:data.sessionId,time:Date.now()
+        email,sessionId:data.sessionId,branch:data.branch || BRANCH,time:Date.now()
       }));
       localStorage.setItem("loginTime_" + BRANCH,Date.now());
       openApp();
@@ -762,10 +767,11 @@ async function verifyOTP(){
     }
     document.getElementById("loginStatus").innerText =
       data.status === "INVALID" ? "❌ Wrong OTP." :
+      data.status === "BRANCH_DENIED" ? "❌ Your account is not allowed for " + BRANCH + "." :
       data.status === "EMAIL_DENIED" ? "❌ Gmail not allowed." :
       "❌ Login failed.";
   }catch(err){
-    forceLogout("❌ Login server unavailable. You have been logged out. Please log in again.");
+    forceLogout("Unable to connect to login server. You have been logged out.");
   }
 }
 
@@ -774,17 +780,17 @@ async function forceLogin(){
   const otp = document.getElementById("otp").value.trim();
   try{
     const data = await loginApi("forceLogin",{branch:BRANCH,email,otp});
-    if(data.status === "OK" || data.ok === true){
+    if(data.status === "OK"){
       localStorage.setItem("inventorySession_" + BRANCH,JSON.stringify({
-        email,sessionId:data.sessionId,time:Date.now()
+        email,sessionId:data.sessionId,branch:data.branch || BRANCH,time:Date.now()
       }));
       localStorage.setItem("loginTime_" + BRANCH,Date.now());
       openApp();
     }else{
-      forceLogout("❌ Force logout failed. Please request a new OTP.");
+      alert("Force login failed. Please request a new OTP.");
     }
   }catch(e){
-    forceLogout("❌ Login server unavailable. You have been logged out. Please log in again.");
+    forceLogout("Unable to connect to login server. You have been logged out.");
   }
 }
 
@@ -1341,8 +1347,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     btn.disabled=!this.value.trim();
     btn.style.opacity=this.value.trim()?"1":".5";
   });
-
-  checkLoginExpiry();
+checkLoginExpiry();
 
   if(!BRANCH_NAMES[BRANCH]){
     document.getElementById("branchScreen").style.display="flex";
@@ -1366,7 +1371,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     const data=await loginApi("checkSession",{
       branch:BRANCH,email:session.email,sessionId:session.sessionId
     });
-    if(data.status==="VALID" || data.ok===true) openApp();
+    if(data.status==="VALID") openApp();
     else forceLogout("Session expired. Please login again.");
   }catch(e){
     forceLogout("Unable to verify session. Please login again.");
