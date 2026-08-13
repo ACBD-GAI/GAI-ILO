@@ -2350,7 +2350,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzuFpw7PJ3J2VVD67kEoZBJulwHjA06C6T4e62eP4UgoCgjrWIWxiaYAVT4QDo22Qsuaw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz3AVZOO7qVejmKTw4WTR9Onh3A_NSLz_rnK2MMNhfcu3cHRNiIIXGljcIjXehVr-SVTA/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2670,6 +2670,7 @@ function openApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
+  startScannerSessionMonitor();
 }
 
 async function changeBranch(){
@@ -2681,6 +2682,13 @@ async function changeBranch(){
     scanner = null;
     isScanning = false;
   }
+
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  await notifyScannerLogout();
 
   BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
@@ -4199,11 +4207,127 @@ function vibrate() {
 
 document.addEventListener("click", initAudio, { once: true });
 
+let scannerSessionMonitorTimer = null;
+let scannerForcedLogoutHandling = false;
+
+function startScannerSessionMonitor(){
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  const check = async function(){
+    if(scannerForcedLogoutHandling) return;
+
+    const session = currentSession();
+    const email = String(session.email || "").trim().toLowerCase();
+    const sessionId = String(session.sessionId || "").trim();
+
+    if(!BRANCH || !email || !sessionId){
+      return;
+    }
+
+    try{
+      const url =
+        API_URL +
+        "?action=checkSession" +
+        "&branch=" + encodeURIComponent(BRANCH) +
+        "&email=" + encodeURIComponent(email) +
+        "&sessionId=" + encodeURIComponent(sessionId);
+
+      const res = await fetch(url, {
+        method:"GET",
+        redirect:"follow",
+        cache:"no-store"
+      });
+
+      const data = await res.json();
+
+      if(!data || data.status !== "OK"){
+        await handleScannerForcedLogout(
+          "Your scanner session was logged out by the administrator."
+        );
+      }
+    }catch(err){
+      /*
+       * Do NOT log the user out just because the internet or
+       * Apps Script is temporarily unavailable.
+       */
+      console.warn("Scanner session check failed:", err);
+    }
+  };
+
+  check();
+  scannerSessionMonitorTimer = setInterval(check, 15000);
+}
+
+async function handleScannerForcedLogout(message){
+  if(scannerForcedLogoutHandling) return;
+  scannerForcedLogoutHandling = true;
+
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  try{
+    await stopNormalScanner();
+  }catch(e){}
+
+  try{
+    if(typeof stopAuditScanner === "function"){
+      await stopAuditScanner();
+    }
+  }catch(e){}
+
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+
+  alert(message);
+  location.reload();
+}
+
+async function notifyScannerLogout(){
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  const sessionId = String(session.sessionId || "").trim();
+
+  if(!BRANCH || !email || !sessionId){
+    return;
+  }
+
+  try{
+    await fetch(
+      API_URL +
+      "?action=logout" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email) +
+      "&sessionId=" + encodeURIComponent(sessionId),
+      {
+        method:"GET",
+        redirect:"follow",
+        cache:"no-store"
+      }
+    );
+  }catch(err){
+    console.warn("Scanner logout notification failed:", err);
+  }
+}
+
 async function logout() {
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  await notifyScannerLogout();
+
   localStorage.removeItem("inventorySession_" + BRANCH);
   localStorage.removeItem("loginTime_" + BRANCH);
   localStorage.removeItem("inventorySelectedBranch");
+
   try { await stopNormalScanner(); } catch(e) {}
+
   location.reload();
 }
 
