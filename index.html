@@ -936,7 +936,6 @@ input:focus-visible{
    ========================================================= */
 
 #branchScreen{
-  display:none;
   position:fixed;
 
   inset:0;
@@ -2119,7 +2118,7 @@ margin-bottom:15px;
 
 <input id="email" placeholder="Enter Gmail">
 
-<button id="sendOtpBtn" class="btn-blue" onclick="sendOTP()">
+<button class="btn-blue" onclick="sendOTP()">
 SEND OTP
 </button>
 
@@ -2351,7 +2350,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbysTrF9al_EtwjvoUQ_ogXDd8ouQDWfk7BFAj0i7jfrzidZ_-OlG_WxnFezJcUSfzygiQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzeiJL1lDYRr-NqWTTf-5Z-TpNx1sQqHUatoxHmHEVxpij6H6cT56eDOywgsEGjjxYDqg/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2671,6 +2670,7 @@ function openApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
+  startScannerSessionMonitor();
 }
 
 async function changeBranch(){
@@ -2682,6 +2682,13 @@ async function changeBranch(){
     scanner = null;
     isScanning = false;
   }
+
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  await notifyScannerLogout();
 
   BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
@@ -2696,254 +2703,137 @@ async function changeBranch(){
 
 
 /* ================= LOGIN ================= */
-let otpResendCooldownActive = false;
-let otpResendTimer = null;
-
 async function sendOTP(){
 
-  const emailInput = document.getElementById("email");
-  const statusBox = document.getElementById("loginStatus");
-  const otpBox = document.getElementById("otp");
-  const verifyBtn = document.getElementById("verifyBtn");
-  const sendBtn = document.getElementById("sendOtpBtn");
+try {
 
-  const email = emailInput.value.trim().toLowerCase();
+const email = document.getElementById("email").value.trim();
 
-  if(!email){
-    statusBox.innerText = "❌ Enter Gmail";
-    emailInput.focus();
-    return;
-  }
-
-  if(!BRANCH){
-    statusBox.innerText = "❌ Please select a branch first.";
-    return;
-  }
-
-  if(sendBtn && sendBtn.disabled){
-    return;
-  }
-
-  if(sendBtn){
-    sendBtn.disabled = true;
-    sendBtn.style.opacity = "0.6";
-    sendBtn.style.cursor = "not-allowed";
-    sendBtn.innerText = "Sending...";
-  }
-
-  statusBox.innerText = "Sending OTP...";
-
-  if(otpBox){
-    otpBox.style.display = "none";
-    otpBox.value = "";
-  }
-
-  if(verifyBtn){
-    verifyBtn.style.display = "none";
-  }
-
-  const url =
-    API_URL +
-    "?action=sendOTP" +
-    "&branch=" + encodeURIComponent(BRANCH) +
-    "&email=" + encodeURIComponent(email);
-
-  try {
-
-    const controller = new AbortController();
-
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 30000);
-
-    let res;
-
-    try {
-      res = await fetch(
-        url,
-        {
-          method: "GET",
-          redirect: "follow",
-          cache: "no-store",
-          signal: controller.signal
-        }
-      );
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    const text = await res.text();
-
-    console.log("SEND OTP RAW RESPONSE:", text);
-
-    let data = null;
-
-    try {
-      data = JSON.parse(text);
-    } catch(e) {
-      data = null;
-    }
-
-    if(!data){
-      if(res.ok){
-        statusBox.innerText =
-          "✅ OTP sent to Gmail. Enter the OTP below.";
-
-        if(otpBox){
-          otpBox.style.display = "block";
-          otpBox.focus();
-          otpBox.select();
-        }
-
-        if(verifyBtn){
-          verifyBtn.style.display = "block";
-        }
-
-        startOtpResendCooldown();
-        return;
-      }
-
-      statusBox.innerText = "❌ Unable to send OTP.";
-      console.log("SEND OTP NON-JSON RESPONSE:", text);
-      return;
-    }
-
-    if(data.status === "OTP_SENT"){
-
-      if(data.alreadyLoggedIn){
-
-        statusBox.innerHTML = `
-          <div class="login-warning">
-            ⚠ Account already logged in.<br><br>
-
-            <button
-              onclick="forceLogin()"
-              style="
-                background:#ff9800;
-                color:white;
-                padding:10px 20px;
-                border:none;
-                border-radius:10px;
-                font-weight:bold;
-                cursor:pointer;
-              "
-            >
-              FORCE LOGOUT OTHER DEVICE
-            </button>
-          </div>
-        `;
-
-      } else {
-        statusBox.innerText = "✅ OTP sent to Gmail";
-      }
-
-      if(otpBox){
-        otpBox.style.display = "block";
-        otpBox.focus();
-        otpBox.select();
-      }
-
-      if(verifyBtn){
-        verifyBtn.style.display = "block";
-      }
-
-      startOtpResendCooldown();
-      return;
-    }
-
-    if(data.status === "EMAIL_DENIED"){
-
-      statusBox.innerText = "❌ Gmail not allowed.";
-
-      if(otpBox){
-        otpBox.style.display = "none";
-      }
-
-      if(verifyBtn){
-        verifyBtn.style.display = "none";
-      }
-
-      return;
-    }
-
-    if(data.status === "ERROR"){
-      statusBox.innerText =
-        "❌ " + (data.error || "Unable to send OTP.");
-      return;
-    }
-
-    statusBox.innerText = "❌ Login error.";
-
-  } catch(err){
-
-    console.error("SEND OTP ERROR:", err);
-
-    if(err.name === "AbortError"){
-
-      statusBox.innerText =
-        "⚠ Server is taking too long to respond. " +
-        "Check your Gmail. If the OTP arrives, enter it below.";
-
-      if(otpBox){
-        otpBox.style.display = "block";
-        otpBox.focus();
-      }
-
-      if(verifyBtn){
-        verifyBtn.style.display = "block";
-      }
-
-      return;
-    }
-
-    statusBox.innerText = "❌ Cannot connect to server.";
-
-  } finally {
-
-    if(sendBtn && !otpResendCooldownActive){
-      sendBtn.disabled = false;
-      sendBtn.style.opacity = "";
-      sendBtn.style.cursor = "";
-      sendBtn.innerText = "SEND OTP";
-    }
-  }
+if(!email){
+  alert("Enter Gmail");
+  return;
 }
 
-function startOtpResendCooldown(){
+const statusBox = document.getElementById("loginStatus");
+const otpBox = document.getElementById("otp");
+const verifyBtn = document.getElementById("verifyBtn");
 
-  const sendBtn = document.getElementById("sendOtpBtn");
-  if(!sendBtn) return;
+statusBox.innerText = "Sending OTP...";
 
-  otpResendCooldownActive = true;
+const res = await fetch(
+  API_URL +
+  "?action=sendOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
+  "&email=" + encodeURIComponent(email),
+  {
+    method: "GET",
+    redirect: "follow",
+    cache: "no-store"
+  }
+);
 
-  let seconds = 30;
+const text = await res.text();
 
-  sendBtn.disabled = true;
-  sendBtn.style.opacity = "0.6";
-  sendBtn.style.cursor = "not-allowed";
-  sendBtn.innerText = "RESEND OTP (" + seconds + "s)";
+console.log("SEND OTP RAW RESPONSE:", text);
 
-  clearInterval(otpResendTimer);
+let data = null;
 
-  otpResendTimer = setInterval(() => {
+try {
+  data = JSON.parse(text);
+} catch(e) {
+  data = null;
+}
 
-    seconds--;
+/*
+   IMPORTANT OTP FIX:
+   Some Google Apps Script deployments can return an HTML wrapper/page
+   even though sendOTP has already completed and the email was sent.
+   The old code stopped here and never displayed the OTP textbox.
 
-    if(seconds <= 0){
-      clearInterval(otpResendTimer);
-      otpResendCooldownActive = false;
+   If the request completed successfully but the response is not JSON,
+   do NOT dump the HTML into the page. Show the OTP box instead.
+*/
+if (!data) {
+  if (res.ok) {
+    statusBox.innerText = "✅ OTP sent to Gmail. Enter the OTP below.";
+    otpBox.style.display = "block";
+    verifyBtn.style.display = "block";
+    otpBox.focus();
+    otpBox.select();
+    return;
+  }
 
-      sendBtn.disabled = false;
-      sendBtn.style.opacity = "";
-      sendBtn.style.cursor = "";
-      sendBtn.innerText = "SEND OTP";
-      return;
+  statusBox.innerText = "❌ Unable to send OTP.";
+  console.log("SEND OTP NON-JSON RESPONSE:", text);
+  return;
+}
+
+if (data.status === "OTP_SENT") {
+
+    if (data.alreadyLoggedIn) {
+
+      statusBox.innerHTML =
+      `
+      <div class="login-warning">
+      ⚠ Account already logged in.<br><br>
+
+      <button
+      onclick="forceLogin()"
+      style="
+      background:#ff9800;
+      color:white;
+      padding:10px 20px;
+      border:none;
+      border-radius:10px;
+      font-weight:bold;
+      cursor:pointer;
+      ">
+      FORCE LOGOUT OTHER DEVICE
+      </button>
+
+      </div>
+      `;
+
+    } else {
+
+      statusBox.innerText =
+      "✅ OTP sent to Gmail";
+
     }
 
-    sendBtn.innerText =
-      "RESEND OTP (" + seconds + "s)";
+    otpBox.style.display = "block";
+    verifyBtn.style.display = "block";
 
-  }, 1000);
+    otpBox.focus();
+    otpBox.select();
+
+}
+else if(data.status === "EMAIL_DENIED"){
+
+    statusBox.innerText =
+    "❌ Gmail not allowed.";
+
+    otpBox.style.display = "none";
+    verifyBtn.style.display = "none";
+
+}
+else{
+
+    statusBox.innerText =
+    "❌ Login error.";
+
+}
+
+}
+catch(err){
+
+console.error("SEND OTP ERROR:", err);
+
+document.getElementById("loginStatus").innerText =
+"❌ Cannot connect to server.";
+
+}
+
 }
 
 async function verifyOTP() {
@@ -4317,11 +4207,127 @@ function vibrate() {
 
 document.addEventListener("click", initAudio, { once: true });
 
+let scannerSessionMonitorTimer = null;
+let scannerForcedLogoutHandling = false;
+
+function startScannerSessionMonitor(){
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  const check = async function(){
+    if(scannerForcedLogoutHandling) return;
+
+    const session = currentSession();
+    const email = String(session.email || "").trim().toLowerCase();
+    const sessionId = String(session.sessionId || "").trim();
+
+    if(!BRANCH || !email || !sessionId){
+      return;
+    }
+
+    try{
+      const url =
+        API_URL +
+        "?action=checkSession" +
+        "&branch=" + encodeURIComponent(BRANCH) +
+        "&email=" + encodeURIComponent(email) +
+        "&sessionId=" + encodeURIComponent(sessionId);
+
+      const res = await fetch(url, {
+        method:"GET",
+        redirect:"follow",
+        cache:"no-store"
+      });
+
+      const data = await res.json();
+
+      if(!data || data.status !== "OK"){
+        await handleScannerForcedLogout(
+          "Your scanner session was logged out by the administrator."
+        );
+      }
+    }catch(err){
+      /*
+       * Do NOT log the user out just because the internet or
+       * Apps Script is temporarily unavailable.
+       */
+      console.warn("Scanner session check failed:", err);
+    }
+  };
+
+  check();
+  scannerSessionMonitorTimer = setInterval(check, 15000);
+}
+
+async function handleScannerForcedLogout(message){
+  if(scannerForcedLogoutHandling) return;
+  scannerForcedLogoutHandling = true;
+
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  try{
+    await stopNormalScanner();
+  }catch(e){}
+
+  try{
+    if(typeof stopAuditScanner === "function"){
+      await stopAuditScanner();
+    }
+  }catch(e){}
+
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+
+  alert(message);
+  location.reload();
+}
+
+async function notifyScannerLogout(){
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  const sessionId = String(session.sessionId || "").trim();
+
+  if(!BRANCH || !email || !sessionId){
+    return;
+  }
+
+  try{
+    await fetch(
+      API_URL +
+      "?action=logout" +
+      "&branch=" + encodeURIComponent(BRANCH) +
+      "&email=" + encodeURIComponent(email) +
+      "&sessionId=" + encodeURIComponent(sessionId),
+      {
+        method:"GET",
+        redirect:"follow",
+        cache:"no-store"
+      }
+    );
+  }catch(err){
+    console.warn("Scanner logout notification failed:", err);
+  }
+}
+
 async function logout() {
+  if(scannerSessionMonitorTimer){
+    clearInterval(scannerSessionMonitorTimer);
+    scannerSessionMonitorTimer = null;
+  }
+
+  await notifyScannerLogout();
+
   localStorage.removeItem("inventorySession_" + BRANCH);
   localStorage.removeItem("loginTime_" + BRANCH);
   localStorage.removeItem("inventorySelectedBranch");
+
   try { await stopNormalScanner(); } catch(e) {}
+
   location.reload();
 }
 
