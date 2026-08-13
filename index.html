@@ -2351,7 +2351,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyri2L2GNdXtfDWLFeYoP4gG9zPibTlPsZXhlBAjSC9PxUkj7DAskmI1La9sL_ZbrpeFw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxEzrDxC0mqsNEBwm8RkcPiUtGwjBi8f4v665XQPcbfg3OaQAC0K9Q1f1l2TEBT4Zgc/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2689,7 +2689,7 @@ async function changeBranch(){
     scannerSessionMonitorTimer = null;
   }
 
-  await notifyScannerLogout();
+  notifyScannerLogout();
 
   BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
@@ -4319,46 +4319,65 @@ async function handleScannerForcedLogout(message){
   location.reload();
 }
 
-async function notifyScannerLogout(){
+function notifyScannerLogout(){
   const session = currentSession();
+  const branch = String(BRANCH || "").trim().toUpperCase();
   const email = String(session.email || "").trim().toLowerCase();
   const sessionId = String(session.sessionId || "").trim();
 
-  if(!BRANCH || !email || !sessionId){
+  if(!branch || !email || !sessionId){
     return;
   }
 
+  const url =
+    API_URL +
+    "?action=logout" +
+    "&branch=" + encodeURIComponent(branch) +
+    "&email=" + encodeURIComponent(email) +
+    "&sessionId=" + encodeURIComponent(sessionId) +
+    "&_=" + Date.now();
+
+  // DO NOT await this request.
+  // The browser can leave/reload immediately while the request
+  // continues in the background.
   try{
-    await fetch(
-      API_URL +
-      "?action=logout" +
-      "&branch=" + encodeURIComponent(BRANCH) +
-      "&email=" + encodeURIComponent(email) +
-      "&sessionId=" + encodeURIComponent(sessionId),
-      {
-        method:"GET",
-        redirect:"follow",
-        cache:"no-store"
-      }
-    );
+    fetch(url, {
+      method:"GET",
+      redirect:"follow",
+      cache:"no-store",
+      keepalive:true
+    }).catch(err => {
+      console.warn("Scanner logout notification failed:", err);
+    });
   }catch(err){
     console.warn("Scanner logout notification failed:", err);
   }
 }
 
-async function logout() {
+function logout() {
   if(scannerSessionMonitorTimer){
     clearInterval(scannerSessionMonitorTimer);
     scannerSessionMonitorTimer = null;
   }
 
-  await notifyScannerLogout();
+  // Capture/send server logout FIRST, but NEVER wait for it.
+  notifyScannerLogout();
 
-  localStorage.removeItem("inventorySession_" + BRANCH);
-  localStorage.removeItem("loginTime_" + BRANCH);
+  const oldBranch = BRANCH;
+
+  // Remove local session immediately.
+  localStorage.removeItem("inventorySession_" + oldBranch);
+  localStorage.removeItem("loginTime_" + oldBranch);
   localStorage.removeItem("inventorySelectedBranch");
 
-  try { await stopNormalScanner(); } catch(e) {}
+  // Stop camera in the background. Do NOT wait for it.
+  try { stopNormalScanner().catch(() => {}); } catch(e) {}
+
+  // Instant UI reset.
+  BRANCH = "";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("branchScreen").style.display = "flex";
 
   location.reload();
 }
