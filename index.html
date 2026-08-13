@@ -2351,7 +2351,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzeiJL1lDYRr-NqWTTf-5Z-TpNx1sQqHUatoxHmHEVxpij6H6cT56eDOywgsEGjjxYDqg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyri2L2GNdXtfDWLFeYoP4gG9zPibTlPsZXhlBAjSC9PxUkj7DAskmI1La9sL_ZbrpeFw/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2837,102 +2837,133 @@ document.getElementById("loginStatus").innerText =
 
 }
 
+let otpVerifyBusy = false;
+
 async function verifyOTP() {
 
+  if (otpVerifyBusy) return;
+
+  const email = document.getElementById("email").value.trim();
+  const otp = document.getElementById("otp").value.trim();
+  const statusBox = document.getElementById("loginStatus");
+  const verifyBtn = document.getElementById("verifyBtn");
+
+  if (!email) {
+    statusBox.innerText = "❌ Enter Gmail first.";
+    return;
+  }
+
+  if (!otp) {
+    statusBox.innerText = "❌ Enter the OTP first.";
+    return;
+  }
+
+  if (!BRANCH) {
+    statusBox.innerText = "❌ Please select a branch.";
+    return;
+  }
+
+  otpVerifyBusy = true;
+
+  if (verifyBtn) {
+    verifyBtn.disabled = true;
+    verifyBtn.innerText = "VERIFYING...";
+  }
+
+  statusBox.innerText = "🔐 Verifying OTP...";
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+
   try {
-
-    const email = document.getElementById("email").value.trim();
-    const otp = document.getElementById("otp").value.trim();
-
-    if (!otp) {
-      document.getElementById("loginStatus").innerText =
-      "❌ Enter the OTP first.";
-      return;
-    }
-
-    const res = await fetch(
+    const url =
       API_URL +
       "?action=verifyOTP" +
       "&branch=" + encodeURIComponent(BRANCH) +
       "&email=" + encodeURIComponent(email) +
-      "&otp=" + encodeURIComponent(otp),
-      {
-        method: "GET",
-        redirect: "follow",
-        cache: "no-store"
-      }
-    );
+      "&otp=" + encodeURIComponent(otp) +
+      "&_=" + Date.now();
+
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
 
     const text = await res.text();
+    console.log("VERIFY OTP HTTP:", res.status);
     console.log("VERIFY OTP RAW RESPONSE:", text);
 
     let data = null;
-
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(text.trim());
     } catch (e) {
       data = null;
     }
 
     if (!data) {
-      document.getElementById("loginStatus").innerText =
-        "❌ Server returned an invalid response. Please try again.";
+      statusBox.innerText =
+        "⚠ Server response was delayed. Please press VERIFY OTP again.";
       return;
     }
 
     if (data.status === "OK") {
-
+      localStorage.setItem("inventoryLoggedIn", "true");
       localStorage.setItem(
         "inventorySession_" + BRANCH,
         JSON.stringify({
-          email,
+          email: email,
           sessionId: data.sessionId,
           time: Date.now()
         })
       );
-
       localStorage.setItem("loginTime_" + BRANCH, Date.now());
-
+      statusBox.innerText = "✅ Login successful.";
       openApp();
       return;
     }
 
     if (data.status === "ALREADY_LOGGED_IN") {
-
       if (confirm("Already logged in.\nForce logout other device?")) {
-        forceLogin();
+        await forceLogin();
       }
-
       return;
     }
 
     if (data.status === "INVALID") {
-
-      document.getElementById("loginStatus").innerText =
-        "❌ Wrong OTP.";
-
+      statusBox.innerText = "❌ Wrong or expired OTP.";
       return;
     }
 
     if (data.status === "EMAIL_DENIED") {
-
-      document.getElementById("loginStatus").innerText =
-        "❌ Gmail not allowed.";
-
+      statusBox.innerText = "❌ Gmail not allowed for this branch.";
       return;
     }
 
-    document.getElementById("loginStatus").innerText =
-      "❌ Login failed.";
+    statusBox.innerText =
+      "❌ " + (data.error || "Login failed.");
 
-  }
-  catch(err){
-
+  } catch (err) {
+    clearTimeout(timeout);
     console.error("VERIFY OTP ERROR:", err);
 
-    document.getElementById("loginStatus").innerText =
-      "❌ Cannot connect to server.";
+    if (err.name === "AbortError") {
+      statusBox.innerText =
+        "⚠ Server is taking too long. Please press VERIFY OTP again.";
+    } else {
+      statusBox.innerText =
+        "⚠ Connection problem. Please try VERIFY OTP again.";
+    }
 
+  } finally {
+    otpVerifyBusy = false;
+    if (verifyBtn) {
+      verifyBtn.disabled = false;
+      verifyBtn.innerText = "VERIFY OTP";
+    }
   }
 }
 
