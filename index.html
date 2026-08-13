@@ -2879,6 +2879,7 @@ async function verifyOTP() {
     const url =
       API_URL +
       "?action=verifyOTP" +
+      "&client=scanner" +
       "&branch=" + encodeURIComponent(BRANCH) +
       "&email=" + encodeURIComponent(email) +
       "&otp=" + encodeURIComponent(otp) +
@@ -4242,55 +4243,90 @@ document.addEventListener("click", initAudio, { once: true });
 let scannerSessionMonitorTimer = null;
 let scannerForcedLogoutHandling = false;
 
+/* =========================================================
+   SCANNER ACTIVE SESSION HEARTBEAT
+
+   ONLY tracks the scanner as active for the dashboard's
+   Force Logout system. Inventory functions are unchanged.
+========================================================= */
+
+async function scannerHeartbeat(){
+
+  if(scannerForcedLogoutHandling) return false;
+
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  const sessionId = String(session.sessionId || "").trim();
+  const branch = String(BRANCH || "").trim().toUpperCase();
+
+  if(!branch || !email || !sessionId){
+    return false;
+  }
+
+  try{
+
+    const url =
+      API_URL +
+      "?action=scannerHeartbeat" +
+      "&branch=" + encodeURIComponent(branch) +
+      "&email=" + encodeURIComponent(email) +
+      "&sessionId=" + encodeURIComponent(sessionId) +
+      "&_=" + Date.now();
+
+    const res = await fetch(url, {
+      method:"GET",
+      redirect:"follow",
+      cache:"no-store"
+    });
+
+    const text = await res.text();
+
+    let data = null;
+
+    try{
+      data = JSON.parse(text.trim());
+    }catch(e){
+      data = null;
+    }
+
+    /* Backend uses { ok:true } / { ok:false }. */
+    if(!data || data.ok !== true){
+
+      if(data && data.error === "SESSION_EXPIRED"){
+        await handleScannerForcedLogout(
+          "Your scanner session was logged out by the administrator."
+        );
+      }
+
+      return false;
+    }
+
+    return true;
+
+  }catch(err){
+
+    /* Do not log out because of a temporary network problem. */
+    console.warn("Scanner heartbeat failed:", err);
+
+    return false;
+  }
+}
+
 function startScannerSessionMonitor(){
+
   if(scannerSessionMonitorTimer){
     clearInterval(scannerSessionMonitorTimer);
     scannerSessionMonitorTimer = null;
   }
 
-  const check = async function(){
-    if(scannerForcedLogoutHandling) return;
+  /* Register immediately after scanner login. */
+  scannerHeartbeat();
 
-    const session = currentSession();
-    const email = String(session.email || "").trim().toLowerCase();
-    const sessionId = String(session.sessionId || "").trim();
-
-    if(!BRANCH || !email || !sessionId){
-      return;
-    }
-
-    try{
-      const url =
-        API_URL +
-        "?action=checkSession" +
-        "&branch=" + encodeURIComponent(BRANCH) +
-        "&email=" + encodeURIComponent(email) +
-        "&sessionId=" + encodeURIComponent(sessionId);
-
-      const res = await fetch(url, {
-        method:"GET",
-        redirect:"follow",
-        cache:"no-store"
-      });
-
-      const data = await res.json();
-
-      if(!data || data.status !== "OK"){
-        await handleScannerForcedLogout(
-          "Your scanner session was logged out by the administrator."
-        );
-      }
-    }catch(err){
-      /*
-       * Do NOT log the user out just because the internet or
-       * Apps Script is temporarily unavailable.
-       */
-      console.warn("Scanner session check failed:", err);
-    }
-  };
-
-  check();
-  scannerSessionMonitorTimer = setInterval(check, 15000);
+  /* Keep last_seen alive every 20 seconds. */
+  scannerSessionMonitorTimer = setInterval(
+    scannerHeartbeat,
+    20000
+  );
 }
 
 async function handleScannerForcedLogout(message){
