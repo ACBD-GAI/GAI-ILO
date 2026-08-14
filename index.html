@@ -2059,6 +2059,255 @@ input:focus-visible{
   }
 
 }
+
+/* =========================================================
+   👓 PRO SCANNER LAYOUT — CSS ONLY
+   Keeps HTML / JAVASCRIPT unchanged
+   ========================================================= */
+
+/* Main workspace */
+.container{
+  width:100%;
+  max-width:760px;
+  margin:0 auto;
+  padding:24px 18px 50px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+}
+
+/* Professional vertical flow:
+   SI number -> scanner -> controls -> result -> search result */
+.container > #siNo{
+  order:1;
+}
+
+.container > #reader,
+.container > #auditReader{
+  order:2;
+}
+
+.container > #auditCounter{
+  order:3;
+}
+
+.container > .button-grid{
+  order:4;
+}
+
+.container > #result{
+  order:5;
+}
+
+.container > #searchResult{
+  order:6;
+}
+
+/* SI field becomes the clean control header */
+.si-input{
+  width:100%;
+  max-width:680px;
+  margin:0 auto 16px !important;
+  min-height:52px;
+}
+
+/* Normal scanner */
+#reader{
+  width:100% !important;
+  max-width:540px !important;
+  min-height:340px;
+  margin:0 auto 18px !important;
+  border-radius:24px !important;
+
+  background:
+    linear-gradient(145deg,#f8fbff,#eef7ff);
+
+  box-shadow:
+    0 18px 45px rgba(37,99,235,.13),
+    0 4px 12px rgba(50,70,100,.05),
+    inset 0 0 0 1px rgba(255,255,255,.9);
+}
+
+/* Audit/re-inventory scanner.
+   !important safely overrides the existing inline max-width/margin only. */
+#auditReader{
+  width:100% !important;
+  max-width:540px !important;
+  min-height:340px;
+  margin:0 auto 12px !important;
+  border-radius:24px !important;
+
+  background:
+    linear-gradient(145deg,#fffaf2,#fff7ed);
+
+  box-shadow:
+    0 18px 45px rgba(249,115,22,.12),
+    0 4px 12px rgba(50,70,100,.05),
+    inset 0 0 0 1px rgba(255,255,255,.9);
+}
+
+/* Keep camera output centered and contained */
+#reader video,
+#auditReader video{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  height:auto !important;
+  min-height:320px;
+  object-fit:cover !important;
+  object-position:center center !important;
+}
+
+/* Keep the generated html5-qrcode camera UI centered */
+#reader > div,
+#auditReader > div{
+  margin-left:auto !important;
+  margin-right:auto !important;
+  max-width:100% !important;
+}
+
+/* Scanner framing */
+#reader::before,
+#auditReader::before{
+  inset:14px;
+  border-radius:18px;
+}
+
+/* Scanner controls */
+.button-grid{
+  width:100%;
+  max-width:680px;
+  margin:0 auto 18px;
+  gap:12px;
+}
+
+.button-grid button{
+  min-height:50px;
+}
+
+/* Audit counter sits directly under the audit camera */
+#auditCounter{
+  margin:0 auto 16px !important;
+  min-width:150px;
+}
+
+/* Results stay below the controls, never above the scanner */
+#result,
+#searchResult{
+  width:100%;
+  max-width:680px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+#result:empty,
+#searchResult:empty{
+  display:none;
+}
+
+/* Give result cards a clean relationship to the scanner */
+#result .card,
+#result .no-results,
+#searchResult .card,
+#searchResult .no-results{
+  margin-top:0;
+  margin-bottom:12px;
+}
+
+/* Desktop: generous scanner area without becoming oversized */
+@media(min-width:901px){
+  #reader,
+  #auditReader{
+    max-width:560px !important;
+    min-height:360px;
+  }
+
+  #reader video,
+  #auditReader video{
+    min-height:340px;
+  }
+}
+
+/* Tablet */
+@media(max-width:900px){
+  .container{
+    max-width:720px;
+    padding:20px 16px 42px;
+  }
+
+  #reader,
+  #auditReader{
+    max-width:520px !important;
+  }
+}
+
+/* Phone: scanner uses the available width while remaining centered */
+@media(max-width:600px){
+  .container{
+    max-width:100%;
+    padding:14px 12px 34px;
+  }
+
+  .si-input{
+    max-width:100%;
+    margin-bottom:12px !important;
+  }
+
+  #reader,
+  #auditReader{
+    width:100% !important;
+    max-width:100% !important;
+    min-height:300px;
+    margin-bottom:14px !important;
+    border-radius:20px !important;
+  }
+
+  #reader video,
+  #auditReader video{
+    min-height:280px;
+  }
+
+  #reader::before,
+  #auditReader::before{
+    inset:10px;
+    border-radius:15px;
+  }
+
+  .button-grid{
+    max-width:100%;
+    gap:8px;
+    margin-bottom:14px;
+  }
+
+  .button-grid button{
+    min-height:50px;
+  }
+
+  #result,
+  #searchResult{
+    max-width:100%;
+  }
+}
+
+/* Very small phones */
+@media(max-width:380px){
+  .container{
+    padding-left:9px;
+    padding-right:9px;
+  }
+
+  #reader,
+  #auditReader{
+    min-height:270px;
+  }
+
+  #reader video,
+  #auditReader video{
+    min-height:250px;
+  }
+}
+
 </style>
 </head>
 
