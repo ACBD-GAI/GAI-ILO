@@ -2508,7 +2508,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxPBS6Bo1Ou6e1RDKlUYp8UBuKBLwi1x_1gFkhnwOfp1UZyWXQUJQEEhj3aMwmOC8KiKg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby0zlyydU6SlqTSNnIX5UR2OJ9hviGUimbYYEQacCHmUH7XNnVbnG3EfJjwutbBYi_wgw/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2865,10 +2865,17 @@ async function sendOTP(){
 
 try {
 
-const email = document.getElementById("email").value.trim();
+const emailInput = document.getElementById("email");
+const email = emailInput.value.trim();
 
 if(!email){
-  alert("Enter Gmail");
+  if(emailInput){
+    emailInput.focus();
+    emailInput.classList.remove("si-input-attention");
+    void emailInput.offsetWidth;
+    emailInput.classList.add("si-input-attention");
+    if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
+  }
   return;
 }
 
@@ -3006,12 +3013,26 @@ async function verifyOTP() {
   const verifyBtn = document.getElementById("verifyBtn");
 
   if (!email) {
-    statusBox.innerText = "❌ Enter Gmail first.";
+    const emailInput = document.getElementById("email");
+    if(emailInput){
+      emailInput.focus();
+      emailInput.classList.remove("si-input-attention");
+      void emailInput.offsetWidth;
+      emailInput.classList.add("si-input-attention");
+      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
+    }
     return;
   }
 
   if (!otp) {
-    statusBox.innerText = "❌ Enter the OTP first.";
+    const otpInput = document.getElementById("otp");
+    if(otpInput){
+      otpInput.focus();
+      otpInput.classList.remove("si-input-attention");
+      void otpInput.offsetWidth;
+      otpInput.classList.add("si-input-attention");
+      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
+    }
     return;
   }
 
@@ -4735,89 +4756,6 @@ function cancelQuitAudit(){
   
 
   
-</script>
-
-
-
-<!-- =========================================================
-     SCANNER <-> DASHBOARD CHAT — ADDITIVE FEATURE ONLY
-========================================================= -->
-<style>
-#scannerChatButton{position:fixed;right:18px;bottom:18px;z-index:99990;width:52px;height:52px;border:0;border-radius:50%;background:#2563eb;color:#fff;font-size:22px;box-shadow:0 10px 28px rgba(37,99,235,.28);cursor:pointer;display:none}
-#scannerChatBadge{position:absolute;right:-2px;top:-2px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#dc2626;color:#fff;font-size:10px;font-weight:900;display:none;align-items:center;justify-content:center}
-#scannerChatPanel{position:fixed;right:18px;bottom:82px;z-index:99991;width:min(360px,calc(100vw - 36px));height:470px;background:#fff;border:1px solid #d7e5ef;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.20);display:none;overflow:hidden}
-#scannerChatPanel.open{display:flex;flex-direction:column}
-.scChatHead{padding:13px 15px;background:linear-gradient(135deg,#0284c7,#2563eb);color:#fff;display:flex;align-items:center;justify-content:space-between;font-weight:900}
-.scChatClose{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:9px;width:30px;height:30px;cursor:pointer}
-#scannerChatMessages{flex:1;overflow:auto;padding:12px;background:#f7fbfe}
-.scChatMsg{max-width:82%;padding:9px 11px;border-radius:13px;margin:7px 0;font-size:12px;line-height:1.35;word-break:break-word}
-.scChatMine{margin-left:auto;background:#2563eb;color:#fff;border-bottom-right-radius:4px}
-.scChatOther{margin-right:auto;background:#fff;color:#102033;border:1px solid #e1eaf0;border-bottom-left-radius:4px}
-.scChatTime{font-size:9px;opacity:.65;margin-top:4px}
-.scChatComposer{display:flex;gap:7px;padding:10px;border-top:1px solid #e1eaf0;background:#fff}
-#scannerChatInput{flex:1;min-width:0;resize:none;border:1px solid #cbdde9;border-radius:11px;padding:9px 10px;outline:none;font:inherit;font-size:12px}
-#scannerChatSend{border:0;border-radius:11px;background:#2563eb;color:#fff;padding:0 14px;font-weight:900;cursor:pointer}
-#scannerChatSend:disabled{opacity:.55;cursor:not-allowed}
-</style>
-<button id="scannerChatButton" type="button" aria-label="Messages">💬<span id="scannerChatBadge">0</span></button>
-<div id="scannerChatPanel">
-  <div class="scChatHead"><span>💬 Dashboard Messages</span><button class="scChatClose" id="scannerChatClose">×</button></div>
-  <div id="scannerChatMessages"><div style="text-align:center;color:#64748b;font-size:11px;padding:30px 10px">No messages yet.</div></div>
-  <div class="scChatComposer"><textarea id="scannerChatInput" rows="2" maxlength="1000" placeholder="Type a message..."></textarea><button id="scannerChatSend" type="button">Send</button></div>
-</div>
-<script>
-(function(){
-  const btn=document.getElementById('scannerChatButton');
-  const badge=document.getElementById('scannerChatBadge');
-  const panel=document.getElementById('scannerChatPanel');
-  const close=document.getElementById('scannerChatClose');
-  const list=document.getElementById('scannerChatMessages');
-  const input=document.getElementById('scannerChatInput');
-  const send=document.getElementById('scannerChatSend');
-  if(!btn||!panel) return;
-  let lastIds=new Set(); let unread=0; let busy=false; let initialized=false;
-  function session(){try{return currentSession?currentSession():JSON.parse(localStorage.getItem('inventorySession_'+(typeof BRANCH!=='undefined'?BRANCH:''))||'{}')}catch(e){return {}}}
-  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-  function fmt(v){try{return new Date(v).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
-  function render(messages){
-    if(!messages.length){list.innerHTML='<div style="text-align:center;color:#64748b;font-size:11px;padding:30px 10px">No messages yet.</div>';return;}
-    list.innerHTML=messages.map(m=>{const mine=String(m.sender_type)==='scanner';return '<div class="scChatMsg '+(mine?'scChatMine':'scChatOther')+'"><div>'+esc(m.message)+'</div><div class="scChatTime">'+(mine?'You':'Dashboard')+' · '+fmt(m.created_at)+'</div></div>'}).join('');
-    list.scrollTop=list.scrollHeight;
-  }
-  async function poll(){
-    const s=session(); const sid=String(s.sessionId||'').trim(); const email=String(s.email||'').trim();
-    if(!sid||!email||typeof API_URL==='undefined') {btn.style.display='none';return;}
-    btn.style.display='block';
-    try{
-      const r=await fetch(API_URL+'?action=chatGetScanner&sessionId='+encodeURIComponent(sid)+'&_='+Date.now(),{cache:'no-store'});
-      const d=await r.json(); if(!d||d.ok!==true)return;
-      const msgs=Array.isArray(d.messages)?d.messages:[];
-      const ids=new Set(msgs.map(x=>String(x.id)));
-      const newIncoming=msgs.filter(x=>String(x.sender_type)==='dashboard'&&!lastIds.has(String(x.id)));
-      if(initialized&&newIncoming.length&&!panel.classList.contains('open')){unread+=newIncoming.length;badge.textContent=String(unread);badge.style.display='flex';try{navigator.vibrate&&navigator.vibrate([100,60,100])}catch(e){}}
-      lastIds=ids; initialized=true; render(msgs);
-      if(panel.classList.contains('open')){unread=0;badge.style.display='none';}
-    }catch(e){console.warn('Scanner chat receive failed',e)}
-  }
-  async function sendMsg(){
-    const text=input.value.trim(); if(!text||busy)return;
-    const s=session(); const sid=String(s.sessionId||'').trim(); if(!sid)return;
-    busy=true; send.disabled=true;
-    const temp={id:'local-'+Date.now(),sender_type:'scanner',message:text,created_at:new Date().toISOString()};
-    const current=Array.from(list.querySelectorAll('.scChatMsg')).map(()=>null); // keep DOM stable; server sync follows
-    const old=list.innerHTML; list.insertAdjacentHTML('beforeend','<div class="scChatMsg scChatMine"><div>'+esc(text)+'</div><div class="scChatTime">You · sending…</div></div>'); list.scrollTop=list.scrollHeight; input.value='';
-    try{
-      const r=await fetch(API_URL+'?action=chatSendScanner&sessionId='+encodeURIComponent(sid)+'&branch='+encodeURIComponent(typeof BRANCH!=='undefined'?BRANCH:'')+'&message='+encodeURIComponent(text)+'&_='+Date.now(),{cache:'no-store'});
-      const d=await r.json(); if(!d||d.ok!==true)throw new Error(d&&d.error||'Unable to send message.');
-      await poll();
-    }catch(e){list.innerHTML=old; input.value=text; alert(e.message||'Unable to send message.');}
-    finally{busy=false;send.disabled=false;input.focus();}
-  }
-  btn.addEventListener('click',()=>{panel.classList.toggle('open');if(panel.classList.contains('open')){unread=0;badge.style.display='none';poll();setTimeout(()=>input.focus(),50)}});
-  close.addEventListener('click',()=>panel.classList.remove('open'));
-  send.addEventListener('click',sendMsg); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
-  setInterval(poll,1500); poll();
-})();
 </script>
 
 </body>
