@@ -2712,22 +2712,28 @@ const email = document.getElementById("email").value.trim();
 
 if(!email){
   const emailBox = document.getElementById("email");
+
   if(emailBox){
     emailBox.focus();
+
     emailBox.animate(
       [
-        { transform: "translateX(0)" },
-        { transform: "translateX(-8px)" },
-        { transform: "translateX(8px)" },
-        { transform: "translateX(-6px)" },
-        { transform: "translateX(6px)" },
-        { transform: "translateX(-3px)" },
-        { transform: "translateX(3px)" },
-        { transform: "translateX(0)" }
+        { transform:"translateX(0)" },
+        { transform:"translateX(-8px)" },
+        { transform:"translateX(8px)" },
+        { transform:"translateX(-6px)" },
+        { transform:"translateX(6px)" },
+        { transform:"translateX(-3px)" },
+        { transform:"translateX(3px)" },
+        { transform:"translateX(0)" }
       ],
-      { duration: 400, easing: "ease-in-out" }
+      {
+        duration:420,
+        easing:"ease-in-out"
+      }
     );
   }
+
   return;
 }
 
