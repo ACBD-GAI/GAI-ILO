@@ -2508,7 +2508,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxnGafFwRchItGy_Rer9L97llC18k3KWhySiVbE7gsdDBJhOxNTwCjw5S9gERwj3cndmA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx3RVABy2OMj9M20SC4WD16L3DwUYXXDummW_gRp-1eb0wc_mp_5ftDQRbAGSYD6pcfnA/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -4783,12 +4783,16 @@ function cancelQuitAudit(){
 (function(){
   let chatTimer=null;
   let chatMessages=[];
+  let chatLastMessageId="";
+  let chatUnreadCount=0;
+
   window.acebedoScannerChatToggle=function(){
     const panel=document.getElementById("acebedoChatScanPanel");
     if(!panel) return;
     panel.classList.toggle("open");
-    if(panel.classList.contains("open")){acebedoScannerChatLoad();if(!chatTimer)chatTimer=setInterval(acebedoScannerChatLoad,5000);}
-    else if(chatTimer){clearInterval(chatTimer);chatTimer=null;}
+    if(panel.classList.contains("open")){
+      acebedoScannerChatLoad();
+    }
   };
   function chatSession(){
     try{return currentSession();}catch(e){return {};}
@@ -4805,11 +4809,39 @@ function cancelQuitAudit(){
     try{
       const data=await chatApi("chatGet",{email:email,branch:BRANCH,sessionId:sid});
       if(!data||data.ok!==true)return;
-      chatMessages=Array.isArray(data.messages)?data.messages:[];
+      const nextMessages=Array.isArray(data.messages)?data.messages:[];
+      const previousCount=chatMessages.length;
+      const latest=nextMessages.length ? String(nextMessages[nextMessages.length-1].id||"") : "";
+      const hasNewDashboardMessage = latest && latest!==chatLastMessageId && nextMessages[nextMessages.length-1].sender_type==="dashboard";
+      chatMessages=nextMessages;
+      chatLastMessageId=latest;
+      if(hasNewDashboardMessage && !document.getElementById("acebedoChatScanPanel")?.classList.contains("open")){
+        chatUnreadCount++;
+        acebedoScannerChatUpdateBadge();
+        if(navigator.vibrate) navigator.vibrate([150,80,150]);
+      }
       acebedoScannerChatRender();
-      await chatApi("chatMarkRead",{email:email,branch:BRANCH,sessionId:sid});
+      if(document.getElementById("acebedoChatScanPanel")?.classList.contains("open")){
+        chatUnreadCount=0;
+        acebedoScannerChatUpdateBadge();
+        await chatApi("chatMarkRead",{email:email,branch:BRANCH,sessionId:sid});
+      }
     }catch(e){console.warn("Scanner chat load failed",e);}
   };
+
+  function acebedoScannerChatUpdateBadge(){
+    const btn=document.getElementById("acebedoChatScanBtn");
+    if(!btn)return;
+    let badge=document.getElementById("acebedoChatScanBadge");
+    if(!badge){
+      badge=document.createElement("span");
+      badge.id="acebedoChatScanBadge";
+      badge.style.cssText="position:absolute;right:-2px;top:-2px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#dc2626;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #fff;";
+      btn.appendChild(badge);
+    }
+    badge.textContent=chatUnreadCount>0?(chatUnreadCount>9?"9+":String(chatUnreadCount)):"";
+    badge.style.display=chatUnreadCount>0?"flex":"none";
+  }
   function acebedoScannerChatRender(){
     const box=document.getElementById("acebedoChatScanMessages");if(!box)return;
     if(!chatMessages.length){box.innerHTML='<div class="acebedoChatScanEmpty">No messages yet.</div>';return;}
@@ -4845,6 +4877,7 @@ function cancelQuitAudit(){
   document.addEventListener("DOMContentLoaded",function(){
     updateScannerChatVisibility();
     setInterval(updateScannerChatVisibility,2000);
+    setInterval(acebedoScannerChatLoad,5000);
     const input=document.getElementById("acebedoChatScanInput");
     if(input)input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();acebedoScannerChatSend();}});
   });
