@@ -2508,7 +2508,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxr0SgJnCTDVGu4IsspgPIdosrMzGa5zSEVvWGt-Hoa63-UCmSObaMK8KQ1h18yjWepeA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby7_bHK2_17NMWC4Vi5vdC_Lwfhd6o_pL55OxNJ4EAAp_EYKLj2l77pDaVbQIZ-rVdrmQ/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -4756,6 +4756,99 @@ function cancelQuitAudit(){
   
 
   
+</script>
+
+
+
+<!-- =========================================================
+     ACEBEDO CHAT — SCANNER SIDE
+     Separate overlay. Existing scanner HTML/JS untouched.
+========================================================= -->
+<style>
+#acebedoChatScanBtn{display:none;position:fixed;right:18px;bottom:18px;z-index:99990;width:54px;height:54px;border:0;border-radius:50%;background:linear-gradient(135deg,#0284c7,#4f46e5);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 12px 30px rgba(37,99,235,.28)}
+#acebedoChatScanPanel{display:none;position:fixed;right:18px;bottom:82px;z-index:99991;width:min(390px,calc(100vw - 24px));height:min(560px,calc(100vh - 100px));background:#fff;border:1px solid #d7e5ef;border-radius:18px;box-shadow:0 25px 70px rgba(15,23,42,.20);overflow:hidden}
+#acebedoChatScanPanel.open{display:flex;flex-direction:column}
+.acebedoChatScanHead{padding:14px 16px;background:linear-gradient(135deg,#0284c7,#4f46e5);color:#fff;display:flex;justify-content:space-between;align-items:center}.acebedoChatScanHead strong{font-size:14px}.acebedoChatScanHead small{display:block;opacity:.8;margin-top:2px}.acebedoChatScanClose{background:transparent!important;color:#fff!important;border:0!important;font-size:20px!important;min-height:auto!important;padding:2px 6px!important;box-shadow:none!important}
+#acebedoChatScanMessages{flex:1;overflow:auto;padding:12px;background:#f8fbff}.acebedoChatScanBubble{max-width:82%;padding:9px 11px;border-radius:13px;margin:6px 0;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word}.acebedoChatScanBubble.dashboard{margin-right:auto;background:#fff;border:1px solid #e2e8f0;color:#243447}.acebedoChatScanBubble.scanner{margin-left:auto;background:#dbeafe;color:#1e3a8a}.acebedoChatScanMeta{font-size:8px;color:#94a3b8;margin-top:3px}#acebedoChatScanComposer{display:flex;gap:7px;padding:9px;border-top:1px solid #e8f0f6;background:#fff}#acebedoChatScanInput{flex:1;min-height:42px;max-height:90px;resize:none;border:1px solid #cbdde9;border-radius:10px;padding:9px;outline:none;font:inherit;font-size:12px}#acebedoChatScanSend{min-width:65px;min-height:42px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer}.acebedoChatScanEmpty{padding:30px 15px;text-align:center;color:#94a3b8;font-size:11px}
+</style>
+
+<button id="acebedoChatScanBtn" type="button" title="Message Dashboard" onclick="acebedoScannerChatToggle()">💬</button>
+<div id="acebedoChatScanPanel">
+  <div class="acebedoChatScanHead"><div><strong>Message Dashboard</strong><small>Send a message to the Dashboard</small></div><button class="acebedoChatScanClose" type="button" onclick="acebedoScannerChatToggle()">×</button></div>
+  <div id="acebedoChatScanMessages"><div class="acebedoChatScanEmpty">No messages yet.</div></div>
+  <div id="acebedoChatScanComposer"><textarea id="acebedoChatScanInput" maxlength="1000" placeholder="Type a message..."></textarea><button id="acebedoChatScanSend" type="button" onclick="acebedoScannerChatSend()">Send</button></div>
+</div>
+
+<script>
+(function(){
+  let chatTimer=null;
+  let chatMessages=[];
+  window.acebedoScannerChatToggle=function(){
+    const panel=document.getElementById("acebedoChatScanPanel");
+    if(!panel) return;
+    panel.classList.toggle("open");
+    if(panel.classList.contains("open")){acebedoScannerChatLoad();if(!chatTimer)chatTimer=setInterval(acebedoScannerChatLoad,5000);}
+    else if(chatTimer){clearInterval(chatTimer);chatTimer=null;}
+  };
+  function chatSession(){
+    try{return currentSession();}catch(e){return {};}
+  }
+  function chatApi(action,params){
+    const q=new URLSearchParams({action:action,...params,_:Date.now()});
+    return fetch(API_URL+"?"+q.toString(),{method:"GET",redirect:"follow",cache:"no-store"}).then(r=>r.json());
+  }
+  window.acebedoScannerChatLoad=async function(){
+    const s=chatSession();
+    const email=String(s.email||"").trim().toLowerCase();
+    const sid=String(s.sessionId||"").trim();
+    if(!email||!BRANCH||!sid)return;
+    try{
+      const data=await chatApi("chatGet",{email:email,branch:BRANCH,sessionId:sid});
+      if(!data||data.ok!==true)return;
+      chatMessages=Array.isArray(data.messages)?data.messages:[];
+      acebedoScannerChatRender();
+      await chatApi("chatMarkRead",{email:email,branch:BRANCH,sessionId:sid});
+    }catch(e){console.warn("Scanner chat load failed",e);}
+  };
+  function acebedoScannerChatRender(){
+    const box=document.getElementById("acebedoChatScanMessages");if(!box)return;
+    if(!chatMessages.length){box.innerHTML='<div class="acebedoChatScanEmpty">No messages yet.</div>';return;}
+    box.innerHTML=chatMessages.map(m=>`<div class="acebedoChatScanBubble ${m.sender_type==='dashboard'?'dashboard':'scanner'}">${escapeHtml(String(m.message||''))}<div class="acebedoChatScanMeta">${m.sender_type==='dashboard'?'Dashboard':'You'} · ${escapeHtml(String(m.created_at||''))}</div></div>`).join("");
+    box.scrollTop=box.scrollHeight;
+  }
+  window.acebedoScannerChatSend=async function(){
+    const input=document.getElementById("acebedoChatScanInput");
+    const message=String(input?.value||"").trim();
+    const s=chatSession();
+    const email=String(s.email||"").trim().toLowerCase();
+    const sid=String(s.sessionId||"").trim();
+    if(!message||!email||!sid||!BRANCH)return;
+    const btn=document.getElementById("acebedoChatScanSend");if(btn)btn.disabled=true;
+    try{
+      const data=await chatApi("chatSend",{email:email,branch:BRANCH,sessionId:sid,message:message});
+      if(!data||data.ok!==true)throw new Error(data?.error||"Unable to send message.");
+      input.value="";await acebedoScannerChatLoad();
+    }catch(e){if(typeof setLoginStatus==='function')setLoginStatus(e.message||String(e));else alert(e.message||String(e));}
+    finally{if(btn)btn.disabled=false;}
+  };
+  function updateScannerChatVisibility(){
+    const btn=document.getElementById("acebedoChatScanBtn");
+    if(!btn) return;
+    try{
+      const s=chatSession();
+      btn.style.display=(s && s.sessionId && BRANCH) ? "block" : "none";
+    }catch(e){
+      btn.style.display="none";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded",function(){
+    updateScannerChatVisibility();
+    setInterval(updateScannerChatVisibility,2000);
+    const input=document.getElementById("acebedoChatScanInput");
+    if(input)input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();acebedoScannerChatSend();}});
+  });
+})();
 </script>
 
 </body>
