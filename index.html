@@ -2532,7 +2532,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycby0zlyydU6SlqTSNnIX5UR2OJ9hviGUimbYYEQacCHmUH7XNnVbnG3EfJjwutbBYi_wgw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxr0SgJnCTDVGu4IsspgPIdosrMzGa5zSEVvWGt-Hoa63-UCmSObaMK8KQ1h18yjWepeA/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -4782,7 +4782,7 @@ function cancelQuitAudit(){
   
 
 
-/* ================= PRIVATE CHAT: SCANNER -> DASHBOARD ================= */
+/* ================= PRIVATE CHAT: BRANCH -> ADMIN ================= */
 let aoChatOpen=false;
 let aoChatSending=false;
 let aoChatTimer=null;
@@ -4808,11 +4808,11 @@ async function aoChatLoad(){
   try{
     const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+"&order=created_at.asc&limit=300");
     const old=box.scrollTop, bottom=(box.scrollHeight-box.clientHeight-old)<60;
-    if(!Array.isArray(rows)||!rows.length){box.innerHTML='<div class="ao-chat-empty">No messages yet. Send a message to Dashboard.</div>';}
+    if(!Array.isArray(rows)||!rows.length){box.innerHTML='<div class="ao-chat-empty">No messages yet. Send a message to Admin.</div>';}
     else{
       box.innerHTML=rows.map(r=>{
         const mine=String(r.sender_email||"").toLowerCase()===email;
-        return '<div class="ao-chat-row '+(mine?'mine':'')+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(r.sender_type||"")+' · '+aoChatEsc(r.sender_email||"")+'</div><div class="ao-chat-text">'+aoChatEsc(r.message||"")+'</div><div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
+        return '<div class="ao-chat-row '+(mine?'mine':'')+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(r.sender_type==='SCANNER'?'BRANCH':(r.sender_type==='DASHBOARD'?'ADMIN':r.sender_type||''))+' · '+aoChatEsc(r.sender_email||"")+'</div><div class="ao-chat-text">'+aoChatEsc(r.message||"")+'</div><div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
       }).join("");
       if(aoChatOpen&&bottom)box.scrollTop=box.scrollHeight;
       const newest=rows[rows.length-1];
@@ -4858,16 +4858,16 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 
 
-<!-- PRIVATE SCANNER <-> DASHBOARD CHAT -->
+<!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge">NEW</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true">
   <div class="ao-chat-head">
-    <div><div class="ao-chat-title">Chat with Dashboard</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div>
+    <div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div>
     <button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button>
   </div>
   <div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div>
   <div class="ao-chat-compose">
-    <input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Dashboard...">
+    <input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin...">
     <button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button>
   </div>
   <div id="aoChatStatus" class="ao-chat-status"></div>
