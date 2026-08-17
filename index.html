@@ -2197,12 +2197,6 @@ input:focus-visible{
   box-shadow:0 0 0 4px rgba(96,165,250,.14),0 8px 22px rgba(37,99,235,.10) !important;
 }
 
-.login-input-attention{
-  animation:siAttention .35s ease;
-  border-color:#60a5fa !important;
-  box-shadow:0 0 0 4px rgba(96,165,250,.14),0 8px 22px rgba(37,99,235,.10) !important;
-}
-
 @media(max-width:600px){
   .pro-notification{
     top:14px;
@@ -2871,17 +2865,17 @@ async function sendOTP(){
 
 try {
 
-const email = document.getElementById("email").value.trim();
+const emailInput = document.getElementById("email");
+const email = emailInput.value.trim();
 
 if(!email){
-  const emailInput = document.getElementById("email");
   if(emailInput){
     emailInput.focus();
-    emailInput.classList.remove("login-input-attention");
+    emailInput.classList.remove("si-input-attention");
     void emailInput.offsetWidth;
-    emailInput.classList.add("login-input-attention");
+    emailInput.classList.add("si-input-attention");
+    if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
   }
-  alert("Enter Gmail");
   return;
 }
 
@@ -3022,11 +3016,11 @@ async function verifyOTP() {
     const emailInput = document.getElementById("email");
     if(emailInput){
       emailInput.focus();
-      emailInput.classList.remove("login-input-attention");
+      emailInput.classList.remove("si-input-attention");
       void emailInput.offsetWidth;
-      emailInput.classList.add("login-input-attention");
+      emailInput.classList.add("si-input-attention");
+      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
     }
-    statusBox.innerText = "❌ Enter Gmail first.";
     return;
   }
 
@@ -3034,11 +3028,11 @@ async function verifyOTP() {
     const otpInput = document.getElementById("otp");
     if(otpInput){
       otpInput.focus();
-      otpInput.classList.remove("login-input-attention");
+      otpInput.classList.remove("si-input-attention");
       void otpInput.offsetWidth;
-      otpInput.classList.add("login-input-attention");
+      otpInput.classList.add("si-input-attention");
+      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
     }
-    statusBox.innerText = "❌ Enter the OTP first.";
     return;
   }
 
