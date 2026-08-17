@@ -643,28 +643,6 @@ input:focus-visible{
   outline-offset:3px;
 }
 
-/* =========================================================
-   🔐 LOGIN EMPTY EMAIL SHAKE
-   Replaces the browser alert when Gmail is empty.
-   ========================================================= */
-
-.login-input-shake{
-  animation:
-    loginInputShake .45s cubic-bezier(.36,.07,.19,.97);
-}
-
-@keyframes loginInputShake{
-  0%   { transform:translateX(0); }
-  15%  { transform:translateX(-9px); }
-  30%  { transform:translateX(9px); }
-  45%  { transform:translateX(-7px); }
-  60%  { transform:translateX(7px); }
-  75%  { transform:translateX(-4px); }
-  90%  { transform:translateX(4px); }
-  100% { transform:translateX(0); }
-}
-
-
 
 /* =========================================================
    💙 BLUE / PRIMARY BUTTON
@@ -2081,6 +2059,17 @@ input:focus-visible{
   }
 
 }
+
+
+.shake{
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%,60%{transform:translateX(-7px)}
+  40%,80%{transform:translateX(7px)}
+}
 </style>
 </head>
 
@@ -2734,22 +2723,10 @@ const email = document.getElementById("email").value.trim();
 
 if(!email){
   const emailBox = document.getElementById("email");
-
-  if (emailBox) {
-    emailBox.focus();
-
-    emailBox.classList.remove("login-input-shake");
-
-    // Restart the animation every time the field is empty.
-    void emailBox.offsetWidth;
-
-    emailBox.classList.add("login-input-shake");
-
-    setTimeout(() => {
-      emailBox.classList.remove("login-input-shake");
-    }, 450);
-  }
-
+  emailBox.focus();
+  emailBox.classList.remove("shake");
+  void emailBox.offsetWidth;
+  emailBox.classList.add("shake");
   return;
 }
 
