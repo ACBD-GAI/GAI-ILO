@@ -4,2246 +4,745 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js">
-
-/* =========================================================
-   PROFESSIONAL NOTIFICATION HELPERS
-   Only replaces the small validation alerts. Existing logic
-   and server/API functions remain unchanged.
-========================================================= */
-
-function showProNotification(message, title = "Attention", icon = "⚠"){
-  const box = document.getElementById("proNotification");
-  const titleEl = document.getElementById("proNotificationTitle");
-  const messageEl = document.getElementById("proNotificationMessage");
-  const iconEl = document.getElementById("proNotificationIcon");
-
-  if(!box || !titleEl || !messageEl || !iconEl){
-    return;
-  }
-
-  titleEl.textContent = title;
-  messageEl.textContent = message;
-  iconEl.textContent = icon;
-
-  box.classList.add("show");
-
-  clearTimeout(window.proNotificationTimer);
-  window.proNotificationTimer = setTimeout(() => {
-    hideProNotification();
-  }, 3000);
-}
-
-function hideProNotification(){
-  const box = document.getElementById("proNotification");
-  if(box){
-    box.classList.remove("show");
-  }
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
-/* =========================================================
-   👓 OPTICAL SHOP — JOLLY EYEGLASS THEME
-   CSS ONLY
-   HTML / JAVASCRIPT UNCHANGED
-   ========================================================= */
-
-:root{
-  --blue:#3b82f6;
-  --blue-2:#2563eb;
-  --blue-soft:#dbeafe;
-
-  --sky:#38bdf8;
-  --sky-soft:#e0f2fe;
-
-  --purple:#8b5cf6;
-  --purple-soft:#ede9fe;
-
-  --pink:#f472b6;
-  --pink-soft:#fce7f3;
-
-  --yellow:#facc15;
-  --yellow-soft:#fef9c3;
-
-  --orange:#fb923c;
-  --orange-soft:#ffedd5;
-
-  --green:#22c55e;
-  --green-soft:#dcfce7;
-
-  --red:#ef4444;
-  --red-soft:#fee2e2;
-
-  --white:#ffffff;
-  --cream:#fffdf8;
-
-  --text:#26364a;
-  --text-dark:#172033;
-  --muted:#718096;
-
-  --border:#e5eaf1;
-  --border-blue:#bfdbfe;
-
-  --card:#ffffff;
-
-  --shadow:
-    0 12px 35px rgba(50,70,100,.10);
-
-  --shadow-hover:
-    0 18px 45px rgba(50,70,100,.16);
-
-  --radius:20px;
+body {
+  font-family: Arial;
+  margin: 0;
+  background: #eef2f7;
 }
-
-
-/* =========================================================
-   🌈 GLOBAL
-   ========================================================= */
-
-*{
-  box-sizing:border-box;
-}
-
-html{
-  min-height:100%;
-  background:#f7faff;
-}
-
-body{
-  margin:0;
-  min-height:100vh;
-
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Arial,
-    sans-serif;
-
-  color:var(--text);
-
-  background:
-    radial-gradient(
-      circle at 8% 5%,
-      rgba(59,130,246,.16),
-      transparent 25%
-    ),
-
-    radial-gradient(
-      circle at 92% 8%,
-      rgba(244,114,182,.13),
-      transparent 23%
-    ),
-
-    radial-gradient(
-      circle at 10% 90%,
-      rgba(250,204,21,.12),
-      transparent 22%
-    ),
-
-    radial-gradient(
-      circle at 90% 90%,
-      rgba(34,197,94,.10),
-      transparent 25%
-    ),
-
-    linear-gradient(
-      135deg,
-      #f9fbff 0%,
-      #ffffff 48%,
-      #f7fbff 100%
-    );
-
-  overflow-x:hidden;
-}
-
-
-/* =========================================================
-   ✨ PLAYFUL BACKGROUND
-   ========================================================= */
-
-body::before{
-  content:"";
-
-  position:fixed;
-  inset:0;
-
-  pointer-events:none;
-  z-index:-1;
-
-  opacity:.45;
-
-  background-image:
-    radial-gradient(
-      circle,
-      rgba(59,130,246,.10) 1.5px,
-      transparent 1.5px
-    );
-
-  background-size:28px 28px;
-
-  mask-image:
-    linear-gradient(
-      to bottom,
-      black,
-      transparent 80%
-    );
-}
-
-
-/* =========================================================
-   👓 HEADER
-   ========================================================= */
-
+  
 .header{
-  position:sticky;
-  top:0;
-  z-index:1000;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+    padding:10px 15px;
 
-  min-height:72px;
-  padding:12px 18px;
+    background:linear-gradient(135deg,#2196f3,#1976d2);
+    color:white;
 
-  background:
-    rgba(255,255,255,.94);
-
-  border-bottom:
-    1px solid rgba(59,130,246,.12);
-
-  box-shadow:
-    0 7px 25px rgba(55,75,105,.08);
-
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+    position:sticky;
+    top:0;
+    z-index:1000;
 }
-
-
-.header::after{
-  content:"";
-
-  position:absolute;
-
-  left:0;
-  right:0;
-  bottom:-1px;
-
-  height:3px;
-
-  background:
-    linear-gradient(
-      90deg,
-      #60a5fa,
-      #38bdf8,
-      #a78bfa,
-      #f472b6,
-      #facc15,
-      #4ade80
-    );
-}
-
 
 .header-left{
-  display:flex;
-  align-items:center;
-  gap:12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
-
 
 .header-left img{
-  width:45px;
-  height:45px;
-
-  object-fit:contain;
-
-  border-radius:15px;
-
-  padding:5px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #eff6ff,
-      #ffffff
-    );
-
-  border:
-    2px solid #dbeafe;
-
-  box-shadow:
-    0 7px 18px rgba(37,99,235,.13);
-
-  transition:
-    transform .25s ease,
-    box-shadow .25s ease;
+    width:40px;
+    height:40px;
+    background:#fff;
+    border-radius:8px;
+    padding:3px;
 }
-
-
-.header-left img:hover{
-  transform:
-    translateY(-3px)
-    rotate(-4deg);
-
-  box-shadow:
-    0 12px 25px rgba(37,99,235,.20);
-}
-
 
 .header-left h3{
-  margin:0;
-
-  color:var(--text-dark);
-
-  font-size:16px;
-  font-weight:850;
-
-  letter-spacing:.35px;
+    margin:0;
+    font-size:18px;
+    font-weight:bold;
 }
-
-
-/* =========================================================
-   🔘 HEADER BUTTONS
-   ========================================================= */
-
-.header button{
-  min-height:39px;
-
-  padding:8px 13px;
-
-  font-size:12px;
-  font-weight:800;
-
-  border-radius:12px;
-}
-
-
-.change-branch-btn{
-  color:#2563eb !important;
-
-  background:
-    #eff6ff !important;
-
-  border:
-    1px solid #bfdbfe !important;
-
-  box-shadow:
-    0 4px 12px rgba(37,99,235,.06);
-
-  transition:
-    transform .2s ease,
-    background .2s ease,
-    box-shadow .2s ease !important;
-}
-
-
-.change-branch-btn:hover{
-  background:#dbeafe !important;
-
-  transform:
-    translateY(-2px) !important;
-
-  box-shadow:
-    0 8px 20px rgba(37,99,235,.13) !important;
-}
-
 
 .logout-btn{
-  margin-left:6px;
+    width:auto;
+    margin:0;
+    padding:8px 14px;
 
-  color:#ffffff !important;
+    background:#fff;
+    color:#1976d2;
 
-  background:
-    linear-gradient(
-      135deg,
-      #fb7185,
-      #f43f5e
-    );
+    border:none;
+    border-radius:10px;
 
-  border:0;
+    font-weight:bold;
+    cursor:pointer;
 
-  box-shadow:
-    0 7px 18px rgba(244,63,94,.18);
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease;
+    box-shadow:none;
+}
+/* CONTAINER */
+.container {
+  padding: 15px;
 }
 
-
-.logout-btn:hover{
-  transform:
-    translateY(-2px)
-    rotate(-1deg);
-
-  box-shadow:
-    0 11px 25px rgba(244,63,94,.25);
+/* SCANNER */
+#reader {
+  width: 100%;
+  max-width: 360px;
+  margin: auto;
+  border-radius: 15px;
+  overflow: hidden;
 }
 
+/* INPUT */
+input {
+  padding: 14px;
+  width: 50%;
+  display: block;
+  margin: 12px auto 0 auto;
 
-/* =========================================================
-   📦 MAIN CONTAINER
-   ========================================================= */
+  font-size: 16px;
+  text-align: center;
 
-.container{
-  width:100%;
-  max-width:920px;
+  border-radius: 12px;
+  border: none;
 
-  margin:0 auto;
-
-  padding:25px 18px 48px;
+  box-sizing: border-box;
 }
 
-
-/* =========================================================
-   📷 QR SCANNER
-   ========================================================= */
-
-#reader,
-#auditReader{
-  position:relative;
-
-  background:
-    linear-gradient(
-      145deg,
-      #f8fbff,
-      #eef7ff
-    );
-
-  border:
-    3px solid #bfdbfe !important;
-
-  border-radius:26px !important;
-
-  overflow:hidden;
-
-  box-shadow:
-    0 15px 40px rgba(37,99,235,.10),
-    inset 0 0 0 1px rgba(255,255,255,.8);
-
-  isolation:isolate;
+/* BUTTONS */
+button {
+  padding: 14px;
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  border-radius: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
 }
 
-
-#reader::before,
-#auditReader::before{
-  content:"";
-
-  position:absolute;
-  inset:12px;
-
-  border:
-    2px dashed rgba(59,130,246,.28);
-
-  border-radius:18px;
-
-  pointer-events:none;
-
-  z-index:5;
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.18);
 }
 
-
-#reader::after,
-#auditReader::after{
-  content:"";
-
-  position:absolute;
-
-  left:15%;
-  right:15%;
-  top:50%;
-
-  height:3px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      #38bdf8,
-      #3b82f6,
-      #a78bfa,
-      transparent
-    );
-
-  box-shadow:
-    0 0 10px rgba(56,189,248,.55),
-    0 0 25px rgba(59,130,246,.18);
-
-  pointer-events:none;
-
-  z-index:10;
-
-  animation:
-    scanLine 2.2s ease-in-out infinite;
+button:active {
+  transform: translateY(1px) scale(0.98);
 }
 
+.btn-blue {
+  background: linear-gradient(135deg, #2196f3, #1976d2);
+  color: white;
+}
 
-@keyframes scanLine{
+.btn-orange {
+  background: linear-gradient(135deg, #ff7043, #ff5722);
+  color: white;
+}
 
-  0%{
-    transform:translateY(-110px);
-    opacity:.2;
-  }
+/* CARD */
+.card {
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 12px;
+  background: white;
+}
+  
 
-  50%{
-    opacity:1;
-  }
+.green {
+  border-left: 6px solid #2ecc71;
+}
 
-  100%{
-    transform:translateY(110px);
-    opacity:.2;
+.red {
+  border-left: 6px solid #e74c3c;
+}
+  /* SAVING CARD */
+.saving {
+  border-left: 6px solid #2196f3;
+  text-align: center;
+  padding: 25px;
+  background: linear-gradient(135deg, #e3f2fd, #ffffff);
+  color: #1976d2;
+  font-weight: bold;
+}
+
+/* SPINNER */
+.spinner {
+  width: 35px;
+  height: 35px;
+  margin: 0 auto 10px;
+  border: 4px solid #cfe8ff;
+  border-top: 4px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* TEXT STYLE */
+.saving-text {
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+/* ANIMATION */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-
-/* =========================================================
-   🧾 INPUTS
-   ========================================================= */
-
-input{
-  width:100%;
-
-  min-height:49px;
-
-  padding:12px 15px;
-
-  margin:6px 0;
-
-  color:var(--text-dark);
-
-  background:
-    #ffffff;
-
-  border:
-    2px solid #e6ebf2;
-
-  border-radius:14px;
-
-  outline:none;
-
-  font-size:14px;
-
-  box-shadow:
-    0 5px 15px rgba(50,70,100,.05);
-
-  transition:
-    border-color .22s ease,
-    box-shadow .22s ease,
-    background .22s ease,
-    transform .22s ease;
+  .no-results {
+  text-align: center;
+  margin-top: 20px;
+  padding: 20px;
+  font-weight: bold;
+  color: #666;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-
-input::placeholder{
-  color:#9aa8ba;
-}
-
-
-input:hover{
-  border-color:
-    #bfdbfe;
-
-  box-shadow:
-    0 7px 18px rgba(37,99,235,.07);
-}
-
-
-input:focus{
-  background:#ffffff;
-
-  border-color:
-    #60a5fa;
-
-  box-shadow:
-    0 0 0 4px rgba(96,165,250,.13),
-    0 8px 22px rgba(37,99,235,.08);
-
-  transform:
-    translateY(-1px);
-}
-
-
-.si-input{
-  margin-top:18px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #ffffff,
-      #f8fbff
-    );
-
-  border:
-    2px solid #dbeafe;
-
-  box-shadow:
-    0 7px 20px rgba(37,99,235,.07);
-}
-
-
-/* =========================================================
-   🎈 GLOBAL BUTTONS
-   ========================================================= */
-
-button{
-  position:relative;
-
-  min-height:46px;
-
-  padding:11px 16px;
-
-  border:0;
-  border-radius:14px;
-
-  color:#ffffff;
-
-  font-family:inherit;
-  font-size:13px;
-  font-weight:800;
-
-  cursor:pointer;
-
-  overflow:hidden;
-
-  transition:
-    transform .18s ease,
-    box-shadow .18s ease,
-    filter .18s ease,
-    opacity .18s ease;
-}
-
-
-button::after{
-  content:"";
-
-  position:absolute;
-
-  top:-30%;
-  left:-120%;
-
-  width:65%;
-  height:160%;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255,255,255,.38),
-      transparent
-    );
-
-  transform:skewX(-20deg);
-
-  transition:
-    left .55s ease;
-
-  pointer-events:none;
-}
-
-
-button:hover::after{
-  left:145%;
-}
-
-
-button:hover{
-  filter:brightness(1.03);
-}
-
-
-button:active{
-  transform:
-    translateY(1px)
-    scale(.975);
-}
-
-
-button:disabled{
-  cursor:not-allowed;
-
-  filter:grayscale(.3);
-
-  opacity:.48 !important;
-}
-
-
-button:focus-visible,
-input:focus-visible{
-  outline:
-    3px solid rgba(56,189,248,.38);
-
-  outline-offset:3px;
-}
-
-
-/* =========================================================
-   💙 BLUE / PRIMARY BUTTON
-   ========================================================= */
-
-.btn-blue{
-  color:#ffffff;
-
-  background:
-    linear-gradient(
-      135deg,
-      #60a5fa 0%,
-      #3b82f6 50%,
-      #2563eb 100%
-    );
-
-  border:
-    1px solid rgba(37,99,235,.12);
-
-  box-shadow:
-    0 8px 22px rgba(37,99,235,.20),
-    inset 0 1px 0 rgba(255,255,255,.28);
-}
-
-
-.btn-blue:hover{
-  transform:
-    translateY(-3px);
-
-  box-shadow:
-    0 13px 30px rgba(37,99,235,.28);
-}
-
-
-/* =========================================================
-   🧡 ORANGE BUTTON
-   ========================================================= */
-
-.btn-orange{
-  color:#ffffff;
-
-  background:
-    linear-gradient(
-      135deg,
-      #fdba74 0%,
-      #fb923c 48%,
-      #f97316 100%
-    );
-
-  border:
-    1px solid rgba(249,115,22,.12);
-
-  box-shadow:
-    0 8px 22px rgba(249,115,22,.18),
-    inset 0 1px 0 rgba(255,255,255,.30);
-}
-
-
-.btn-orange:hover{
-  transform:
-    translateY(-3px);
-
-  box-shadow:
-    0 13px 30px rgba(249,115,22,.25);
-}
-
-
-/* =========================================================
-   🟩 RESULT CARDS
-   ========================================================= */
-
-.card,
-.no-results{
-  position:relative;
-
-  margin-top:16px;
-
-  padding:20px;
-
-  border-radius:20px;
-
-  background:
-    rgba(255,255,255,.96);
-
-  border:
-    1px solid #e5eaf1;
-
-  box-shadow:
-    var(--shadow);
-
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-
-  overflow:hidden;
-
-  transition:
-    transform .22s ease,
-    box-shadow .22s ease;
-}
-
-
-.card::before{
-  content:"";
-
-  position:absolute;
-
-  left:0;
-  top:0;
-  bottom:0;
-
-  width:5px;
-
-  background:
-    linear-gradient(
-      to bottom,
-      #60a5fa,
-      #38bdf8,
-      #a78bfa,
-      #f472b6
-    );
-
-  border-radius:5px;
-}
-
-
-.card:hover{
-  box-shadow:
-    var(--shadow-hover);
-
-  transform:
-    translateY(-3px);
-}
-
-
-.green{
-  border:
-    1px solid #bbf7d0;
-
-  background:
-    linear-gradient(
-      145deg,
-      #ffffff,
-      #f0fdf4
-    );
-
-  box-shadow:
-    0 13px 35px rgba(34,197,94,.09);
-}
-
-
-.green::before{
-  background:
-    linear-gradient(
-      to bottom,
-      #86efac,
-      #22c55e,
-      #16a34a
-    );
-}
-
-
-.red{
-  border:
-    1px solid #fecaca;
-
-  background:
-    linear-gradient(
-      145deg,
-      #ffffff,
-      #fff5f5
-    );
-
-  box-shadow:
-    0 13px 35px rgba(239,68,68,.08);
-}
-
-
-.red::before{
-  background:
-    linear-gradient(
-      to bottom,
-      #fca5a5,
-      #ef4444,
-      #dc2626
-    );
-}
-
-
-/* =========================================================
-   💾 SAVING CARD
-   ========================================================= */
-
-.saving{
-  border:
-    1px solid #bfdbfe;
-
-  background:
-    linear-gradient(
-      135deg,
-      #eff6ff,
-      #f0f9ff,
-      #faf5ff
-    );
-
-  box-shadow:
-    0 15px 40px rgba(59,130,246,.12);
-}
-
-
-.saving::before{
-  background:
-    linear-gradient(
-      to bottom,
-      #60a5fa,
-      #38bdf8,
-      #a78bfa,
-      #f472b6
-    );
-}
-
-
-.saving-text{
-  margin-top:12px;
-
-  color:#51657c;
-
-  font-size:14px;
-  font-weight:700;
-}
-
-
-/* =========================================================
-   ⏳ SPINNER
-   ========================================================= */
-
-.spinner{
-  width:40px;
-  height:40px;
-
-  margin:auto;
-
-  border:
-    4px solid #e0f2fe;
-
-  border-top:
-    4px solid #3b82f6;
-
-  border-right:
-    4px solid #f472b6;
-
-  border-radius:50%;
-
-  box-shadow:
-    0 0 20px rgba(59,130,246,.12);
-
-  animation:
-    spin .75s linear infinite;
-}
-
-
-@keyframes spin{
-  to{
-    transform:rotate(360deg);
+/* optional smooth appearance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-
-/* =========================================================
-   ❌ NO RESULTS
-   ========================================================= */
-
-.no-results{
-  color:#718096;
-
-  text-align:center;
-
-  border:
-    1px solid #e2e8f0;
-
-  background:
-    linear-gradient(
-      145deg,
-      #ffffff,
-      #f8fafc
-    );
+  /* SCAN SUCCESS ANIMATION CARD */
+.scan-animate {
+  animation: popIn 0.35s ease-out, glow 1s ease-in-out;
+  transform-origin: center;
 }
 
+/* POP IN EFFECT */
+@keyframes popIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 
-/* =========================================================
-   🏪 BRANCH SCREEN
-   ========================================================= */
+/* GLOW EFFECT */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0 rgba(46, 204, 113, 0);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(46, 204, 113, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
 
-#branchScreen{
-  display:none;
-  position:fixed;
-
-  inset:0;
-
-  z-index:9000;
+  /* ================= LOGIN DESIGN ================= */
 
   
 
-  align-items:center;
-  justify-content:center;
-
-  overflow:auto;
-
-  padding:25px;
-
-  background:
-    radial-gradient(
-      circle at 12% 10%,
-      rgba(59,130,246,.18),
-      transparent 25%
-    ),
-
-    radial-gradient(
-      circle at 88% 12%,
-      rgba(244,114,182,.17),
-      transparent 24%
-    ),
-
-    radial-gradient(
-      circle at 15% 90%,
-      rgba(250,204,21,.14),
-      transparent 22%
-    ),
-
-    radial-gradient(
-      circle at 90% 90%,
-      rgba(34,197,94,.13),
-      transparent 24%
-    ),
-
-    #f8fbff;
+#loginScreen {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+   position:fixed;
+  overflow:hidden;
 }
 
 
-#branchScreen::before{
-  content:"";
+/* LOGIN CARD */
+#loginScreen::before {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 420px;
+  background: white;
+  border-radius: 25px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  z-index: 0;
+}
+#loginScreen > * {
+  position: relative;
+  z-index: 1;
+}
+  
 
-  position:absolute;
 
-  width:500px;
-  height:500px;
+/* TITLE */
+#loginScreen h2 {
+  color: #1976d2;
+  margin-bottom: 25px;
+  font-size: 26px;
+}
 
-  border-radius:50%;
 
-  border:
-    2px dashed rgba(59,130,246,.10);
+/* LOGIN INPUTS */
+#loginScreen input {
+  width: 280px;
+  max-width: 80%;
+  padding: 15px;
+  margin-top: 12px;
+
+  border-radius: 14px;
+  border: 1px solid #ddd;
+
+  background: #f8fbff;
+
+  text-align: center;
+  font-size: 16px;
+
+  outline: none;
+  transition: 0.3s;
+}
+
+
+#loginScreen input:focus {
+
+  border-color:#2196f3;
 
   box-shadow:
-    0 0 100px rgba(59,130,246,.08);
+  0 0 0 3px rgba(33,150,243,0.2);
 
-  pointer-events:none;
 }
 
 
-/* =========================================================
-   🏪 BRANCH CARD
-   ========================================================= */
+/* LOGIN BUTTONS */
+#loginScreen button {
 
-.branch-card{
-  position:relative;
+  width:280px;
+  max-width:80%;
 
-  width:410px;
-  max-width:100%;
+  padding:15px;
 
-  padding:30px;
-
-  border-radius:28px;
-
-  background:
-    rgba(255,255,255,.96);
-
-  border:
-    1px solid #e4eaf2;
-
-  box-shadow:
-    0 25px 70px rgba(50,70,100,.14);
-
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-
-  animation:
-    branchCardIn .45s cubic-bezier(.2,.8,.2,1);
-}
-
-
-.branch-card::before{
-  content:"";
-
-  position:absolute;
-
-  left:25px;
-  right:25px;
-  top:0;
-
-  height:4px;
-
-  border-radius:
-    0 0 10px 10px;
-
-  background:
-    linear-gradient(
-      90deg,
-      #60a5fa,
-      #38bdf8,
-      #a78bfa,
-      #f472b6,
-      #facc15
-    );
-}
-
-
-@keyframes branchCardIn{
-
-  from{
-    opacity:0;
-
-    transform:
-      translateY(22px)
-      scale(.95);
-  }
-
-  to{
-    opacity:1;
-
-    transform:
-      translateY(0)
-      scale(1);
-  }
-}
-
-
-.branch-card h2{
-  margin:0 0 7px;
-
-  font-size:24px;
-  font-weight:900;
-
-  letter-spacing:.2px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #2563eb,
-      #7c3aed,
-      #ec4899
-    );
-
-  -webkit-background-clip:text;
-  background-clip:text;
-
-  -webkit-text-fill-color:transparent;
-}
-
-
-.branch-card p{
-  margin:0 0 22px;
-
-  color:#7b8798;
-
-  font-size:13px;
-}
-
-
-/* =========================================================
-   🌈 BRANCH BUTTONS
-   ========================================================= */
-
-.branch-grid{
-  display:grid;
-
-  grid-template-columns:
-    repeat(2,minmax(0,1fr));
-
-  gap:11px;
-}
-
-
-.branch-option{
-  min-height:50px;
-
-  color:#2563eb;
-
-  background:
-    linear-gradient(
-      135deg,
-      #eff6ff,
-      #ffffff
-    );
-
-  border:
-    2px solid #dbeafe;
+  margin-top:15px;
 
   border-radius:15px;
 
-  box-shadow:
-    0 6px 15px rgba(37,99,235,.06);
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    background .2s ease,
-    border-color .2s ease;
-}
-
-
-.branch-option:nth-child(3n){
-  color:#7c3aed;
-  border-color:#ede9fe;
-  background:#faf8ff;
-}
-
-
-.branch-option:nth-child(4n){
-  color:#db2777;
-  border-color:#fce7f3;
-  background:#fff8fb;
-}
-
-
-.branch-option:hover{
-  transform:
-    translateY(-4px)
-    scale(1.015);
-
-  color:#ffffff;
+  font-size:16px;
 
   background:
-    linear-gradient(
-      135deg,
-      #60a5fa,
-      #2563eb
-    );
+  linear-gradient(135deg,#2196f3,#1565c0);
 
-  border-color:#60a5fa;
+  color:white;
 
   box-shadow:
-    0 12px 25px rgba(37,99,235,.20);
+  0 8px 18px rgba(25,118,210,0.35);
+
 }
 
 
-.branch-option:active{
-  transform:
-    translateY(0)
-    scale(.97);
-}
+/* BUTTON HOVER */
+#loginScreen button:hover {
 
-
-/* =========================================================
-   🔐 LOGIN SCREEN
-   ========================================================= */
-
-#loginScreen{
-  position:fixed !important;
-
-  inset:0 !important;
-
-  z-index:9999;
-
-  overflow:hidden;
-
-  background:
-    radial-gradient(
-      circle at 10% 10%,
-      rgba(59,130,246,.17),
-      transparent 28%
-    ),
-
-    radial-gradient(
-      circle at 90% 15%,
-      rgba(244,114,182,.16),
-      transparent 26%
-    ),
-
-    radial-gradient(
-      circle at 15% 90%,
-      rgba(250,204,21,.13),
-      transparent 25%
-    ),
-
-    radial-gradient(
-      circle at 90% 90%,
-      rgba(34,197,94,.11),
-      transparent 25%
-    ),
-
-    #f8fbff !important;
-}
-
-
-/* =========================================================
-   👓 LOGIN CARD
-   ========================================================= */
-
-#loginScreen::before{
-  content:"";
-
-  position:absolute;
-
-  width:390px;
-  height:530px;
-
-  max-width:calc(100vw - 30px);
-
-  border-radius:30px;
-
-  background:
-    rgba(255,255,255,.97);
-
-  border:
-    1px solid #e3e9f1;
+  transform:translateY(-3px);
 
   box-shadow:
-    0 30px 90px rgba(50,70,100,.16);
+  0 12px 25px rgba(25,118,210,0.45);
 
-  backdrop-filter:blur(25px);
-  -webkit-backdrop-filter:blur(25px);
-
-  animation:
-    loginCardIn .45s cubic-bezier(.2,.8,.2,1);
-
-  pointer-events:none;
 }
 
 
-#loginScreen::after{
-  content:"";
+/* STATUS MESSAGE */
+#loginStatus {
 
-  position:absolute;
+  margin-top:15px;
 
-  width:310px;
-  height:310px;
+  font-weight:bold;
 
-  border-radius:50%;
+  color:#555;
 
-  background:
-    radial-gradient(
-      circle,
-      rgba(96,165,250,.16),
-      transparent 68%
-    );
+}
 
-  filter:blur(10px);
+  /* ALREADY LOGGED IN WARNING */
 
-  pointer-events:none;
+.login-warning {
+  margin-top:15px;
+  padding:12px 18px;
+
+  background:linear-gradient(135deg,#fff3cd,#ffe082);
+
+  color:#8a5a00;
+
+  border-left:5px solid #ff9800;
+
+  border-radius:12px;
+
+  font-weight:bold;
+  font-size:15px;
+
+  text-align:center;
+
+  box-shadow:0 5px 15px rgba(255,152,0,0.25);
+
+  animation:warningPop 0.3s ease;
 }
 
 
-@keyframes loginCardIn{
+@keyframes warningPop {
 
-  from{
+  from {
     opacity:0;
-
-    transform:
-      translateY(22px)
-      scale(.96);
+    transform:translateY(-10px);
   }
 
-  to{
+  to {
     opacity:1;
-
-    transform:
-      translateY(0)
-      scale(1);
+    transform:translateY(0);
   }
+
 }
 
-
-#loginScreen h2{
-  position:relative;
-  z-index:2;
-
-  margin:0 0 15px;
-
-  font-size:25px;
-  font-weight:900;
-
-  letter-spacing:.4px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #2563eb,
-      #7c3aed,
-      #ec4899
-    );
-
-  -webkit-background-clip:text;
-  background-clip:text;
-
-  -webkit-text-fill-color:transparent;
-}
-
-
-#loginScreen > *{
-  position:relative;
-  z-index:2;
-}
-
-
-#loginScreen .selected-branch-label{
-  margin-bottom:5px;
-}
-
-
-/* =========================================================
-   🏷 SELECTED BRANCH
-   ========================================================= */
-
-.selected-branch-label{
-  padding:9px 15px;
-
-  border-radius:999px;
-
-  color:#2563eb;
-
-  background:
-    #eff6ff;
-
-  border:
-    1px solid #bfdbfe;
-
-  box-shadow:
-    0 4px 12px rgba(37,99,235,.06);
-
-  font-size:12px;
-  font-weight:850;
-
-  letter-spacing:.3px;
-}
-
-
-/* =========================================================
-   ⚠ LOGIN WARNING
-   ========================================================= */
-
-.login-warning{
-  margin-top:12px;
-
-  padding:14px;
-
-  color:#9a3412;
-
-  background:
-    linear-gradient(
-      145deg,
-      #fff7ed,
-      #ffedd5
-    );
-
-  border:
-    1px solid #fed7aa;
-
-  border-left:
-    4px solid #fb923c;
-
-  border-radius:14px;
-
-  box-shadow:
-    0 10px 25px rgba(249,115,22,.07);
-}
-
-
-/* =========================================================
-   📊 AUDIT COUNTER
-   ========================================================= */
-
-#auditCounter{
-  position:relative;
-
-  width:max-content;
-
-  min-width:145px;
-
-  margin:14px auto;
-
-  padding:9px 17px;
-
-  color:#2563eb;
-
-  background:
-    linear-gradient(
-      135deg,
-      #eff6ff,
-      #e0f2fe
-    );
-
-  border:
-    1px solid #bfdbfe;
-
-  border-radius:999px;
-
-  box-shadow:
-    0 7px 18px rgba(37,99,235,.08);
-
-  font-size:13px;
-
-  letter-spacing:.25px;
-}
-
-
-/* =========================================================
-   🪟 MODAL OVERLAY
-   ========================================================= */
+  /* ================= REPORT DIALOG ================= */
 
 .report-overlay{
-  position:fixed;
 
-  inset:0;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
 
-  z-index:11000;
+display:none;
+justify-content:center;
+align-items:center;
 
-  display:none;
 
-  align-items:center;
-  justify-content:center;
 
-  padding:18px;
+z-index:99999;
 
-  background:
-    rgba(30,41,59,.28);
-
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+animation:fadeReport .25s;
 }
 
+@keyframes fadeReport{
 
-/* =========================================================
-   🪟 MODAL
-   ========================================================= */
+from{
+opacity:0;
+}
+
+to{
+opacity:1;
+}
+
+}
 
 .report-modal{
-  width:400px;
-  max-width:100%;
 
-  padding:25px;
+width:320px;
+max-width:90%;
 
-  border-radius:24px;
+max-height:85vh;
+overflow-y:auto;
 
-  background:
-    rgba(255,255,255,.98);
+background:#fff;
 
-  border:
-    1px solid #e4e9f0;
+border-radius:18px;
 
-  box-shadow:
-    0 30px 80px rgba(50,70,100,.20);
+padding:18px;
 
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
+box-shadow:0 20px 45px rgba(0,0,0,.25);
 
-  animation:
-    modalIn .25s ease-out;
+animation:popReport .25s;
+
 }
 
+@keyframes popReport{
 
-@keyframes modalIn{
+from{
 
-  from{
-    opacity:0;
+transform:scale(.85);
+opacity:0;
 
-    transform:
-      translateY(12px)
-      scale(.97);
-  }
-
-  to{
-    opacity:1;
-
-    transform:
-      translateY(0)
-      scale(1);
-  }
 }
 
+to{
+
+transform:scale(1);
+opacity:1;
+
+}
+
+}
 
 .report-title{
-  margin-bottom:7px;
 
-  font-size:19px;
-  font-weight:900;
+font-size:20px;
+font-weight:bold;
+color:#1976d2;
 
-  background:
-    linear-gradient(
-      135deg,
-      #2563eb,
-      #7c3aed,
-      #ec4899
-    );
+text-align:center;
 
-  -webkit-background-clip:text;
-  background-clip:text;
-
-  -webkit-text-fill-color:transparent;
 }
-
 
 .report-subtitle{
-  margin-bottom:15px;
 
-  color:#718096;
+margin-top:8px;
+margin-bottom:22px;
 
-  font-size:13px;
+text-align:center;
+color:#777;
+
 }
-
-
-/* =========================================================
-   👤 RECIPIENT CARDS
-   ========================================================= */
 
 .recipient-card{
-  padding:12px;
 
-  color:#334155;
+display:flex;
+align-items:center;
 
-  background:
-    #ffffff;
+padding:10px 12px;
 
-  border:
-    1px solid #e5eaf1;
+margin-bottom:8px;
 
-  border-radius:14px;
+border:1.5px solid #e5e5e5;
 
-  box-shadow:
-    0 5px 15px rgba(50,70,100,.05);
+border-radius:14px;
 
-  transition:
-    transform .2s ease,
-    border-color .2s ease,
-    background .2s ease,
-    box-shadow .2s ease;
-}
+cursor:pointer;
 
+transition:.25s;
 
-.recipient-card:hover{
-  transform:
-    translateY(-2px);
+position:relative;
 
-  background:
-    #f8fbff;
-
-  border-color:
-    #bfdbfe;
-
-  box-shadow:
-    0 9px 22px rgba(37,99,235,.08);
-}
-
-
-.recipient-card.selected{
-  background:
-    linear-gradient(
-      135deg,
-      #eff6ff,
-      #f5f3ff
-    );
-
-  border-color:
-    #93c5fd;
-
-  box-shadow:
-    0 10px 25px rgba(37,99,235,.10);
 }
 
 
 .recipient-icon{
-  background:
+
+width:38px;
+height:38px;
+
+border-radius:50%;
+
+background:#2196f3;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-size:18px;
+
+color:#fff;
+
+margin-right:10px;
+
+flex-shrink:0;
+
+}
+
+
+.recipient-name{
+
+font-weight:bold;
+font-size:14px;
+
+}
+
+
+.recipient-email{
+
+font-size:11px;
+
+color:#777;
+
+margin-top:2px;
+
+}
+
+
+.checkmark{
+
+margin-left:auto;
+
+font-size:18px;
+
+color:#2196f3;
+
+opacity:0;
+
+transform:scale(.5);
+
+transition:.25s;
+
+}
+  .checkmark{
+
+margin-left:auto;
+
+font-size:22px;
+
+color:#2196f3;
+
+opacity:0;
+
+transform:scale(.5);
+
+transition:.25s;
+
+}
+
+.recipient-card.selected .checkmark{
+
+opacity:1;
+
+transform:scale(1);
+
+}
+
+.send-report-btn{
+
+margin-top:10px;
+
+background:linear-gradient(135deg,#2196f3,#1565c0);
+
+color:#fff;
+
+font-size:17px;
+
+}
+
+.cancel-report-btn{
+
+background:#f2f2f2;
+
+color:#555;
+
+margin-top:10px;
+
+}
+  .report-overlay{
+    background:
     linear-gradient(
       135deg,
-      #60a5fa,
-      #8b5cf6
+      rgba(25,118,210,.35),
+      rgba(0,0,0,.55)
     );
 
-  box-shadow:
-    0 7px 18px rgba(99,102,241,.18);
+    backdrop-filter: blur(10px);
 }
 
-
-/* =========================================================
-   🔄 REFRESH
-   ========================================================= */
-
-#refreshBtn{
-  position:relative;
-
-  background:
-    linear-gradient(
-      135deg,
-      #fbbf24,
-      #fb923c
-    );
-
-  box-shadow:
-    0 8px 22px rgba(249,115,22,.15);
-}
-
-
-#refreshBtn:hover{
-  transform:
-    translateY(-3px);
-
-  box-shadow:
-    0 13px 30px rgba(249,115,22,.22);
-}
-
-
-/* =========================================================
-   ✨ SCAN SUCCESS
-   ========================================================= */
-
-.scan-animate{
-  animation:
-    resultPop .38s cubic-bezier(.2,.8,.2,1),
-    resultGlow 1.15s ease-out;
-}
-
-
-@keyframes resultPop{
-
-  from{
-    opacity:0;
-
-    transform:
-      translateY(8px)
-      scale(.985);
-  }
-
-  to{
-    opacity:1;
-
-    transform:
-      translateY(0)
-      scale(1);
-  }
-}
-
-
-@keyframes resultGlow{
-
-  0%{
-    box-shadow:
-      0 0 0 rgba(59,130,246,0);
-  }
-
-  35%{
-    box-shadow:
-      0 0 35px rgba(59,130,246,.18);
-  }
-
-  100%{
-    box-shadow:
-      var(--shadow);
-  }
-}
-
-
-/* =========================================================
-   🧱 BUTTON GRID
-   ========================================================= */
-
-.button-grid{
+  .button-grid{
   display:grid;
-
-  grid-template-columns:
-    repeat(2,minmax(0,1fr));
-
-  gap:11px;
-
-  margin-top:12px;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
 }
-
 
 .button-grid button{
   width:100%;
 }
 
+  .si-input {
+  width:50%;
+  display:block;
+  margin:12px auto 0 auto;
 
-/* =========================================================
-   🌈 EXTRA BUTTON COLORS
-   Keeps existing classes functional
-   ========================================================= */
+  text-align:center;
+  padding:14px;
 
-.send-report-btn{
-  background:
-    linear-gradient(
-      135deg,
-      #60a5fa,
-      #2563eb
-    ) !important;
+  font-size:16px;
 
-  color:#fff !important;
-
-  box-shadow:
-    0 8px 20px rgba(37,99,235,.18);
-}
-
-
-.cancel-report-btn{
-  background:
-    #f1f5f9 !important;
-
-  color:#475569 !important;
-
-  border:
-    1px solid #e2e8f0 !important;
-
-  box-shadow:
-    0 5px 14px rgba(50,70,100,.05);
-}
-
-
-.cancel-report-btn:hover{
-  background:
-    #e2e8f0 !important;
-
-  transform:
-    translateY(-2px);
-}
-
-
-/* =========================================================
-   🖱 SCROLLBAR
-   ========================================================= */
-
-::-webkit-scrollbar{
-  width:9px;
-  height:9px;
-}
-
-
-::-webkit-scrollbar-track{
-  background:#f1f5f9;
-}
-
-
-::-webkit-scrollbar-thumb{
-  background:
-    linear-gradient(
-      180deg,
-      #60a5fa,
-      #8b5cf6,
-      #f472b6
-    );
-
-  border-radius:999px;
-
-  border:
-    2px solid #f1f5f9;
-}
-
-
-::-webkit-scrollbar-thumb:hover{
-  background:
-    linear-gradient(
-      180deg,
-      #3b82f6,
-      #7c3aed,
-      #ec4899
-    );
-}
-
-
-/* =========================================================
-   ✨ TEXT SELECTION
-   ========================================================= */
-
-::selection{
-  color:#ffffff;
-
-  background:
-    #3b82f6;
-}
-
-
-/* =========================================================
-   📱 MOBILE
-   ========================================================= */
-
-@media(max-width:600px){
-
-  body{
-    font-size:14px;
-  }
-
-
-  .header{
-    min-height:62px;
-
-    padding:9px 11px;
-  }
-
-
-  .header-left{
-    gap:9px;
-  }
-
-
-  .header-left img{
-    width:38px;
-    height:38px;
-
-    border-radius:11px;
-  }
-
-
-  .header-left h3{
-    max-width:145px;
-
-    overflow:hidden;
-
-    white-space:nowrap;
-
-    text-overflow:ellipsis;
-
-    font-size:13px;
-  }
-
-
-  .header button{
-    min-height:36px;
-
-    padding:7px 9px;
-
-    font-size:10px;
-  }
-
-
-  .logout-btn{
-    margin-left:3px;
-  }
-
-
-  .container{
-    padding:
-      14px
-      12px
-      32px;
-  }
-
-
-  #reader,
-  #auditReader{
-    border-radius:20px !important;
-  }
-
-
-  #reader::before,
-  #auditReader::before{
-    inset:9px;
-
-    border-radius:15px;
-  }
-
-
-  .button-grid{
-    grid-template-columns:
-      repeat(2,minmax(0,1fr));
-
-    gap:8px;
-  }
-
-
-  button{
-    min-height:48px;
-
-    padding:
-      10px 9px;
-
-    font-size:12px;
-  }
-
-
-  .si-input{
-    min-height:50px;
-
-    margin-top:14px;
-  }
-
-
-  .card,
-  .no-results{
-    padding:17px;
-
-    border-radius:17px;
-  }
-
-
-  .branch-card{
-    width:
-      calc(100vw - 28px);
-
-    padding:
-      27px
-      18px;
-
-    border-radius:24px;
-  }
-
-
-  .branch-card h2{
-    font-size:21px;
-  }
-
-
-  .branch-grid{
-    gap:8px;
-  }
-
-
-  .branch-option{
-    min-height:48px;
-  }
-
-
-  #loginScreen::before{
-    width:
-      calc(100vw - 28px);
-
-    height:500px;
-
-    border-radius:25px;
-  }
-
-
-  #loginScreen h2{
-    font-size:22px;
-  }
-
-
-  #loginScreen input,
-  #loginScreen button{
-    width:270px;
-
-    max-width:
-      calc(100vw - 70px);
-  }
-
-
-  #auditCounter{
-    margin:
-      10px
-      auto;
-  }
-
-
-  .report-modal{
-    padding:20px;
-
-    border-radius:20px;
-  }
-
-}
-
-
-/* =========================================================
-   📱 VERY SMALL PHONES
-   ========================================================= */
-
-@media(max-width:380px){
-
-  .header-left h3{
-    max-width:105px;
-  }
-
-
-  .header button{
-    padding:
-      6px 7px;
-
-    font-size:9px;
-  }
-
-
-  .container{
-    padding-left:9px;
-    padding-right:9px;
-  }
-
-
-  .button-grid{
-    gap:7px;
-  }
-
-
-  button{
-    font-size:11px;
-  }
-
-
-  .branch-card{
-    padding:
-      23px
-      15px;
-  }
-
-}
-
-
-/* =========================================================
-   🧊 REDUCED MOTION
-   ========================================================= */
-
-@media(prefers-reduced-motion:reduce){
-
-  *,
-  *::before,
-  *::after{
-    animation-duration:.01ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:.01ms !important;
-  }
-
-}
-
-
-/* =========================================================
-   PROFESSIONAL IN-PAGE NOTIFICATION
-   Replaces browser alert for SI/tag validation only.
-========================================================= */
-
-.pro-notification{
-  position:fixed;
-  top:22px;
-  left:50%;
-  transform:translate(-50%,-25px) scale(.96);
-  z-index:50000;
-  min-width:300px;
-  max-width:calc(100vw - 30px);
-  padding:15px 18px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  background:rgba(255,255,255,.97);
-  border:1px solid #dbeafe;
-  border-radius:16px;
-  box-shadow:0 20px 50px rgba(15,23,42,.18),0 4px 15px rgba(37,99,235,.08);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.2,1);
-}
-
-.pro-notification.show{
-  opacity:1;
-  transform:translate(-50%,0) scale(1);
-}
-
-.pro-notification-icon{
-  width:38px;
-  height:38px;
-  flex:0 0 38px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
   border-radius:12px;
-  color:#2563eb;
-  background:#eff6ff;
-  font-size:18px;
-}
+  border:none;
 
-.pro-notification-content{
-  flex:1;
-  min-width:0;
+  box-sizing:border-box;
 }
+  
 
-.pro-notification-title{
-  margin:0 0 2px;
-  color:#172033;
-  font-size:13px;
-  font-weight:900;
-}
-
-.pro-notification-message{
-  margin:0;
-  color:#64748b;
-  font-size:12px;
-  font-weight:600;
-  line-height:1.45;
-}
-
-.pro-notification-close{
-  width:30px !important;
-  min-width:30px !important;
-  min-height:30px !important;
-  height:30px;
-  padding:0 !important;
-  display:flex;
+/* ================= BRANCH SELECTOR ================= */
+#branchScreen{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg,#e3f2fd,#bbdefb);
+  display:none;
   align-items:center;
   justify-content:center;
-  color:#64748b !important;
-  background:#f1f5f9 !important;
-  border-radius:9px !important;
+  flex-direction:column;
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+.branch-card{
+  width:340px;
+  max-width:90vw;
+  background:#fff;
+  border-radius:25px;
+  padding:28px 24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.18);
+  text-align:center;
+}
+
+.branch-card h2{
+  margin:0 0 8px;
+  color:#1976d2;
+  font-size:26px;
+}
+
+.branch-card p{
+  margin:0 0 20px;
+  color:#666;
+}
+
+.branch-option{
+  width:100%;
+  margin-top:10px;
+  padding:15px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#2196f3,#1565c0);
+  color:#fff;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 7px 16px rgba(25,118,210,.25);
+  transition:.2s;
+}
+
+.branch-option:hover{
+  transform:translateY(-2px);
+}
+
+.branch-option small{
+  display:block;
+  margin-top:3px;
+  opacity:.9;
+  font-weight:normal;
+}
+
+.branch-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  width:340px;
+  max-width:90vw;
+  margin:0 auto;
+}
+
+.branch-grid .branch-option{
+  margin-top:0;
+  padding:13px 8px;
+}
+
+.selected-branch-label{
+  width:280px;
+  max-width:80%;
+  padding:11px 14px;
+  margin:0 auto 5px;
+  box-sizing:border-box;
+  border-radius:12px;
+  background:#e3f2fd;
+  color:#1565c0;
+  text-align:center;
+  font-weight:bold;
+}
+
+.change-branch-btn{
+  width:auto !important;
+  padding:8px 12px !important;
+  margin:0 0 0 8px !important;
+  background:rgba(255,255,255,.18) !important;
+  color:#fff !important;
   box-shadow:none !important;
+  font-size:12px !important;
 }
 
-.pro-notification-close:hover{
-  background:#e2e8f0 !important;
-  transform:none !important;
+#branchTitle{
+  text-transform:uppercase;
 }
-
-@keyframes siAttention{
-  0%,100%{transform:translateX(0)}
-  25%{transform:translateX(-5px)}
-  50%{transform:translateX(5px)}
-  75%{transform:translateX(-3px)}
-}
-
-.si-input-attention{
-  animation:siAttention .35s ease;
-  border-color:#60a5fa !important;
-  box-shadow:0 0 0 4px rgba(96,165,250,.14),0 8px 22px rgba(37,99,235,.10) !important;
-}
-
-@media(max-width:600px){
-  .pro-notification{
-    top:14px;
-    min-width:0;
-    width:calc(100vw - 28px);
-  }
-}
-
-</style>
-<style>
-
-/* ================= PRIVATE DASHBOARD CHAT ================= */
-.ao-chat-fab{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border:0;border-radius:50%;background:#111827;color:#fff;font-size:25px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99990;display:flex;align-items:center;justify-content:center}
-.ao-chat-fab:hover{transform:translateY(-2px)}
-.ao-chat-badge{position:absolute;right:-2px;top:-2px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ef4444;color:#fff;font:bold 11px Arial;display:none;align-items:center;justify-content:center}
-.ao-chat-panel{position:fixed;right:22px;bottom:92px;width:min(390px,calc(100vw - 30px));height:min(570px,calc(100vh - 125px));background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:99989;display:none;overflow:hidden}
-.ao-chat-panel.open{display:flex;flex-direction:column}
-.ao-chat-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#111827;color:#fff}
-.ao-chat-title{font-weight:800;font-size:15px}.ao-chat-sub{font-size:11px;opacity:.75;margin-top:2px}
-.ao-chat-close{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
-.ao-chat-recipient{padding:10px;border-bottom:1px solid #e5e7eb;background:#f9fafb}
-.ao-chat-select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;font-size:13px;outline:none}
-.ao-chat-messages{flex:1;overflow-y:auto;padding:14px;background:#f3f4f6}
-.ao-chat-row{display:flex;justify-content:flex-start;margin:7px 0}.ao-chat-row.mine{justify-content:flex-end}
-.ao-chat-bubble{max-width:82%;padding:9px 11px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);word-break:break-word}
-.ao-chat-row.mine .ao-chat-bubble{background:#111827;color:#fff}
-.ao-chat-name{font-size:10px;font-weight:700;opacity:.65;margin-bottom:4px}.ao-chat-text{font-size:13px;line-height:1.4;white-space:pre-wrap}.ao-chat-time{font-size:9px;opacity:.55;margin-top:5px}
-.ao-chat-empty{text-align:center;color:#6b7280;font-size:12px;padding:35px 15px}
-.ao-chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}.ao-chat-input{flex:1;min-width:0;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;outline:none;font-size:13px}.ao-chat-send{width:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:18px;cursor:pointer}.ao-chat-send:disabled{opacity:.5;cursor:not-allowed}
-.ao-chat-status{min-height:17px;padding:0 11px 8px;color:#dc2626;font-size:10px;background:#fff}
-@media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}}
 
 </style>
 </head>
 
 <body>
-
-<!-- PROFESSIONAL IN-PAGE NOTIFICATION -->
-<div id="proNotification" class="pro-notification" aria-live="polite" role="status">
-  <div class="pro-notification-icon" id="proNotificationIcon">⚠</div>
-  <div class="pro-notification-content">
-    <div class="pro-notification-title" id="proNotificationTitle">Attention</div>
-    <div class="pro-notification-message" id="proNotificationMessage">Please enter the required information.</div>
-  </div>
-  <button type="button" class="pro-notification-close" onclick="hideProNotification()" aria-label="Close notification">✕</button>
-</div>
-
 
 
   
@@ -2420,7 +919,7 @@ onclick="refreshPage()">
 </div>
 
 <div class="report-subtitle">
- 
+Enter Tag Number 
 </div>
 
 
@@ -2532,7 +1031,7 @@ const STOCK_ADMIN = [
 ];
 
 
-const API_URL = "https://script.google.com/macros/s/AKfycby0zlyydU6SlqTSNnIX5UR2OJ9hviGUimbYYEQacCHmUH7XNnVbnG3EfJjwutbBYi_wgw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbygtQfll3WXwHg-p_uQRLVcfj1H2LfWrGawP5E0JF6yqdXld09BEiEmAxtCze_tpSIU/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2671,74 +1170,62 @@ async function isAlreadySoldDirect(barcode){
   return rows[0] || null;
 }
 
-async function directCheck(rawBarcode){
+async function isSIAlreadyMarkedDirect(siNo){
+  const cleanSI = String(siNo || "").trim();
+  if(!cleanSI) return null;
 
-    await requireSupabaseAccess();
+  const rows = await sbRequest(
+    "/rest/v1/" +
+    branchTable(BRANCH,"scanresults") +
+    "?%22SI%20NO.%22=eq." +
+    encodeURIComponent(cleanSI) +
+    "&STATUS=eq.MARKED" +
+    "&select=%22SI%20NO.%22,STATUS,NTAGN,DESCRIPTION,LENSTYPE" +
+    "&limit=1"
+  );
 
-    const scannedBarcode = normalizeBarcode(rawBarcode);
-    const barcode = decodeBarcode(scannedBarcode);
+  return rows[0] || null;
+}
 
-    // ==========================================
-    // BRANCH VALIDATION
-    // ==========================================
+async function directCheck(rawBarcode, siNo){
+  await requireSupabaseAccess();
 
-    const parts = barcode.split("-");
-    const qrBranch = parts.length >= 2
-        ? String(parts[0]).trim().toUpperCase()
-        : "";
-
-    const selectedBranch = String(BRANCH || "").trim().toUpperCase();
-
-    if (
-        !qrBranch ||
-        !selectedBranch ||
-        qrBranch !== selectedBranch
-    ) {
-        return {
-            status: "WRONG BRANCH"
-        };
-    }
-
-    // ==========================================
-    // DUPLICATE CHECK
-    // ==========================================
-
-    const sold = await isAlreadySoldDirect(barcode);
-
-    if(sold){
-        return {
-            status: "DUPLICATE",
-            colJ: String(sold.LENSTYPE || ""),
-            colO: String(sold.DESCRIPTION || ""),
-            tag: String(sold.NTAGN || "")
-        };
-    }
-
-    // ==========================================
-    // STOCK CHECK
-    // ==========================================
-
-    const stock = await getStockByBarcodeDirect(barcode);
-
-    if(stock){
-        return {
-            status: "FOUND",
-            row: stockRowArray(stock),
-            colJ: String(stock.LENSTYPE || ""),
-            colO: String(stock.DESCRIPTION || ""),
-            tag: String(stock.NTAGN || "")
-        };
-    }
-
+  const markedSI = await isSIAlreadyMarkedDirect(siNo);
+  if(markedSI){
     return {
-        status: "NOT FOUND"
+      status:"SI MARKED",
+      siNo:String(markedSI["SI NO."] || siNo || ""),
+      tag:String(markedSI.NTAGN || ""),
+      colJ:String(markedSI.LENSTYPE || ""),
+      colO:String(markedSI.DESCRIPTION || "")
     };
+  }
+
+  const scannedBarcode = normalizeBarcode(rawBarcode);
+  const barcode = decodeBarcode(scannedBarcode);
+  if(!validateBarcodeBranch(barcode, BRANCH)){
+    return {status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode)};
+  }
+  const sold = await isAlreadySoldDirect(barcode);
+  if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
+  const stock = await getStockByBarcodeDirect(barcode);
+  if(stock){ return {status:"FOUND", row:stockRowArray(stock), colJ:String(stock.LENSTYPE||""), colO:String(stock.DESCRIPTION||""), tag:String(stock.NTAGN||"")}; }
+  return {status:"NOT FOUND"};
 }
 
 async function directSave(rawBarcode, siNo){
   const access = await requireSupabaseAccess();
+
+  const markedSI = await isSIAlreadyMarkedDirect(siNo);
+  if(markedSI){
+    return {
+      status:"SI MARKED",
+      siNo:String(markedSI["SI NO."] || siNo || "")
+    };
+  }
+
   const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH"};
+  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
   if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
   const stock = await getStockByBarcodeDirect(barcode);
   if(!stock) return {status:"NOT FOUND"};
@@ -2773,7 +1260,7 @@ async function directCheckTag(tag){
 async function directSaveAudit(rawBarcode){
   const access=await requireSupabaseAccess();
   const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH"};
+  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
   const parts=barcode.split("-");
   if(parts.length<2) return {status:"INVALID BARCODE"};
   const br=parts[0], ntagn=parts.slice(1).join("-");
@@ -2841,7 +1328,11 @@ async function selectBranch(branch){
 
   updateBranchUI();
 
-location.reload();
+  document.getElementById("branchScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("loginScreen").style.display = "flex";
+
+  resetLoginForm();
 
 }
 
@@ -2852,7 +1343,6 @@ function openApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
-  startScannerSessionMonitor();
 }
 
 async function changeBranch(){
@@ -2864,13 +1354,6 @@ async function changeBranch(){
     scanner = null;
     isScanning = false;
   }
-
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  notifyScannerLogout();
 
   BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
@@ -2889,79 +1372,61 @@ async function sendOTP(){
 
 try {
 
-const emailInput = document.getElementById("email");
-const email = emailInput.value.trim();
+const email = document.getElementById("email").value.trim();
 
 if(!email){
-  if(emailInput){
-    emailInput.focus();
-    emailInput.classList.remove("si-input-attention");
-    void emailInput.offsetWidth;
-    emailInput.classList.add("si-input-attention");
-    if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
-  }
+  alert("Enter Gmail");
   return;
 }
-
-const statusBox = document.getElementById("loginStatus");
-const otpBox = document.getElementById("otp");
-const verifyBtn = document.getElementById("verifyBtn");
-
-statusBox.innerText = "Sending OTP...";
 
 const res = await fetch(
-  API_URL +
-  "?action=sendOTP" +
-  "&branch=" + encodeURIComponent(BRANCH) +
-  "&email=" + encodeURIComponent(email),
-  {
-    method: "GET",
-    redirect: "follow",
-    cache: "no-store"
-  }
+API_URL +
+"?action=sendOTP" +
+"&branch=" + encodeURIComponent(BRANCH) +
+"&email=" + encodeURIComponent(email)
 );
 
+// ===== DEBUG SERVER RESPONSE =====
 const text = await res.text();
 
-console.log("SEND OTP RAW RESPONSE:", text);
+console.log("SEND OTP RAW RESPONSE:");
+console.log(text);
 
-let data = null;
+let data;
 
-try {
-  data = JSON.parse(text);
-} catch(e) {
-  data = null;
+try{
+    data = JSON.parse(text);
 }
+catch(e){
 
-/*
-   IMPORTANT OTP FIX:
-   Some Google Apps Script deployments can return an HTML wrapper/page
-   even though sendOTP has already completed and the email was sent.
-   The old code stopped here and never displayed the OTP textbox.
+    document.getElementById("loginStatus").innerHTML = `
+    <div style="color:red">
+    ❌ SERVER RETURNED HTML
+    <br><br>
+    <pre style="
+        white-space:pre-wrap;
+        font-size:12px;
+        max-height:300px;
+        overflow:auto;
+        background:#f5f5f5;
+        padding:10px;
+        border-radius:8px;
+    ">
+${text.replace(/</g,"&lt;")}
+    </pre>
+    </div>
+    `;
 
-   If the request completed successfully but the response is not JSON,
-   do NOT dump the HTML into the page. Show the OTP box instead.
-*/
-if (!data) {
-  if (res.ok) {
-    statusBox.innerText = "✅ OTP sent to Gmail. Enter the OTP below.";
-    otpBox.style.display = "block";
-    verifyBtn.style.display = "block";
-    otpBox.focus();
-    otpBox.select();
+    console.log(text);
     return;
-  }
-
-  statusBox.innerText = "❌ Unable to send OTP.";
-  console.log("SEND OTP NON-JSON RESPONSE:", text);
-  return;
 }
+// ================================
 
 if (data.status === "OTP_SENT") {
 
     if (data.alreadyLoggedIn) {
 
-      statusBox.innerHTML =
+      document.getElementById("loginStatus").innerHTML =
       `
       <div class="login-warning">
       ⚠ Account already logged in.<br><br>
@@ -2985,13 +1450,15 @@ if (data.status === "OTP_SENT") {
 
     } else {
 
-      statusBox.innerText =
+      document.getElementById("loginStatus").innerText =
       "✅ OTP sent to Gmail";
 
     }
 
+    const otpBox = document.getElementById("otp");
+
     otpBox.style.display = "block";
-    verifyBtn.style.display = "block";
+    document.getElementById("verifyBtn").style.display = "block";
 
     otpBox.focus();
     otpBox.select();
@@ -2999,16 +1466,13 @@ if (data.status === "OTP_SENT") {
 }
 else if(data.status === "EMAIL_DENIED"){
 
-    statusBox.innerText =
+    document.getElementById("loginStatus").innerText =
     "❌ Gmail not allowed.";
-
-    otpBox.style.display = "none";
-    verifyBtn.style.display = "none";
 
 }
 else{
 
-    statusBox.innerText =
+    document.getElementById("loginStatus").innerText =
     "❌ Login error.";
 
 }
@@ -3016,157 +1480,98 @@ else{
 }
 catch(err){
 
-console.error("SEND OTP ERROR:", err);
+document.getElementById("loginStatus").innerHTML =
+`
+<div style="color:red">
+❌ ERROR:<br>
+${err}
+</div>
+`;
 
-document.getElementById("loginStatus").innerText =
-"❌ Cannot connect to server.";
+console.log(err);
 
 }
 
 }
-
-let otpVerifyBusy = false;
-
 async function verifyOTP() {
 
-  if (otpVerifyBusy) return;
-
-  const email = document.getElementById("email").value.trim();
-  const otp = document.getElementById("otp").value.trim();
-  const statusBox = document.getElementById("loginStatus");
-  const verifyBtn = document.getElementById("verifyBtn");
-
-  if (!email) {
-    const emailInput = document.getElementById("email");
-    if(emailInput){
-      emailInput.focus();
-      emailInput.classList.remove("si-input-attention");
-      void emailInput.offsetWidth;
-      emailInput.classList.add("si-input-attention");
-      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
-    }
-    return;
-  }
-
-  if (!otp) {
-    const otpInput = document.getElementById("otp");
-    if(otpInput){
-      otpInput.focus();
-      otpInput.classList.remove("si-input-attention");
-      void otpInput.offsetWidth;
-      otpInput.classList.add("si-input-attention");
-      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
-    }
-    return;
-  }
-
-  if (!BRANCH) {
-    statusBox.innerText = "❌ Please select a branch.";
-    return;
-  }
-
-  otpVerifyBusy = true;
-
-  if (verifyBtn) {
-    verifyBtn.disabled = true;
-    verifyBtn.innerText = "VERIFYING...";
-  }
-
-  statusBox.innerText = "🔐 Verifying OTP...";
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
-
   try {
-    const url =
-      API_URL +
-      "?action=verifyOTP" +
-      "&branch=" + encodeURIComponent(BRANCH) +
-      "&email=" + encodeURIComponent(email) +
-      "&otp=" + encodeURIComponent(otp) +
-      "&_=" + Date.now();
 
-    const res = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      cache: "no-store",
-      signal: controller.signal
-    });
+    const email = document.getElementById("email").value.trim();
+    const otp = document.getElementById("otp").value.trim();
 
-    clearTimeout(timeout);
+    const res = await fetch(
+  API_URL +
+  "?action=verifyOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
+  "&email=" + encodeURIComponent(email) +
+  "&otp=" + encodeURIComponent(otp)
+);
 
-    const text = await res.text();
-    console.log("VERIFY OTP HTTP:", res.status);
-    console.log("VERIFY OTP RAW RESPONSE:", text);
+const text = await res.text();
 
-    let data = null;
+console.log(text);
+    let data;
+
     try {
-      data = JSON.parse(text.trim());
+      data = JSON.parse(text);
     } catch (e) {
-      data = null;
-    }
+      console.log(text);
 
-    if (!data) {
-      statusBox.innerText =
-        "⚠ Server response was delayed. Please press VERIFY OTP again.";
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Server returned invalid response.<br>Please try again.";
+
       return;
     }
 
     if (data.status === "OK") {
-      localStorage.setItem("inventoryLoggedIn", "true");
+
       localStorage.setItem(
         "inventorySession_" + BRANCH,
         JSON.stringify({
-          email: email,
+          email,
           sessionId: data.sessionId,
           time: Date.now()
         })
       );
+
       localStorage.setItem("loginTime_" + BRANCH, Date.now());
-      statusBox.innerText = "✅ Login successful.";
+
       openApp();
       return;
     }
 
     if (data.status === "ALREADY_LOGGED_IN") {
+
       if (confirm("Already logged in.\nForce logout other device?")) {
-        await forceLogin();
+        forceLogin();
       }
+
       return;
     }
 
     if (data.status === "INVALID") {
-      statusBox.innerText = "❌ Wrong or expired OTP.";
+
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Wrong OTP.";
+
       return;
     }
 
-    if (data.status === "EMAIL_DENIED") {
-      statusBox.innerText = "❌ Gmail not allowed for this branch.";
-      return;
-    }
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Login failed.";
 
-    statusBox.innerText =
-      "❌ " + (data.error || "Login failed.");
-
-  } catch (err) {
-    clearTimeout(timeout);
-    console.error("VERIFY OTP ERROR:", err);
-
-    if (err.name === "AbortError") {
-      statusBox.innerText =
-        "⚠ Server is taking too long. Please press VERIFY OTP again.";
-    } else {
-      statusBox.innerText =
-        "⚠ Connection problem. Please try VERIFY OTP again.";
-    }
-
-  } finally {
-    otpVerifyBusy = false;
-    if (verifyBtn) {
-      verifyBtn.disabled = false;
-      verifyBtn.innerText = "VERIFY OTP";
-    }
   }
+
+  catch(err){
+
+    console.error(err);
+
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Cannot connect to server.";
+
+  }
+
 }
 
   async function forceLogin() {
@@ -3240,18 +1645,24 @@ function setUIScanning(state) {
 
 async function toggleScan() {
   const siNo = document.getElementById("siNo").value;
-  if (!siNo) {
-    const siInput = document.getElementById("siNo");
-    if(siInput){
-      siInput.focus();
-      siInput.classList.remove("si-input-attention");
-      void siInput.offsetWidth;
-      siInput.classList.add("si-input-attention");
+  if (!siNo) return alert("Enter SI No");
+
+  try {
+    const markedSI = await isSIAlreadyMarkedDirect(siNo);
+    if (markedSI) {
+      showProNotification(
+        "This SI No. is already marked in the Dashboard and cannot be used.",
+        "SI No. Already Marked",
+        "🛑"
+      );
+      return;
     }
+  } catch (err) {
+    console.error("SI mark check failed:", err);
     showProNotification(
-      "Please enter the SI No before starting the scanner.",
-      "SI No Required",
-      "📄"
+      err.message || "Unable to verify SI No.",
+      "SI No Check Failed",
+      "⚠️"
     );
     return;
   }
@@ -3328,7 +1739,7 @@ await scanner.start(
 
         let data;
         try {
-          data = await directCheck(code);
+          data = await directCheck(code, siNo);
         } catch (err) {
           document.getElementById("result").innerHTML = `
             <div class="card red">
@@ -3366,19 +1777,28 @@ let tag = data.tag || row[12] || "";
                 </div>
             `;
         }
-else if (data.status === "WRONG BRANCH") {
-
-    document.getElementById("result").innerHTML = `
-        <div class="card red scan-animate">
-            ❌ WRONG BRANCH
-        </div>
-    `;
-
-    tempCode = "";
-    tempSi = "";
-
-    return;
-}
+        else if (data.status === "SI MARKED") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red scan-animate">
+                    🛑 SI NO. ALREADY MARKED<br><br>
+                    <small>SI No: <b>${data.siNo || siNo}</b></small><br>
+                    ${data.colO ? `<small>${data.colO}</small><br>` : ""}
+                    ${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
+                    ${data.tag ? `<small>🏷 Tag: <b>${data.tag}</b></small>` : ""}
+                    <br><br>
+                    This SI No. cannot be used until it is unmarked in the Dashboard.
+                </div>
+            `;
+        }
+        else if (data.status === "WRONG BRANCH") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ WRONG BRANCH<br><br>
+                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
+                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
+                </div>
+            `;
+        }
         else if (data.status === "DUPLICATE") {
             document.getElementById("result").innerHTML = `
                 <div class="card red">
@@ -3871,19 +2291,6 @@ async function processAuditQueue() {
             switch (saveData.status) {
 
 
-                case "WRONG BRANCH":
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card red scan-animate">
-
-                    ❌ WRONG BRANCH
-
-                    </div>
-                    `;
-
-                break;
-
-
                 case "RECORDED":
 
                     auditCount++;
@@ -4043,6 +2450,17 @@ let colO = data.colO || row[14] || "";
 
 let tag = data.tag || row[12] || "";
 
+
+    if (data.status === "SI MARKED") {
+      document.getElementById("result").innerHTML = `
+        <div class="card red">
+          🛑 SI NO. ALREADY MARKED<br><br>
+          SI No: <b>${data.siNo || tempSi}</b><br><br>
+          This SI No. cannot be used until it is unmarked in the Dashboard.
+        </div>
+      `;
+      return;
+    }
 
     if (data.status === "ERROR") {
 
@@ -4320,31 +2738,12 @@ document.getElementById("siNo")
 .value.trim();
 
 if(!siNo){
-  const siInput = document.getElementById("siNo");
-  if(siInput){
-    siInput.focus();
-    siInput.classList.remove("si-input-attention");
-    void siInput.offsetWidth;
-    siInput.classList.add("si-input-attention");
-  }
-  showProNotification(
-    "Please enter the SI No before adding a tag.",
-    "SI No Required",
-    "📄"
-  );
+  alert("Enter SI No first");
   return;
 }
 
 if(!tag){
-  const tagInput = document.getElementById("tagNumberInput");
-  if(tagInput){
-    tagInput.focus();
-  }
-  showProNotification(
-    "Please enter a tag number to continue.",
-    "Tag Number Required",
-    "🏷️"
-  );
+  alert("Enter Tag Number");
   return;
 }
 
@@ -4474,146 +2873,11 @@ function vibrate() {
 
 document.addEventListener("click", initAudio, { once: true });
 
-let scannerSessionMonitorTimer = null;
-let scannerForcedLogoutHandling = false;
-
-function startScannerSessionMonitor(){
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  const check = async function(){
-    if(scannerForcedLogoutHandling) return;
-
-    const session = currentSession();
-    const email = String(session.email || "").trim().toLowerCase();
-    const sessionId = String(session.sessionId || "").trim();
-
-    if(!BRANCH || !email || !sessionId){
-      return;
-    }
-
-    try{
-      const url =
-        API_URL +
-        "?action=checkSession" +
-        "&branch=" + encodeURIComponent(BRANCH) +
-        "&email=" + encodeURIComponent(email) +
-        "&sessionId=" + encodeURIComponent(sessionId);
-
-      const res = await fetch(url, {
-        method:"GET",
-        redirect:"follow",
-        cache:"no-store"
-      });
-
-      const data = await res.json();
-
-      if(!data || data.status !== "OK"){
-        await handleScannerForcedLogout(
-          "Your scanner session was logged out by the administrator."
-        );
-      }
-    }catch(err){
-      /*
-       * Do NOT log the user out just because the internet or
-       * Apps Script is temporarily unavailable.
-       */
-      console.warn("Scanner session check failed:", err);
-    }
-  };
-
-  check();
-  scannerSessionMonitorTimer = setInterval(check, 15000);
-}
-
-async function handleScannerForcedLogout(message){
-  if(scannerForcedLogoutHandling) return;
-  scannerForcedLogoutHandling = true;
-
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  try{
-    await stopNormalScanner();
-  }catch(e){}
-
-  try{
-    if(typeof stopAuditScanner === "function"){
-      await stopAuditScanner();
-    }
-  }catch(e){}
-
+async function logout() {
   localStorage.removeItem("inventorySession_" + BRANCH);
   localStorage.removeItem("loginTime_" + BRANCH);
-
-  alert(message);
-  location.reload();
-}
-
-function notifyScannerLogout(){
-  const session = currentSession();
-  const branch = String(BRANCH || "").trim().toUpperCase();
-  const email = String(session.email || "").trim().toLowerCase();
-  const sessionId = String(session.sessionId || "").trim();
-
-  if(!branch || !email || !sessionId){
-    return;
-  }
-
-  const url =
-    API_URL +
-    "?action=logout" +
-    "&branch=" + encodeURIComponent(branch) +
-    "&email=" + encodeURIComponent(email) +
-    "&sessionId=" + encodeURIComponent(sessionId) +
-    "&_=" + Date.now();
-
-  // DO NOT await this request.
-  // The browser can leave/reload immediately while the request
-  // continues in the background.
-  try{
-    fetch(url, {
-      method:"GET",
-      redirect:"follow",
-      cache:"no-store",
-      keepalive:true
-    }).catch(err => {
-      console.warn("Scanner logout notification failed:", err);
-    });
-  }catch(err){
-    console.warn("Scanner logout notification failed:", err);
-  }
-}
-
-function logout() {
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  // Capture/send server logout FIRST, but NEVER wait for it.
-  notifyScannerLogout();
-
-  const oldBranch = BRANCH;
-
-  // Remove local session immediately.
-  localStorage.removeItem("inventorySession_" + oldBranch);
-  localStorage.removeItem("loginTime_" + oldBranch);
   localStorage.removeItem("inventorySelectedBranch");
-
-  // Stop camera in the background. Do NOT wait for it.
-  try { stopNormalScanner().catch(() => {}); } catch(e) {}
-
-  // Instant UI reset.
-  BRANCH = "";
-  document.getElementById("app").style.display = "none";
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("branchScreen").style.display = "flex";
-
+  try { await stopNormalScanner(); } catch(e) {}
   location.reload();
 }
 
@@ -4627,7 +2891,7 @@ function checkLoginExpiry(){
 
   const now = Date.now();
 
-  const maxTime = 365 * 24 * 60 * 60 * 1000; // 1 year
+  const maxTime = 13 * 60 * 60 * 1000; // 13 hours
   if(now - Number(loginTime) > maxTime){
 
     
@@ -4780,48 +3044,9 @@ function cancelQuitAudit(){
   
 
   
-
-
-/* ================= PRIVATE CHAT: BRANCH -> ADMIN ================= */
-let aoChatOpen=false, aoChatSending=false, aoChatTimer=null, aoChatUnread=0;
-function aoChatEsc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
-function aoChatStatus(t){const e=document.getElementById("aoChatStatus");if(e)e.textContent=t||"";}
-function aoChatSession(){try{return currentSession()||{};}catch(e){return {};}}
-function aoChatBranch(){return String(BRANCH||"").trim().toUpperCase();}
-function aoChatEmail(){return String(aoChatSession().email||"").trim().toLowerCase();}
-function aoChatTime(v){const d=new Date(v);return Number.isNaN(d.getTime())?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}
-function aoChatKey(){return "aoChatRead:BRANCH:"+aoChatBranch()+":"+aoChatEmail();}
-function aoChatRead(){return Number(localStorage.getItem(aoChatKey())||0);}
-function aoChatMark(ts){if(ts)localStorage.setItem(aoChatKey(),String(ts));}
-function aoChatBadge(n){aoChatUnread=Math.max(0,Number(n)||0);const b=document.getElementById("aoChatBadge");if(b){b.textContent=aoChatUnread>99?"99+":String(aoChatUnread);b.style.display=aoChatUnread?"flex":"none";}}
-async function aoChatLoad(){
- const branch=aoChatBranch(),email=aoChatEmail(),box=document.getElementById("aoChatMessages");if(!box||!branch||!email)return;
- try{
-  const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+"&order=created_at.asc&limit=500");
-  const list=Array.isArray(rows)?rows:[],read=aoChatRead();
-  const incoming=list.filter(r=>r.sender_type==="DASHBOARD"),unread=incoming.filter(r=>new Date(r.created_at).getTime()>read);
-  if(!aoChatOpen)aoChatBadge(unread.length);
-  const old=box.scrollTop,bottom=(box.scrollHeight-box.clientHeight-old)<60;
-  if(!list.length)box.innerHTML='<div class="ao-chat-empty">No messages yet. Send a message to Admin.</div>';
-  else{
-   let firstUnreadId=unread.length?unread[0].id:null;
-   box.innerHTML=list.map(r=>{
-    const mine=String(r.sender_email||"").toLowerCase()===email,label=r.sender_type==="SCANNER"?"BRANCH":(r.sender_type==="DASHBOARD"?"ADMIN":r.sender_type||"");
-    const sep=firstUnreadId!==null&&r.id===firstUnreadId?'<div class="ao-chat-unread-divider">'+unread.length+' UNREAD MESSAGE'+(unread.length===1?'':'S')+' FROM ADMIN</div>':'';
-    return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(r.sender_email||"")+'</div><div class="ao-chat-text">'+aoChatEsc(r.message||"")+'</div><div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
-   }).join("");
-   if(aoChatOpen&&bottom)box.scrollTop=box.scrollHeight;
-  }
-  if(aoChatOpen){const last=incoming.length?new Date(incoming[incoming.length-1].created_at).getTime():0;if(last)aoChatMark(last);aoChatBadge(0);}
-  const sub=document.getElementById("aoChatSub");if(sub)sub.textContent=branch+" · "+email;
- }catch(e){console.warn("Scanner chat load failed:",e);aoChatStatus(e?.message||"Chat temporarily unavailable.");}
-}
-function aoChatToggle(){aoChatOpen=!aoChatOpen;const p=document.getElementById("aoChatPanel");if(!p)return;p.classList.toggle("open",aoChatOpen);p.setAttribute("aria-hidden",String(!aoChatOpen));if(aoChatOpen){aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}else aoChatLoad();}
-async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),branch=aoChatBranch(),email=aoChatEmail();if(!text)return;if(!branch||!email){aoChatStatus("Please log in first.");return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");try{await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:text})});input.value="";aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
-document.addEventListener("DOMContentLoaded",()=>{const input=document.getElementById("aoChatInput");if(input)input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();aoChatSend();}});setTimeout(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},1500);if(!aoChatTimer)aoChatTimer=setInterval(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},3000);});
 </script>
-<!-- PRIVATE BRANCH <-> ADMIN CHAT -->
-<button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
-<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div class="ao-chat-compose"><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+
 </body>
 </html>
+
+<!-- redeploy -->
