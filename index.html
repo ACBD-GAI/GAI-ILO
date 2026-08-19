@@ -2892,10 +2892,17 @@ let auditProcessing = false;
 let auditRecent = new Map();
 /* =========================================== */
 
-const STOCK_ADMIN = [
-  "remnvill@gmail.com",
-  "fmfc_audit654@yahoo.com"
-];
+/* =========================================================
+   MANUAL INVENTORY ACCESS
+   Controlled by Supabase app_allowed_users.
+   No hardcoded email list is used.
+========================================================= */
+let manualInventoryAccessCache = {
+  email: "",
+  allowed: false,
+  checkedAt: 0
+};
+
 
 
 const API_URL = "https://script.google.com/macros/s/AKfycby0zlyydU6SlqTSNnIX5UR2OJ9hviGUimbYYEQacCHmUH7XNnVbnG3EfJjwutbBYi_wgw/exec";
@@ -5257,20 +5264,61 @@ let manualInventoryQueue = [];
 let manualInventoryProcessing = false;
 let manualInventoryLoading = false;
 
-function manualInventoryIsAuthorized(){
+async function manualInventoryIsAuthorized(forceRefresh=false){
   try{
     const session = currentSession() || {};
     const email = String(session.email || "").trim().toLowerCase();
-    return STOCK_ADMIN.map(e => String(e).toLowerCase()).includes(email);
-  }catch(e){
+
+    if(!email){
+      manualInventoryAccessCache = { email, allowed:false, checkedAt:Date.now() };
+      return false;
+    }
+
+    const age = Date.now() - Number(manualInventoryAccessCache.checkedAt || 0);
+    if(!forceRefresh &&
+       manualInventoryAccessCache.email === email &&
+       age < 60000){
+      return manualInventoryAccessCache.allowed === true;
+    }
+
+    /* Only active users in app_allowed_users can see this button. */
+    const rows = await sbRequest(
+      "/rest/v1/app_allowed_users" +
+      "?email=eq." + encodeURIComponent(email) +
+      "&select=email,active&limit=1"
+    );
+
+    const allowed = Array.isArray(rows) && rows.some(row => {
+      const activeValue = row.active ?? row.ACTIVE ?? row.enabled ?? row.ENABLED;
+      return activeValue === undefined ||
+             activeValue === true ||
+             String(activeValue).toLowerCase() === "true" ||
+             String(activeValue) === "1";
+    });
+
+    manualInventoryAccessCache = {
+      email,
+      allowed,
+      checkedAt: Date.now()
+    };
+
+    return allowed;
+  }catch(err){
+    console.warn("Manual Inventory access check failed:", err);
+    manualInventoryAccessCache = {
+      email: String((currentSession() || {}).email || "").trim().toLowerCase(),
+      allowed: false,
+      checkedAt: Date.now()
+    };
     return false;
   }
 }
 
-function manualInventoryUpdateButton(){
+async function manualInventoryUpdateButton(){
   const btn = document.getElementById("manualInventoryBtn");
   if(!btn) return;
-  btn.style.display = manualInventoryIsAuthorized() ? "" : "none";
+  const allowed = await manualInventoryIsAuthorized();
+  btn.style.display = allowed ? "" : "none";
 }
 
 function manualInventoryEscape(value){
@@ -5579,8 +5627,8 @@ async function manualInventoryProcessQueue(){
   }
 }
 
-function openManualInventory(){
-  if(!manualInventoryIsAuthorized()){
+async function openManualInventory(){
+  if(!(await manualInventoryIsAuthorized(true))){
     showProNotification(
       "Manual Inventory is restricted to the authorized audit users.",
       "Access Restricted",
@@ -5627,7 +5675,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   setTimeout(sync,1000);
   setTimeout(sync,2500);
-  setInterval(sync,5000);
+  setInterval(sync,60000);
 
   const category = document.getElementById("manualCategoryFilter");
   const search = document.getElementById("manualSearchFilter");
