@@ -2754,6 +2754,30 @@ async function directSave(rawBarcode, siNo){
   return {status:"ADDED TO SOLD",row};
 }
 
+
+async function isSiNoMarked(siNo){
+  const value = String(siNo || "").trim();
+  if(!value){
+    return false;
+  }
+
+  await requireSupabaseAccess();
+
+  const table = branchTable(BRANCH, "scanresults");
+
+  const rows = await sbRequest(
+    "/rest/v1/" +
+    table +
+    "?%22SI%20NO.%22=eq." +
+    encodeURIComponent(value) +
+    "&STATUS=eq.MARKED" +
+    "&select=%22SI%20NO.%22,STATUS,NTAGN,LENSTYPE,DESCRIPTION" +
+    "&limit=1"
+  );
+
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function directSearchSI(siNo){
   await requireSupabaseAccess();
   const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults") + "?%22SI%20NO.%22=eq." + encodeURIComponent(siNo) + "&select=LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22&limit=100");
@@ -3254,6 +3278,29 @@ async function toggleScan() {
       "📄"
     );
     return;
+  }
+
+  if (!isScanning) {
+    try {
+      const marked = await isSiNoMarked(siNo);
+
+      if (marked) {
+        showProNotification(
+          "This SI No. is already marked and cannot be used for scanning.",
+          "SI No. Already Marked",
+          "🛑"
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("Marked SI check failed:", error);
+      showProNotification(
+        error?.message || "Unable to verify the SI No.",
+        "SI No Check Failed",
+        "⚠️"
+      );
+      return;
+    }
   }
 
   if (isScanning) {
@@ -4007,6 +4054,35 @@ async function saveYes() {
 
   
 
+try{
+  const marked = await isSiNoMarked(tempSi);
+
+  if(marked){
+    document.getElementById("result").innerHTML = `
+      <div class="card red">
+        🛑 SI NO. ALREADY MARKED
+        <br><br>
+        SI No: <b>${tempSi}</b>
+        <br><br>
+        This SI No. cannot be used until it is unmarked in the Dashboard.
+      </div>
+    `;
+    tempCode = "";
+    tempSi = "";
+    return;
+  }
+}catch(error){
+  console.error("Marked SI save check failed:", error);
+  document.getElementById("result").innerHTML = `
+    <div class="card red">
+      ❌ SI NO. CHECK FAILED
+      <br><br>
+      ${error.message || error}
+    </div>
+  `;
+  return;
+}
+
 if (isSaving) return;
 
 isSaving = true;
@@ -4331,6 +4407,27 @@ if(!siNo){
     "Please enter the SI No before adding a tag.",
     "SI No Required",
     "📄"
+  );
+  return;
+}
+
+try{
+  const marked = await isSiNoMarked(siNo);
+
+  if(marked){
+    showProNotification(
+      "This SI No. is already marked and cannot be used.",
+      "SI No. Already Marked",
+      "🛑"
+    );
+    return;
+  }
+}catch(error){
+  console.error("Marked SI check failed:", error);
+  showProNotification(
+    error?.message || "Unable to verify the SI No.",
+    "SI No Check Failed",
+    "⚠️"
   );
   return;
 }
