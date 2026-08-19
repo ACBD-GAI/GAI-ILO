@@ -1237,9 +1237,7 @@ input:focus-visible{
 
 #loginScreen{
   position:fixed !important;
-
   inset:0 !important;
-
   z-index:9999;
 
   overflow:hidden;
@@ -1250,31 +1248,39 @@ input:focus-visible{
       rgba(59,130,246,.17),
       transparent 28%
     ),
-
     radial-gradient(
       circle at 90% 15%,
       rgba(244,114,182,.16),
       transparent 26%
     ),
-
     radial-gradient(
       circle at 15% 90%,
       rgba(250,204,21,.13),
       transparent 25%
     ),
-
     radial-gradient(
       circle at 90% 90%,
       rgba(34,197,94,.11),
       transparent 25%
     ),
-
     #f8fbff !important;
+
+  /*
+    IMPORTANT:
+    Keep the login contents inside the card
+    with an allowance from the card border.
+  */
+  padding:30px 25px !important;
+
+  display:flex !important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
 }
 
 
 /* =========================================================
-   👓 LOGIN CARD
+   👓 LOGIN CARD BACKGROUND
    ========================================================= */
 
 #loginScreen::before{
@@ -1286,14 +1292,13 @@ input:focus-visible{
   height:530px;
 
   max-width:calc(100vw - 30px);
+  max-height:calc(100vh - 30px);
 
   border-radius:30px;
 
-  background:
-    rgba(255,255,255,.97);
+  background:rgba(255,255,255,.97);
 
-  border:
-    1px solid #e3e9f1;
+  border:1px solid #e3e9f1;
 
   box-shadow:
     0 30px 90px rgba(50,70,100,.16);
@@ -1307,6 +1312,10 @@ input:focus-visible{
   pointer-events:none;
 }
 
+
+/* =========================================================
+   🌈 LOGIN DECORATION
+   ========================================================= */
 
 #loginScreen::after{
   content:"";
@@ -1331,6 +1340,129 @@ input:focus-visible{
 }
 
 
+/* =========================================================
+   📦 LOGIN CONTENT WIDTH
+   THIS IS THE IMPORTANT FIX
+   ========================================================= */
+
+#loginScreen > *{
+  position:relative;
+  z-index:2;
+
+  /*
+    Never allow login content to touch
+    the background card border.
+  */
+  width:100%;
+  max-width:330px;
+}
+
+
+/* =========================================================
+   📝 LOGIN TEXTBOX
+   ========================================================= */
+
+#loginScreen input{
+  width:100% !important;
+
+  /*
+    330px content area means there is
+    roughly 30px allowance on both sides
+    inside the 390px card.
+  */
+
+  max-width:330px !important;
+
+  margin-left:auto !important;
+  margin-right:auto !important;
+
+  display:block;
+}
+
+
+/* =========================================================
+   🔘 LOGIN BUTTON
+   ========================================================= */
+
+#loginScreen button{
+  width:100% !important;
+
+  max-width:330px !important;
+
+  margin-left:auto !important;
+  margin-right:auto !important;
+
+  display:block;
+}
+
+
+/* =========================================================
+   🏷 SELECTED BRANCH
+   ========================================================= */
+
+#loginScreen .selected-branch-label{
+  width:max-content;
+  max-width:100%;
+
+  margin-left:auto;
+  margin-right:auto;
+
+  margin-bottom:5px;
+}
+
+
+/* =========================================================
+   📝 LOGIN TITLE
+   ========================================================= */
+
+#loginScreen h2{
+  position:relative;
+  z-index:2;
+
+  width:100%;
+  max-width:330px;
+
+  margin:0 auto 15px;
+
+  font-size:25px;
+  font-weight:900;
+
+  letter-spacing:.4px;
+
+  text-align:center;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #7c3aed,
+      #ec4899
+    );
+
+  -webkit-background-clip:text;
+  background-clip:text;
+
+  -webkit-text-fill-color:transparent;
+}
+
+
+/* =========================================================
+   ⚠ LOGIN WARNING
+   ========================================================= */
+
+#loginScreen .login-warning{
+  width:100%;
+  max-width:330px;
+
+  margin-left:auto;
+  margin-right:auto;
+}
+
+
+/* =========================================================
+   ✨ LOGIN ANIMATION
+   ========================================================= */
+
 @keyframes loginCardIn{
 
   from{
@@ -1351,98 +1483,109 @@ input:focus-visible{
 }
 
 
-#loginScreen h2{
-  position:relative;
-  z-index:2;
+/* =========================================================
+   📱 MOBILE LOGIN
+   ========================================================= */
 
-  margin:0 0 15px;
+@media(max-width:600px){
 
-  font-size:25px;
-  font-weight:900;
-
-  letter-spacing:.4px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #2563eb,
-      #7c3aed,
-      #ec4899
-    );
-
-  -webkit-background-clip:text;
-  background-clip:text;
-
-  -webkit-text-fill-color:transparent;
-}
+  #loginScreen{
+    padding:
+      25px
+      20px !important;
+  }
 
 
-#loginScreen > *{
-  position:relative;
-  z-index:2;
-}
+  #loginScreen::before{
+    width:
+      calc(100vw - 28px);
+
+    height:
+      500px;
+
+    max-height:
+      calc(100vh - 28px);
+
+    border-radius:25px;
+  }
 
 
-#loginScreen .selected-branch-label{
-  margin-bottom:5px;
+  #loginScreen > *{
+    width:100%;
+
+    max-width:
+      calc(100vw - 70px);
+  }
+
+
+  #loginScreen h2{
+    width:100%;
+
+    max-width:
+      calc(100vw - 70px);
+
+    font-size:22px;
+  }
+
+
+  #loginScreen input,
+  #loginScreen button{
+    width:100% !important;
+
+    max-width:
+      calc(100vw - 70px) !important;
+
+    margin-left:auto !important;
+    margin-right:auto !important;
+  }
+
+
+  #loginScreen .login-warning{
+    width:100%;
+
+    max-width:
+      calc(100vw - 70px);
+  }
+
 }
 
 
 /* =========================================================
-   🏷 SELECTED BRANCH
+   📱 VERY SMALL PHONE
    ========================================================= */
 
-.selected-branch-label{
-  padding:9px 15px;
+@media(max-width:380px){
 
-  border-radius:999px;
-
-  color:#2563eb;
-
-  background:
-    #eff6ff;
-
-  border:
-    1px solid #bfdbfe;
-
-  box-shadow:
-    0 4px 12px rgba(37,99,235,.06);
-
-  font-size:12px;
-  font-weight:850;
-
-  letter-spacing:.3px;
-}
+  #loginScreen{
+    padding:
+      20px
+      15px !important;
+  }
 
 
-/* =========================================================
-   ⚠ LOGIN WARNING
-   ========================================================= */
+  #loginScreen::before{
+    width:
+      calc(100vw - 20px);
 
-.login-warning{
-  margin-top:12px;
+    height:
+      calc(100vh - 20px);
 
-  padding:14px;
+    max-height:
+      500px;
 
-  color:#9a3412;
+    border-radius:22px;
+  }
 
-  background:
-    linear-gradient(
-      145deg,
-      #fff7ed,
-      #ffedd5
-    );
 
-  border:
-    1px solid #fed7aa;
+  #loginScreen > *,
+  #loginScreen h2,
+  #loginScreen input,
+  #loginScreen button,
+  #loginScreen .login-warning{
+    max-width:
+      calc(100vw - 50px) !important;
+  }
 
-  border-left:
-    4px solid #fb923c;
-
-  border-radius:14px;
-
-  box-shadow:
-    0 10px 25px rgba(249,115,22,.07);
 }
 
 
