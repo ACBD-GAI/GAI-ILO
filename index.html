@@ -2317,6 +2317,193 @@ input:focus-visible{
 @media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}}
 
 </style>
+
+<style>
+/* =========================================================
+   MANUAL INVENTORY — additive styling only
+========================================================= */
+.manual-inventory-modal{
+  position:relative;
+  width:min(920px,96vw);
+  max-height:88vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.manual-inventory-close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:38px !important;
+  min-width:38px !important;
+  height:38px;
+  min-height:38px !important;
+  padding:0 !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50% !important;
+  background:#f1f5f9 !important;
+  color:#475569 !important;
+  border:1px solid #dbe3ec !important;
+  box-shadow:0 5px 14px rgba(50,70,100,.08) !important;
+  z-index:5;
+  font-size:18px !important;
+}
+
+.manual-inventory-close:hover{
+  background:#fee2e2 !important;
+  color:#dc2626 !important;
+  transform:scale(1.05);
+}
+
+.manual-inventory-filters{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:6px 0 12px;
+}
+
+.manual-inventory-filter{
+  width:100%;
+  min-height:42px;
+  padding:9px 11px;
+  border:1px solid #d8e2ec;
+  border-radius:11px;
+  background:#fff;
+  color:#334155;
+  font-size:12px;
+  font-weight:700;
+  outline:none;
+}
+
+.manual-inventory-filter:focus{
+  border-color:#60a5fa;
+  box-shadow:0 0 0 3px rgba(96,165,250,.12);
+}
+
+.manual-inventory-head,
+.manual-inventory-row{
+  display:grid;
+  grid-template-columns:1.05fr 1.05fr 2.2fr 1.15fr 44px;
+  gap:8px;
+  align-items:center;
+}
+
+.manual-inventory-head{
+  padding:10px 12px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  border-radius:12px;
+  color:#2563eb;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.06em;
+}
+
+.manual-check-head{
+  text-align:center;
+}
+
+.manual-inventory-list{
+  flex:1;
+  min-height:120px;
+  overflow:auto;
+  margin-top:8px;
+  padding-right:2px;
+}
+
+.manual-inventory-row{
+  margin-bottom:7px;
+  padding:10px 12px;
+  background:#fff;
+  border:1px solid #e5eaf1;
+  border-radius:12px;
+  color:#334155;
+  font-size:12px;
+  box-shadow:0 4px 12px rgba(50,70,100,.04);
+}
+
+.manual-inventory-row:hover{
+  border-color:#bfdbfe;
+  background:#f8fbff;
+}
+
+.manual-inventory-cell{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.manual-inventory-checkbox{
+  width:22px !important;
+  height:22px;
+  min-height:22px !important;
+  margin:0 !important;
+  justify-self:center;
+  accent-color:#2563eb;
+  cursor:pointer;
+  box-shadow:none !important;
+}
+
+.manual-inventory-empty{
+  padding:25px 15px;
+  text-align:center;
+  color:#718096;
+  background:#f8fafc;
+  border:1px dashed #cbd5e1;
+  border-radius:14px;
+}
+
+.manual-inventory-status{
+  min-height:22px;
+  margin-top:9px;
+  color:#64748b;
+  font-size:11px;
+  font-weight:700;
+}
+
+@media(max-width:700px){
+  .manual-inventory-modal{
+    width:96vw;
+    max-height:92vh;
+  }
+
+  .manual-inventory-filters{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .manual-inventory-head,
+  .manual-inventory-row{
+    grid-template-columns:1fr 1fr 2fr 1fr 42px;
+    font-size:11px;
+  }
+}
+
+@media(max-width:520px){
+  .manual-inventory-filters{
+    grid-template-columns:1fr;
+  }
+
+  .manual-inventory-head,
+  .manual-inventory-row{
+    grid-template-columns:.9fr .9fr 1.8fr 1fr 40px;
+    gap:5px;
+    padding-left:8px;
+    padding-right:8px;
+  }
+
+  .manual-inventory-head{
+    font-size:9px;
+  }
+
+  .manual-inventory-row{
+    font-size:10px;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -2488,6 +2675,13 @@ onclick="refreshPage()">
 ♻ REFRESH
 </button>
 
+<button
+id="manualInventoryBtn"
+class="btn-blue"
+onclick="openManualInventory()"
+style="display:none;">
+📝 MANUAL INVENTORY
+</button>
 
 </div>
 
@@ -2538,6 +2732,60 @@ CANCEL
 </div>
   
 </div>
+
+<!-- =========================================================
+     MANUAL INVENTORY
+     Additive feature only.
+========================================================= -->
+<div id="manualInventoryDialog" class="report-overlay" aria-hidden="true">
+  <div class="report-modal manual-inventory-modal">
+    <button type="button"
+            class="manual-inventory-close"
+            onclick="closeManualInventory()"
+            aria-label="Close Manual Inventory">✕</button>
+
+    <div class="report-title">📝 Manual Inventory</div>
+    <div class="report-subtitle">
+      Select an item to mark it AUDITED. Selected items are added to the save queue.
+    </div>
+
+    <div class="manual-inventory-filters">
+      <select id="manualCategoryFilter" class="manual-inventory-filter">
+        <option value="">ALL CATEGORIES</option>
+      </select>
+
+      <input id="manualLenstypeFilter"
+             class="manual-inventory-filter"
+             type="text"
+             placeholder="Filter LENSTYPE">
+
+      <input id="manualDescriptionFilter"
+             class="manual-inventory-filter"
+             type="text"
+             placeholder="Filter DESCRIPTION">
+
+      <input id="manualTagFilter"
+             class="manual-inventory-filter"
+             type="text"
+             placeholder="Filter TAG NUMBER">
+    </div>
+
+    <div class="manual-inventory-head">
+      <div>CATEGORY</div>
+      <div>LENSTYPE</div>
+      <div>DESCRIPTION</div>
+      <div>TAG NUMBER</div>
+      <div class="manual-check-head">✓</div>
+    </div>
+
+    <div id="manualInventoryList" class="manual-inventory-list">
+      <div class="manual-inventory-empty">Open Manual Inventory to load items.</div>
+    </div>
+
+    <div id="manualInventoryStatus" class="manual-inventory-status"></div>
+  </div>
+</div>
+
   <div id="quitAuditDialog" class="report-overlay">
 
 <div class="report-modal">
@@ -4964,6 +5212,414 @@ function cancelQuitAudit(){
   
 
   
+
+
+
+/* =========================================================
+   MANUAL INVENTORY — ADDITIVE FEATURE ONLY
+   Restricted to STOCK_ADMIN users.
+========================================================= */
+
+let manualInventoryItems = [];
+let manualInventoryFiltered = [];
+let manualInventoryQueue = [];
+let manualInventoryProcessing = false;
+let manualInventoryLoading = false;
+
+function manualInventoryIsAuthorized(){
+  try{
+    const session = currentSession() || {};
+    const email = String(session.email || "").trim().toLowerCase();
+    return STOCK_ADMIN.map(e => String(e).toLowerCase()).includes(email);
+  }catch(e){
+    return false;
+  }
+}
+
+function manualInventoryUpdateButton(){
+  const btn = document.getElementById("manualInventoryBtn");
+  if(!btn) return;
+  btn.style.display = manualInventoryIsAuthorized() ? "" : "none";
+}
+
+function manualInventoryEscape(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+async function manualInventoryFetchAll(table, select="*"){
+  const all = [];
+  const pageSize = 1000;
+  let offset = 0;
+
+  while(true){
+    const rows = await sbRequest(
+      "/rest/v1/" + table +
+      "?select=" + encodeURIComponent(select) +
+      "&limit=" + pageSize +
+      "&offset=" + offset
+    );
+
+    const page = Array.isArray(rows) ? rows : [];
+    all.push(...page);
+
+    if(page.length < pageSize) break;
+    offset += pageSize;
+
+    if(offset > 100000) break;
+  }
+
+  return all;
+}
+
+async function manualInventoryLoad(){
+  if(manualInventoryLoading) return;
+  manualInventoryLoading = true;
+
+  const list = document.getElementById("manualInventoryList");
+  const status = document.getElementById("manualInventoryStatus");
+
+  if(list){
+    list.innerHTML = '<div class="manual-inventory-empty">⏳ Loading inventory...</div>';
+  }
+  if(status) status.textContent = "";
+
+  try{
+    await requireSupabaseAccess();
+
+    const stocksTable = branchTable(BRANCH,"stocks");
+    const auditTable = branchTable(BRANCH,"audit");
+    const soldTable = branchTable(BRANCH,"scanresults");
+
+    const [stocks,audits,sold] = await Promise.all([
+      manualInventoryFetchAll(stocksTable,"*"),
+      manualInventoryFetchAll(auditTable,'BR,NTAGN'),
+      manualInventoryFetchAll(soldTable,'BR,NTAGN')
+    ]);
+
+    const auditKeys = new Set(
+      (Array.isArray(audits) ? audits : []).map(r =>
+        normalizeBarcode(String(r.BR || "") + "-" + String(r.NTAGN || ""))
+      )
+    );
+
+    const soldKeys = new Set(
+      (Array.isArray(sold) ? sold : []).map(r =>
+        normalizeBarcode(String(r.BR || "") + "-" + String(r.NTAGN || ""))
+      )
+    );
+
+    manualInventoryItems = (Array.isArray(stocks) ? stocks : [])
+      .filter(row => row && row.BR != null && row.NTAGN != null)
+      .map(row => {
+        const br = String(row.BR || "").trim().toUpperCase();
+        const ntagn = String(row.NTAGN || "").trim().toUpperCase();
+        return {
+          row,
+          barcode: normalizeBarcode(br + "-" + ntagn),
+          category: String(row.CATEGORY || "").trim(),
+          lenstype: String(row.LENSTYPE || "").trim(),
+          description: String(row.DESCRIPTION || "").trim(),
+          tag: ntagn
+        };
+      })
+      .filter(item =>
+        item.barcode &&
+        !auditKeys.has(item.barcode) &&
+        !soldKeys.has(item.barcode)
+      );
+
+    manualInventoryBuildCategoryFilter();
+    manualInventoryApplyFilters();
+
+    if(status){
+      status.textContent =
+        manualInventoryItems.length +
+        " item" +
+        (manualInventoryItems.length === 1 ? "" : "s") +
+        " available for manual audit.";
+    }
+
+  }catch(err){
+    console.error("Manual Inventory load failed:", err);
+    if(list){
+      list.innerHTML =
+        '<div class="manual-inventory-empty">❌ ' +
+        manualInventoryEscape(err.message || "Unable to load inventory.") +
+        '</div>';
+    }
+    if(status){
+      status.textContent = "";
+    }
+  }finally{
+    manualInventoryLoading = false;
+  }
+}
+
+function manualInventoryBuildCategoryFilter(){
+  const select = document.getElementById("manualCategoryFilter");
+  if(!select) return;
+
+  const current = select.value;
+  const categories = [...new Set(
+    manualInventoryItems
+      .map(item => item.category)
+      .map(v => v === "" ? "__BLANK__" : v)
+  )].sort((a,b) => a.localeCompare(b));
+
+  select.innerHTML =
+    '<option value="">ALL CATEGORIES</option>' +
+    categories.map(cat =>
+      '<option value="' +
+      manualInventoryEscape(cat) +
+      '">' +
+      (cat === "__BLANK__" ? "NO CATEGORY" : manualInventoryEscape(cat)) +
+      '</option>'
+    ).join("");
+
+  if(categories.includes(current)){
+    select.value = current;
+  }
+}
+
+function manualInventoryApplyFilters(){
+  const category = String(
+    document.getElementById("manualCategoryFilter")?.value || ""
+  );
+
+  const lenstype = String(
+    document.getElementById("manualLenstypeFilter")?.value || ""
+  ).trim().toLowerCase();
+
+  const description = String(
+    document.getElementById("manualDescriptionFilter")?.value || ""
+  ).trim().toLowerCase();
+
+  const tag = String(
+    document.getElementById("manualTagFilter")?.value || ""
+  ).trim().toLowerCase();
+
+  manualInventoryFiltered = manualInventoryItems.filter(item => {
+    const categoryValue =
+      item.category === "" ? "__BLANK__" : item.category;
+
+    if(category && categoryValue !== category) return false;
+    if(lenstype && !item.lenstype.toLowerCase().includes(lenstype)) return false;
+    if(description && !item.description.toLowerCase().includes(description)) return false;
+    if(tag && !item.tag.toLowerCase().includes(tag)) return false;
+
+    return true;
+  });
+
+  manualInventoryRender();
+}
+
+function manualInventoryRender(){
+  const list = document.getElementById("manualInventoryList");
+  if(!list) return;
+
+  if(!manualInventoryFiltered.length){
+    list.innerHTML =
+      '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
+    return;
+  }
+
+  list.innerHTML = manualInventoryFiltered.map(item => `
+    <div class="manual-inventory-row"
+         data-manual-barcode="${manualInventoryEscape(item.barcode)}">
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.category || "NO CATEGORY")}">
+        ${manualInventoryEscape(item.category || "NO CATEGORY")}
+      </div>
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.lenstype)}">
+        ${manualInventoryEscape(item.lenstype)}
+      </div>
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.description)}">
+        ${manualInventoryEscape(item.description)}
+      </div>
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.tag)}">
+        ${manualInventoryEscape(item.tag)}
+      </div>
+      <input type="checkbox"
+             class="manual-inventory-checkbox"
+             aria-label="Mark ${manualInventoryEscape(item.tag)} as audited"
+             onchange="manualInventorySelectItem('${manualInventoryEscape(item.barcode)}', this)">
+    </div>
+  `).join("");
+}
+
+function manualInventorySelectItem(barcode, checkbox){
+  if(!checkbox || !checkbox.checked) return;
+
+  const normalized = normalizeBarcode(barcode);
+
+  // Remove immediately from the visible working list.
+  manualInventoryItems =
+    manualInventoryItems.filter(item => item.barcode !== normalized);
+  manualInventoryFiltered =
+    manualInventoryFiltered.filter(item => item.barcode !== normalized);
+
+  manualInventoryRender();
+
+  // Add to its own queue; Re-Inventory queue is untouched.
+  if(!manualInventoryQueue.includes(normalized)){
+    manualInventoryQueue.push(normalized);
+    manualInventoryProcessQueue();
+  }
+
+  const status = document.getElementById("manualInventoryStatus");
+  if(status){
+    status.textContent =
+      "Saving queue: " +
+      manualInventoryQueue.length +
+      (manualInventoryProcessing ? " • saving..." : "");
+  }
+}
+
+async function manualInventoryProcessQueue(){
+  if(manualInventoryProcessing) return;
+
+  manualInventoryProcessing = true;
+
+  const status = document.getElementById("manualInventoryStatus");
+
+  try{
+    while(manualInventoryQueue.length){
+      const barcode = manualInventoryQueue.shift();
+
+      if(status){
+        status.textContent =
+          "Saving manual audit • " +
+          manualInventoryQueue.length +
+          " remaining...";
+      }
+
+      try{
+        const result = await directSaveAudit(barcode);
+
+        if(result.status === "RECORDED"){
+          if(status){
+            status.textContent =
+              "✅ " + (result.tag || barcode) + " marked AUDITED.";
+          }
+        }else if(result.status === "ALREADY_AUDITED"){
+          if(status){
+            status.textContent =
+              "ℹ️ " + (result.tag || barcode) + " was already AUDITED.";
+          }
+        }else{
+          console.warn(
+            "Manual Inventory save result:",
+            result
+          );
+          if(status){
+            status.textContent =
+              "⚠️ " + barcode + " • " + (result.status || "SAVE FAILED");
+          }
+        }
+      }catch(err){
+        console.error(
+          "Manual Inventory item save failed:",
+          barcode,
+          err
+        );
+
+        // Keep processing the rest of the queue.
+        if(status){
+          status.textContent =
+            "⚠️ Save failed for " +
+            barcode +
+            ". Continuing queue...";
+        }
+      }
+    }
+  }finally{
+    manualInventoryProcessing = false;
+
+    if(status){
+      status.textContent =
+        "✅ Manual Inventory queue saved. " +
+        manualInventoryItems.length +
+        " item" +
+        (manualInventoryItems.length === 1 ? "" : "s") +
+        " remaining.";
+    }
+  }
+}
+
+function openManualInventory(){
+  if(!manualInventoryIsAuthorized()){
+    showProNotification(
+      "Manual Inventory is restricted to the authorized audit users.",
+      "Access Restricted",
+      "🔒"
+    );
+    return;
+  }
+
+  const dialog = document.getElementById("manualInventoryDialog");
+  if(!dialog) return;
+
+  dialog.style.display = "flex";
+  dialog.setAttribute("aria-hidden","false");
+
+  manualInventoryQueue = [];
+  manualInventoryProcessing = false;
+
+  const category = document.getElementById("manualCategoryFilter");
+  const lenstype = document.getElementById("manualLenstypeFilter");
+  const description = document.getElementById("manualDescriptionFilter");
+  const tag = document.getElementById("manualTagFilter");
+
+  if(category) category.value = "";
+  if(lenstype) lenstype.value = "";
+  if(description) description.value = "";
+  if(tag) tag.value = "";
+
+  manualInventoryLoad();
+}
+
+function closeManualInventory(){
+  const dialog = document.getElementById("manualInventoryDialog");
+  if(!dialog) return;
+
+  if(manualInventoryProcessing || manualInventoryQueue.length){
+    showProNotification(
+      "Items are still being saved. You can close this window safely; the save queue will continue.",
+      "Saving Audit",
+      "💾"
+    );
+  }
+
+  dialog.style.display = "none";
+  dialog.setAttribute("aria-hidden","true");
+}
+
+/* Keep access control synced after the existing login flow. */
+document.addEventListener("DOMContentLoaded",()=>{
+  manualInventoryUpdateButton();
+
+  const sync = ()=>{
+    manualInventoryUpdateButton();
+  };
+
+  setTimeout(sync,1000);
+  setTimeout(sync,2500);
+  setInterval(sync,5000);
+
+  const category = document.getElementById("manualCategoryFilter");
+  const lenstype = document.getElementById("manualLenstypeFilter");
+  const description = document.getElementById("manualDescriptionFilter");
+  const tag = document.getElementById("manualTagFilter");
+
+  category?.addEventListener("change", manualInventoryApplyFilters);
+  lenstype?.addEventListener("input", manualInventoryApplyFilters);
+  description?.addEventListener("input", manualInventoryApplyFilters);
+  tag?.addEventListener("input", manualInventoryApplyFilters);
+});
 
 
 /* ================= PRIVATE CHAT: BRANCH -> ADMIN ================= */
