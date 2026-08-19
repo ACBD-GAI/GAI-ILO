@@ -2205,6 +2205,94 @@ input:focus-visible{
   }
 }
 
+   /* =========================================================
+   LOGIN INPUTS — RESPONSIVE FIX
+   Keeps Email and OTP fields inside the login card
+   on small screens/devices.
+   ========================================================= */
+
+#loginScreen input[type="email"],
+#loginScreen input[type="text"],
+#loginScreen input[type="number"],
+#loginScreen input[type="tel"]{
+
+  width:100% !important;
+
+  max-width:100% !important;
+
+  box-sizing:border-box !important;
+
+  min-width:0 !important;
+
+}
+
+
+/* Prevent the input's parent from forcing it wider */
+
+#loginScreen input{
+
+  box-sizing:border-box !important;
+
+  min-width:0 !important;
+
+}
+
+
+/* =========================================================
+   SMALL DEVICES
+   ========================================================= */
+
+@media (max-width:430px){
+
+  #loginScreen::before{
+
+    width:calc(100vw - 30px) !important;
+
+    max-width:calc(100vw - 30px) !important;
+
+  }
+
+  #loginScreen input[type="email"],
+  #loginScreen input[type="text"],
+  #loginScreen input[type="number"],
+  #loginScreen input[type="tel"]{
+
+    width:100% !important;
+
+    max-width:100% !important;
+
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width:360px){
+
+  #loginScreen::before{
+
+    width:calc(100vw - 20px) !important;
+
+    max-width:calc(100vw - 20px) !important;
+
+  }
+
+  #loginScreen input[type="email"],
+  #loginScreen input[type="text"],
+  #loginScreen input[type="number"],
+  #loginScreen input[type="tel"]{
+
+    width:100% !important;
+
+    max-width:100% !important;
+
+  }
+
+}
+
 </style>
 <style>
 
