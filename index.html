@@ -2512,9 +2512,11 @@ input:focus-visible{
     grid-template-columns:1fr 1fr;
   }
 
+  /* EXACTLY 4 columns — matches the 4 cells in every row/header. */
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:1fr 1fr 2fr 1fr 42px;
+    grid-template-columns:90px minmax(0,1fr) 96px 82px;
+    column-gap:7px;
     font-size:11px;
   }
 }
@@ -2524,10 +2526,11 @@ input:focus-visible{
     grid-template-columns:1fr;
   }
 
+  /* Keep header and result rows on the SAME 4-column grid. */
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:.9fr .9fr 1.8fr 1fr 40px;
-    gap:5px;
+    grid-template-columns:78px minmax(0,1fr) 80px 76px;
+    column-gap:6px;
     padding-left:8px;
     padding-right:8px;
   }
@@ -2538,6 +2541,12 @@ input:focus-visible{
 
   .manual-inventory-row{
     font-size:10px;
+  }
+
+  .manual-inventory-action{
+    width:64px !important;
+    min-width:64px !important;
+    justify-self:end;
   }
 }
 </style>
