@@ -2205,74 +2205,89 @@ input:focus-visible{
   }
 }
 /* =========================================================
-   🔐 LOGIN + OTP INPUT SIZE FIX
-   Inputs will stay inside the login card and padding
-   will NOT make them overflow or become wider.
-   HTML / JAVASCRIPT UNCHANGED.
+   🔐 LOGIN / OTP — EXACT SIZE CONTROL
    ========================================================= */
 
-#loginScreen input,
-#loginScreen input[type="text"],
-#loginScreen input[type="email"],
-#loginScreen input[type="password"],
-#loginScreen input[type="number"],
-#loginScreen input[type="tel"]{
+#loginScreen{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:30px;
+}
+
+/* Keep every login element inside the card width */
+#loginScreen > *{
+  width:100%;
+  max-width:330px;
+  box-sizing:border-box;
+}
+
+/* LOGIN + OTP TEXTBOX */
+#loginScreen input{
+  display:block;
+
   width:100% !important;
-  max-width:100% !important;
+  max-width:330px !important;
 
   min-width:0 !important;
 
+  height:52px;
+
+  margin:7px auto !important;
+
+  padding:12px 15px !important;
+
   box-sizing:border-box !important;
-
-  padding-left:15px !important;
-  padding-right:15px !important;
-
-  margin-left:0 !important;
-  margin-right:0 !important;
 }
 
-/* OTP TEXTBOXES */
+/* OTP input specifically */
 #loginScreen input[id*="otp"],
 #loginScreen input[name*="otp"],
 #loginScreen input[class*="otp"]{
-  box-sizing:border-box !important;
-
   width:100% !important;
-  max-width:100% !important;
+  max-width:330px !important;
 
-  min-width:0 !important;
-}
-
-/* Login buttons also stay inside the same width */
-#loginScreen button{
   box-sizing:border-box !important;
-
-  max-width:100% !important;
 }
 
-/* MOBILE — same rule, no forced 270px width */
+/* LOGIN BUTTONS */
+#loginScreen button{
+  width:100% !important;
+  max-width:330px !important;
+
+  box-sizing:border-box !important;
+}
+
+/* SELECTED BRANCH */
+#loginScreen .selected-branch-label{
+  width:auto !important;
+  max-width:330px;
+}
+
+/* MOBILE */
 @media(max-width:600px){
 
-  #loginScreen input,
-  #loginScreen input[type="text"],
-  #loginScreen input[type="email"],
-  #loginScreen input[type="password"],
-  #loginScreen input[type="number"],
-  #loginScreen input[type="tel"]{
-    width:100% !important;
-    max-width:100% !important;
+  #loginScreen{
+    padding:20px;
+  }
 
-    min-width:0 !important;
+  #loginScreen > *{
+    width:100%;
+    max-width:330px;
+  }
+
+  #loginScreen input{
+    width:100% !important;
+    max-width:330px !important;
+    height:52px;
 
     box-sizing:border-box !important;
-
-    padding-left:15px !important;
-    padding-right:15px !important;
   }
 
   #loginScreen button{
     width:100% !important;
-    max-width:100% !important;
+    max-width:330px !important;
   }
 }
    
