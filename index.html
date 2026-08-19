@@ -2360,7 +2360,7 @@ input:focus-visible{
 
 .manual-inventory-filters{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:minmax(180px,1fr) minmax(260px,2fr);
   gap:8px;
   margin:6px 0 12px;
 }
@@ -2383,10 +2383,26 @@ input:focus-visible{
   box-shadow:0 0 0 3px rgba(96,165,250,.12);
 }
 
+.manual-inventory-search{
+  text-align:left;
+}
+
+@media(max-width:600px){
+  .manual-inventory-filters{
+    grid-template-columns:1fr;
+  }
+
+  .manual-inventory-head,
+  .manual-inventory-row{
+    grid-template-columns:1fr 1.8fr 1fr 40px;
+    gap:6px;
+  }
+}
+
 .manual-inventory-head,
 .manual-inventory-row{
   display:grid;
-  grid-template-columns:1.05fr 1.05fr 2.2fr 1.15fr 44px;
+  grid-template-columns:1.05fr 2.35fr 1.25fr 44px;
   gap:8px;
   align-items:center;
 }
@@ -2745,33 +2761,19 @@ CANCEL
             aria-label="Close Manual Inventory">✕</button>
 
     <div class="report-title">📝 Manual Inventory</div>
-    <div class="report-subtitle">
-      Select an item to mark it AUDITED. Selected items are added to the save queue.
-    </div>
-
     <div class="manual-inventory-filters">
       <select id="manualCategoryFilter" class="manual-inventory-filter">
         <option value="">ALL CATEGORIES</option>
       </select>
 
-      <input id="manualLenstypeFilter"
-             class="manual-inventory-filter"
-             type="text"
-             placeholder="Filter LENSTYPE">
-
-      <input id="manualDescriptionFilter"
-             class="manual-inventory-filter"
-             type="text"
-             placeholder="Filter DESCRIPTION">
-
-      <input id="manualTagFilter"
-             class="manual-inventory-filter"
-             type="text"
-             placeholder="Filter TAG NUMBER">
+      <input id="manualSearchFilter"
+             class="manual-inventory-filter manual-inventory-search"
+             type="search"
+             placeholder="🔍 Search Lenstype, Description or Tag Number"
+             autocomplete="off">
     </div>
 
     <div class="manual-inventory-head">
-      <div>CATEGORY</div>
       <div>LENSTYPE</div>
       <div>DESCRIPTION</div>
       <div>TAG NUMBER</div>
@@ -5296,7 +5298,7 @@ async function manualInventoryLoad(){
     const soldTable = branchTable(BRANCH,"scanresults");
 
     const [stocks,audits,sold] = await Promise.all([
-      manualInventoryFetchAll(stocksTable,"*"),
+      manualInventoryFetchAll(stocksTable,'BR,NTAGN,CATEGORY,LENSTYPE,DESCRIPTION'),
       manualInventoryFetchAll(auditTable,'BR,NTAGN'),
       manualInventoryFetchAll(soldTable,'BR,NTAGN')
     ]);
@@ -5391,16 +5393,8 @@ function manualInventoryApplyFilters(){
     document.getElementById("manualCategoryFilter")?.value || ""
   );
 
-  const lenstype = String(
-    document.getElementById("manualLenstypeFilter")?.value || ""
-  ).trim().toLowerCase();
-
-  const description = String(
-    document.getElementById("manualDescriptionFilter")?.value || ""
-  ).trim().toLowerCase();
-
-  const tag = String(
-    document.getElementById("manualTagFilter")?.value || ""
+  const search = String(
+    document.getElementById("manualSearchFilter")?.value || ""
   ).trim().toLowerCase();
 
   manualInventoryFiltered = manualInventoryItems.filter(item => {
@@ -5408,9 +5402,16 @@ function manualInventoryApplyFilters(){
       item.category === "" ? "__BLANK__" : item.category;
 
     if(category && categoryValue !== category) return false;
-    if(lenstype && !item.lenstype.toLowerCase().includes(lenstype)) return false;
-    if(description && !item.description.toLowerCase().includes(description)) return false;
-    if(tag && !item.tag.toLowerCase().includes(tag)) return false;
+
+    if(search){
+      const haystack = [
+        item.lenstype,
+        item.description,
+        item.tag
+      ].join(" ").toLowerCase();
+
+      if(!haystack.includes(search)) return false;
+    }
 
     return true;
   });
@@ -5431,9 +5432,6 @@ function manualInventoryRender(){
   list.innerHTML = manualInventoryFiltered.map(item => `
     <div class="manual-inventory-row"
          data-manual-barcode="${manualInventoryEscape(item.barcode)}">
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.category || "NO CATEGORY")}">
-        ${manualInventoryEscape(item.category || "NO CATEGORY")}
-      </div>
       <div class="manual-inventory-cell" title="${manualInventoryEscape(item.lenstype)}">
         ${manualInventoryEscape(item.lenstype)}
       </div>
@@ -5566,34 +5564,24 @@ function openManualInventory(){
   dialog.style.display = "flex";
   dialog.setAttribute("aria-hidden","false");
 
-  manualInventoryQueue = [];
-  manualInventoryProcessing = false;
-
-  const category = document.getElementById("manualCategoryFilter");
-  const lenstype = document.getElementById("manualLenstypeFilter");
-  const description = document.getElementById("manualDescriptionFilter");
-  const tag = document.getElementById("manualTagFilter");
-
-  if(category) category.value = "";
-  if(lenstype) lenstype.value = "";
-  if(description) description.value = "";
-  if(tag) tag.value = "";
-
-  manualInventoryLoad();
+  // Never interrupt an already-running background save queue.
+  if(!manualInventoryProcessing && manualInventoryQueue.length === 0){
+    const category = document.getElementById("manualCategoryFilter");
+    const search = document.getElementById("manualSearchFilter");
+    if(category) category.value = "";
+    if(search) search.value = "";
+    manualInventoryLoad();
+  }else{
+    manualInventoryBuildCategoryFilter();
+    manualInventoryApplyFilters();
+  }
 }
 
 function closeManualInventory(){
   const dialog = document.getElementById("manualInventoryDialog");
   if(!dialog) return;
 
-  if(manualInventoryProcessing || manualInventoryQueue.length){
-    showProNotification(
-      "Items are still being saved. You can close this window safely; the save queue will continue.",
-      "Saving Audit",
-      "💾"
-    );
-  }
-
+  // Closing the window does NOT stop the background save queue.
   dialog.style.display = "none";
   dialog.setAttribute("aria-hidden","true");
 }
@@ -5611,14 +5599,10 @@ document.addEventListener("DOMContentLoaded",()=>{
   setInterval(sync,5000);
 
   const category = document.getElementById("manualCategoryFilter");
-  const lenstype = document.getElementById("manualLenstypeFilter");
-  const description = document.getElementById("manualDescriptionFilter");
-  const tag = document.getElementById("manualTagFilter");
+  const search = document.getElementById("manualSearchFilter");
 
   category?.addEventListener("change", manualInventoryApplyFilters);
-  lenstype?.addEventListener("input", manualInventoryApplyFilters);
-  description?.addEventListener("input", manualInventoryApplyFilters);
-  tag?.addEventListener("input", manualInventoryApplyFilters);
+  search?.addEventListener("input", manualInventoryApplyFilters);
 });
 
 
