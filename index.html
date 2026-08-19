@@ -2391,18 +2391,12 @@ input:focus-visible{
   .manual-inventory-filters{
     grid-template-columns:1fr;
   }
-
-  .manual-inventory-head,
-  .manual-inventory-row{
-    grid-template-columns:90px minmax(0,1fr) 105px 68px;
-    gap:7px;
-  }
 }
 
 .manual-inventory-head,
 .manual-inventory-row{
   display:grid;
-  grid-template-columns:110px minmax(0,1fr) 135px 78px;
+  grid-template-columns:90px minmax(140px,1fr) 90px 80px;
   column-gap:10px;
   align-items:center;
   width:100%;
@@ -2512,11 +2506,10 @@ input:focus-visible{
     grid-template-columns:1fr 1fr;
   }
 
-  /* EXACTLY 4 columns — matches the 4 cells in every row/header. */
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:90px minmax(0,1fr) 96px 82px;
-    column-gap:7px;
+    grid-template-columns:90px minmax(140px,1fr) 90px 80px;
+    column-gap:10px;
     font-size:11px;
   }
 }
@@ -2526,17 +2519,23 @@ input:focus-visible{
     grid-template-columns:1fr;
   }
 
-  /* Keep header and result rows on the SAME 4-column grid. */
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:78px minmax(0,1fr) 80px 76px;
-    column-gap:6px;
+    grid-template-columns:82px minmax(125px,1fr) 78px 74px;
+    column-gap:8px;
     padding-left:8px;
     padding-right:8px;
   }
 
   .manual-inventory-head{
     font-size:9px;
+    white-space:nowrap;
+  }
+
+  .manual-inventory-head > div:nth-child(3){
+    white-space:normal;
+    line-height:1.1;
+    text-align:center;
   }
 
   .manual-inventory-row{
