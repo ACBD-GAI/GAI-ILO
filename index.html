@@ -4,44 +4,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js">
-
-/* =========================================================
-   PROFESSIONAL NOTIFICATION HELPERS
-   Only replaces the small validation alerts. Existing logic
-   and server/API functions remain unchanged.
-========================================================= */
-
-function showProNotification(message, title = "Attention", icon = "⚠"){
-  const box = document.getElementById("proNotification");
-  const titleEl = document.getElementById("proNotificationTitle");
-  const messageEl = document.getElementById("proNotificationMessage");
-  const iconEl = document.getElementById("proNotificationIcon");
-
-  if(!box || !titleEl || !messageEl || !iconEl){
-    return;
-  }
-
-  titleEl.textContent = title;
-  messageEl.textContent = message;
-  iconEl.textContent = icon;
-
-  box.classList.add("show");
-
-  clearTimeout(window.proNotificationTimer);
-  window.proNotificationTimer = setTimeout(() => {
-    hideProNotification();
-  }, 3000);
-}
-
-function hideProNotification(){
-  const box = document.getElementById("proNotification");
-  if(box){
-    box.classList.remove("show");
-  }
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 /* =========================================================
    👓 OPTICAL SHOP — JOLLY EYEGLASS THEME
@@ -973,14 +936,13 @@ input:focus-visible{
    ========================================================= */
 
 #branchScreen{
-  display:none;
   position:fixed;
 
   inset:0;
 
   z-index:9000;
 
-  
+  display:flex;
 
   align-items:center;
   justify-content:center;
@@ -2097,240 +2059,97 @@ input:focus-visible{
 
 }
 
-
 /* =========================================================
-   PROFESSIONAL IN-PAGE NOTIFICATION
-   Replaces browser alert for SI/tag validation only.
+   MANUAL INVENTORY
 ========================================================= */
-
-.pro-notification{
-  position:fixed;
-  top:22px;
-  left:50%;
-  transform:translate(-50%,-25px) scale(.96);
-  z-index:50000;
-  min-width:300px;
-  max-width:calc(100vw - 30px);
-  padding:15px 18px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  background:rgba(255,255,255,.97);
-  border:1px solid #dbeafe;
-  border-radius:16px;
-  box-shadow:0 20px 50px rgba(15,23,42,.18),0 4px 15px rgba(37,99,235,.08);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.2,1);
+.manual-inventory-btn{
+  background:linear-gradient(135deg,#8b5cf6,#6366f1) !important;
+  color:#fff !important;
+  box-shadow:0 8px 20px rgba(99,102,241,.20);
 }
-
-.pro-notification.show{
-  opacity:1;
-  transform:translate(-50%,0) scale(1);
+.manual-inventory-modal{
+  width:min(96vw,760px);
+  max-height:88vh;
+  overflow:hidden;
 }
-
-.pro-notification-icon{
-  width:38px;
-  height:38px;
-  flex:0 0 38px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+.manual-inventory-filters{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  margin:14px 0;
+}
+.manual-inventory-filters select,
+.manual-inventory-filters input{
+  width:100%;
+  min-height:42px;
+  padding:9px 11px;
+  border:1px solid #dbe3ef;
   border-radius:12px;
-  color:#2563eb;
-  background:#eff6ff;
-  font-size:18px;
+  font-weight:700;
+  background:#fff;
+  color:#26364a;
+  outline:none;
 }
-
-.pro-notification-content{
-  flex:1;
-  min-width:0;
-}
-
-.pro-notification-title{
-  margin:0 0 2px;
-  color:#172033;
-  font-size:13px;
-  font-weight:900;
-}
-
-.pro-notification-message{
-  margin:0;
-  color:#64748b;
-  font-size:12px;
-  font-weight:600;
-  line-height:1.45;
-}
-
-.pro-notification-close{
-  width:30px !important;
-  min-width:30px !important;
-  min-height:30px !important;
-  height:30px;
-  padding:0 !important;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#64748b !important;
-  background:#f1f5f9 !important;
-  border-radius:9px !important;
-  box-shadow:none !important;
-}
-
-.pro-notification-close:hover{
-  background:#e2e8f0 !important;
-  transform:none !important;
-}
-
-@keyframes siAttention{
-  0%,100%{transform:translateX(0)}
-  25%{transform:translateX(-5px)}
-  50%{transform:translateX(5px)}
-  75%{transform:translateX(-3px)}
-}
-
-.si-input-attention{
-  animation:siAttention .35s ease;
-  border-color:#60a5fa !important;
-  box-shadow:0 0 0 4px rgba(96,165,250,.14),0 8px 22px rgba(37,99,235,.10) !important;
-}
-
-@media(max-width:600px){
-  .pro-notification{
-    top:14px;
-    min-width:0;
-    width:calc(100vw - 28px);
-  }
-}
-/* =========================================================
-   🔐 LOGIN / OTP — EXACT SIZE CONTROL
-   ========================================================= */
-
-#loginScreen{
+.manual-inventory-list{
+  max-height:52vh;
+  overflow:auto;
   display:flex;
   flex-direction:column;
+  gap:8px;
+  padding:3px;
+}
+.manual-inventory-row{
+  display:grid;
+  grid-template-columns:42px 1fr;
+  gap:10px;
   align-items:center;
-  justify-content:center;
-  padding:30px;
+  padding:12px;
+  border:1px solid #e5eaf1;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 14px rgba(50,70,100,.05);
 }
-
-/* Keep every login element inside the card width */
-#loginScreen > *{
-  width:100%;
-  max-width:330px;
-  box-sizing:border-box;
+.manual-inventory-row input[type=checkbox]{
+  width:23px;
+  height:23px;
+  accent-color:#6366f1;
 }
-
-/* LOGIN + OTP TEXTBOX */
-#loginScreen input{
-  display:block;
-
-  width:100% !important;
-  max-width:330px !important;
-
-  min-width:0 !important;
-
-  height:52px;
-
-  margin:7px auto !important;
-
-  padding:12px 15px !important;
-
-  box-sizing:border-box !important;
+.manual-inventory-info{
+  min-width:0;
 }
-
-/* OTP input specifically */
-#loginScreen input[id*="otp"],
-#loginScreen input[name*="otp"],
-#loginScreen input[class*="otp"]{
-  width:100% !important;
-  max-width:330px !important;
-
-  box-sizing:border-box !important;
+.manual-inventory-main{
+  font-weight:850;
+  color:#172033;
+  word-break:break-word;
 }
-
-/* LOGIN BUTTONS */
-#loginScreen button{
-  width:100% !important;
-  max-width:330px !important;
-
-  box-sizing:border-box !important;
+.manual-inventory-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:5px;
 }
-
-/* SELECTED BRANCH */
-#loginScreen .selected-branch-label{
-  width:auto !important;
-  max-width:330px;
+.manual-inventory-pill{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#f1f5f9;
+  font-size:11px;
+  font-weight:800;
 }
-
-/* MOBILE */
+.manual-inventory-count{
+  text-align:center;
+  font-weight:850;
+  margin:8px 0;
+}
 @media(max-width:600px){
-
-  #loginScreen{
-    padding:20px;
-  }
-
-  #loginScreen > *{
-    width:100%;
-    max-width:330px;
-  }
-
-  #loginScreen input{
-    width:100% !important;
-    max-width:330px !important;
-    height:52px;
-
-    box-sizing:border-box !important;
-  }
-
-  #loginScreen button{
-    width:100% !important;
-    max-width:330px !important;
-  }
+  .manual-inventory-filters{grid-template-columns:1fr;}
+  .manual-inventory-modal{width:96vw;}
 }
-   
-
-</style>
-<style>
-
-/* ================= PRIVATE DASHBOARD CHAT ================= */
-.ao-chat-fab{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border:0;border-radius:50%;background:#111827;color:#fff;font-size:25px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99990;display:flex;align-items:center;justify-content:center}
-.ao-chat-fab:hover{transform:translateY(-2px)}
-.ao-chat-badge{position:absolute;right:-2px;top:-2px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ef4444;color:#fff;font:bold 11px Arial;display:none;align-items:center;justify-content:center}
-.ao-chat-panel{position:fixed;right:22px;bottom:92px;width:min(390px,calc(100vw - 30px));height:min(570px,calc(100vh - 125px));background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:99989;display:none;overflow:hidden}
-.ao-chat-panel.open{display:flex;flex-direction:column}
-.ao-chat-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#111827;color:#fff}
-.ao-chat-title{font-weight:800;font-size:15px}.ao-chat-sub{font-size:11px;opacity:.75;margin-top:2px}
-.ao-chat-close{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
-.ao-chat-recipient{padding:10px;border-bottom:1px solid #e5e7eb;background:#f9fafb}
-.ao-chat-select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;font-size:13px;outline:none}
-.ao-chat-messages{flex:1;overflow-y:auto;padding:14px;background:#f3f4f6}
-.ao-chat-row{display:flex;justify-content:flex-start;margin:7px 0}.ao-chat-row.mine{justify-content:flex-end}
-.ao-chat-bubble{max-width:82%;padding:9px 11px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);word-break:break-word}
-.ao-chat-row.mine .ao-chat-bubble{background:#111827;color:#fff}
-.ao-chat-name{font-size:10px;font-weight:700;opacity:.65;margin-bottom:4px}.ao-chat-text{font-size:13px;line-height:1.4;white-space:pre-wrap}.ao-chat-time{font-size:9px;opacity:.55;margin-top:5px}
-.ao-chat-empty{text-align:center;color:#6b7280;font-size:12px;padding:35px 15px}
-.ao-chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}.ao-chat-input{flex:1;min-width:0;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;outline:none;font-size:13px}.ao-chat-send{width:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:18px;cursor:pointer}.ao-chat-send:disabled{opacity:.5;cursor:not-allowed}
-.ao-chat-status{min-height:17px;padding:0 11px 8px;color:#dc2626;font-size:10px;background:#fff}
-@media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}}
 
 </style>
 </head>
 
 <body>
-
-<!-- PROFESSIONAL IN-PAGE NOTIFICATION -->
-<div id="proNotification" class="pro-notification" aria-live="polite" role="status">
-  <div class="pro-notification-icon" id="proNotificationIcon">⚠</div>
-  <div class="pro-notification-content">
-    <div class="pro-notification-title" id="proNotificationTitle">Attention</div>
-    <div class="pro-notification-message" id="proNotificationMessage">Please enter the required information.</div>
-  </div>
-  <button type="button" class="pro-notification-close" onclick="hideProNotification()" aria-label="Close notification">✕</button>
-</div>
-
 
 
   
@@ -2374,7 +2193,7 @@ input:focus-visible{
   z-index:9999;
 ">
 
-  <h2 style="text-align:center;">🔐 SYSTEM LOGIN</h2>
+  <h2>🔐 SYSTEM LOGIN</h2>
   <div id="loginBranchLabel" class="selected-branch-label">SELECT BRANCH</div>
   <button class="cancel-report-btn" style="width:280px;max-width:80%;margin-top:8px;" onclick="changeBranch()">↩ CHANGE BRANCH</button>
   <p style="
@@ -2382,10 +2201,10 @@ color:#666;
 margin-top:-15px;
 margin-bottom:15px;
 ">
-<br><br><span style="display:block;text-align:center;font-size:25px;font-weight:900;color:#2563eb;">Secure OTP Login</span>
+<BR><BR>Secure OTP Login
 </p>
 
-<input id="email" placeholder="Enter Email" style="text-align:center;font-weight:700;">
+<input id="email" placeholder="Enter Gmail">
 
 <button class="btn-blue" onclick="sendOTP()">
 SEND OTP
@@ -2393,7 +2212,7 @@ SEND OTP
 
 
 <input id="otp" placeholder="Enter OTP"
-style="display:none;text-align:center;font-weight:700;">
+style="display:none">
 
 
 <button id="verifyBtn" 
@@ -2403,7 +2222,7 @@ onclick="verifyOTP()">
 VERIFY OTP
 </button>
 
- <p id="loginStatus" style="text-align:center;"></p>
+  <p id="loginStatus"></p>
 </div>
 
 
@@ -2488,6 +2307,14 @@ onclick="refreshPage()">
 ♻ REFRESH
 </button>
 
+<button
+id="manualInventoryBtn"
+class="manual-inventory-btn"
+style="display:none"
+onclick="openManualInventory()">
+📝 MANUAL INVENTORY
+</button>
+
 
 </div>
 
@@ -2507,7 +2334,7 @@ onclick="refreshPage()">
 </div>
 
 <div class="report-subtitle">
- 
+Enter Tag Number 
 </div>
 
 
@@ -2572,6 +2399,29 @@ CONTINUE SCANNING
 
 </div>
 
+<div id="manualInventoryDialog" class="report-overlay">
+  <div class="report-modal manual-inventory-modal">
+    <div class="report-title">📝 Manual Inventory</div>
+    <div class="report-subtitle">Select an item to mark it as <b>AUDITED</b>.</div>
+
+    <div class="manual-inventory-filters">
+      <select id="manualCategoryFilter" onchange="renderManualInventoryList()">
+        <option value="">ALL CATEGORIES</option>
+      </select>
+      <select id="manualLensTypeFilter" onchange="renderManualInventoryList()">
+        <option value="">ALL LENSTYPE</option>
+      </select>
+      <input id="manualDescriptionFilter" placeholder="🔎 DESCRIPTION" oninput="renderManualInventoryList()">
+      <input id="manualTagFilter" placeholder="🏷 TAG NUMBER" oninput="renderManualInventoryList()">
+    </div>
+
+    <div id="manualInventoryCount" class="manual-inventory-count">Loading...</div>
+    <div id="manualInventoryList" class="manual-inventory-list"></div>
+
+    <button class="cancel-report-btn" onclick="closeManualInventory()">CLOSE</button>
+  </div>
+</div>
+
 <script>
 
 
@@ -2581,22 +2431,22 @@ let auditCount = 0;
 let BRANCH = localStorage.getItem("inventorySelectedBranch") || "";
 
 const BRANCH_NAMES = {
-  GAI: "GAISANO ILOILO BRANCH",
-  CAS: "CASA PLAZA BRANCH",
-  BAC: "BACOLOD BRANCH",
-  BIN: "BINALBAGAN BRANCH",
-  BIS: "BISLIG BRANCH",
-  CAD: "CADIZ BRANCH",
-  DGT: "DUMAGUETE BRANCH",
-  KAB: "KABANKALAN BRANCH",
-  KAL: "KALIBO BRANCH",
-  PAS: "PASSI BRANCH",
-  POT: "POTOTAN BRANCH",
-  SAN: "SAN CARLOS BRANCH",
-  TAB: "TABUNOK BRANCH",
-  TAN: "TANDAG BRANCH",
-  TIS: "TISA BRANCH",
-  TOL: "TOLEDO BRANCH"
+  GAI: "GAI BRANCH",
+  CAS: "CAS BRANCH",
+  BAC: "BAC BRANCH",
+  BIN: "BIN BRANCH",
+  BIS: "BIS BRANCH",
+  CAD: "CAD BRANCH",
+  DGT: "DGT BRANCH",
+  KAB: "KAB BRANCH",
+  KAL: "KAL BRANCH",
+  PAS: "PAS BRANCH",
+  POT: "POT BRANCH",
+  SAN: "SAN BRANCH",
+  TAB: "TAB BRANCH",
+  TAN: "TAN BRANCH",
+  TIS: "TIS BRANCH",
+  TOL: "TOL BRANCH"
 };
 let auditMode = false;
 let scanner = null;
@@ -2618,8 +2468,15 @@ const STOCK_ADMIN = [
   "fmfc_audit654@yahoo.com"
 ];
 
+/* ===== MANUAL INVENTORY ===== */
+let manualInventoryRows = [];
+let manualInventoryQueue = [];
+let manualInventoryProcessing = false;
+let manualInventoryLoaded = false;
 
-const API_URL = "https://script.google.com/macros/s/AKfycby0zlyydU6SlqTSNnIX5UR2OJ9hviGUimbYYEQacCHmUH7XNnVbnG3EfJjwutbBYi_wgw/exec";
+
+
+const API_URL = "https://script.google.com/macros/s/AKfycbxjM2u1Rm87L6ZCuzn1YdVn2xEwsGcwNigLZXyb-5XssR6UtuXNPyE2B9Qe4krnqOTkLQ/exec";
 
 /* ================= DIRECT SUPABASE ================= */
 const SUPABASE_URL = "https://hvurhnarllvfinpdkfkp.supabase.co";
@@ -2759,73 +2616,23 @@ async function isAlreadySoldDirect(barcode){
 }
 
 async function directCheck(rawBarcode){
-
-    await requireSupabaseAccess();
-
-    const scannedBarcode = normalizeBarcode(rawBarcode);
-    const barcode = decodeBarcode(scannedBarcode);
-
-    // ==========================================
-    // BRANCH VALIDATION
-    // ==========================================
-
-    const parts = barcode.split("-");
-    const qrBranch = parts.length >= 2
-        ? String(parts[0]).trim().toUpperCase()
-        : "";
-
-    const selectedBranch = String(BRANCH || "").trim().toUpperCase();
-
-    if (
-        !qrBranch ||
-        !selectedBranch ||
-        qrBranch !== selectedBranch
-    ) {
-        return {
-            status: "WRONG BRANCH"
-        };
-    }
-
-    // ==========================================
-    // DUPLICATE CHECK
-    // ==========================================
-
-    const sold = await isAlreadySoldDirect(barcode);
-
-    if(sold){
-        return {
-            status: "DUPLICATE",
-            colJ: String(sold.LENSTYPE || ""),
-            colO: String(sold.DESCRIPTION || ""),
-            tag: String(sold.NTAGN || "")
-        };
-    }
-
-    // ==========================================
-    // STOCK CHECK
-    // ==========================================
-
-    const stock = await getStockByBarcodeDirect(barcode);
-
-    if(stock){
-        return {
-            status: "FOUND",
-            row: stockRowArray(stock),
-            colJ: String(stock.LENSTYPE || ""),
-            colO: String(stock.DESCRIPTION || ""),
-            tag: String(stock.NTAGN || "")
-        };
-    }
-
-    return {
-        status: "NOT FOUND"
-    };
+  await requireSupabaseAccess();
+  const scannedBarcode = normalizeBarcode(rawBarcode);
+  const barcode = decodeBarcode(scannedBarcode);
+  if(!validateBarcodeBranch(barcode, BRANCH)){
+    return {status:"WRONG BRANCH", selectedBranch:BRANCH, barcodeBranch:getBranchFromBarcode(barcode)};
+  }
+  const sold = await isAlreadySoldDirect(barcode);
+  if(sold){ return {status:"DUPLICATE", colJ:String(sold.LENSTYPE||""), colO:String(sold.DESCRIPTION||""), tag:String(sold.NTAGN||"")}; }
+  const stock = await getStockByBarcodeDirect(barcode);
+  if(stock){ return {status:"FOUND", row:stockRowArray(stock), colJ:String(stock.LENSTYPE||""), colO:String(stock.DESCRIPTION||""), tag:String(stock.NTAGN||"")}; }
+  return {status:"NOT FOUND"};
 }
 
 async function directSave(rawBarcode, siNo){
   const access = await requireSupabaseAccess();
   const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH"};
+  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
   if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
   const stock = await getStockByBarcodeDirect(barcode);
   if(!stock) return {status:"NOT FOUND"};
@@ -2839,30 +2646,6 @@ async function directSave(rawBarcode, siNo){
   const payload = [{SDATE:row[0],SUPPLIER:row[1],DR:row[2],COST:row[3],ASG:row[4],CB:row[5],FD:row[6],UNITS:row[7],POWER:row[8],LENSTYPE:row[9],PUNIT:row[10],BR:row[11],NTAGN:row[12],CATEGORY:row[13],DESCRIPTION:row[14],LENSCODE:row[15],SELLINGPRICE:row[16],DELIVERYDATE:row[17],ORNUMBER:row[18],ORDATE:row[19],REMARKS:row[20],TAGPRICE:row[21],QR:row[22],"SI NO.":row[23],"DATE AND TIME":row[24],"USER EMAIL":row[25],STATUS:row[26]}];
   await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
   return {status:"ADDED TO SOLD",row};
-}
-
-
-async function isSiNoMarked(siNo){
-  const value = String(siNo || "").trim();
-  if(!value){
-    return false;
-  }
-
-  await requireSupabaseAccess();
-
-  const table = branchTable(BRANCH, "scanresults");
-
-  const rows = await sbRequest(
-    "/rest/v1/" +
-    table +
-    "?%22SI%20NO.%22=eq." +
-    encodeURIComponent(value) +
-    "&STATUS=eq.MARKED" +
-    "&select=%22SI%20NO.%22,STATUS,NTAGN,LENSTYPE,DESCRIPTION" +
-    "&limit=1"
-  );
-
-  return Array.isArray(rows) && rows.length > 0;
 }
 
 async function directSearchSI(siNo){
@@ -2884,7 +2667,7 @@ async function directCheckTag(tag){
 async function directSaveAudit(rawBarcode){
   const access=await requireSupabaseAccess();
   const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH"};
+  if(!validateBarcodeBranch(barcode,BRANCH)) return {status:"WRONG BRANCH",selectedBranch:BRANCH,barcodeBranch:getBranchFromBarcode(barcode)};
   const parts=barcode.split("-");
   if(parts.length<2) return {status:"INVALID BARCODE"};
   const br=parts[0], ntagn=parts.slice(1).join("-");
@@ -2902,6 +2685,202 @@ async function directSaveAudit(rawBarcode){
   
   
 
+
+/* =========================================================
+   MANUAL INVENTORY — AUTHORIZED USERS ONLY
+========================================================= */
+function isManualInventoryAllowed(){
+  const session = currentSession();
+  const email = String(session.email || "").trim().toLowerCase();
+  return STOCK_ADMIN.includes(email);
+}
+
+function manualEscape(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+async function openManualInventory(){
+  if(!isManualInventoryAllowed()){
+    alert("Manual Inventory is restricted to authorized audit users.");
+    return;
+  }
+
+  const dialog = document.getElementById("manualInventoryDialog");
+  dialog.style.display = "flex";
+  document.getElementById("manualInventoryList").innerHTML =
+    '<div class="card">⏳ Loading inventory...</div>';
+  document.getElementById("manualInventoryCount").textContent = "Loading...";
+
+  try{
+    await requireSupabaseAccess();
+
+    const stockTable = branchTable(BRANCH,"stocks");
+    const auditTable = branchTable(BRANCH,"audit");
+    const soldTable = branchTable(BRANCH,"scanresults");
+
+    const [stocks,audits,sold] = await Promise.all([
+      sbRequest("/rest/v1/"+stockTable+"?select=BR,NTAGN,CATEGORY,LENSTYPE,DESCRIPTION&limit=1000&order=NTAGN.asc"),
+      sbRequest("/rest/v1/"+auditTable+"?select=BR,NTAGN&limit=1000"),
+      sbRequest("/rest/v1/"+soldTable+"?select=BR,NTAGN&limit=1000")
+    ]);
+
+    const auditedSet = new Set((Array.isArray(audits)?audits:[]).map(r =>
+      normalizeBarcode(String(r.BR||"")+"-"+String(r.NTAGN||""))
+    ));
+    const soldSet = new Set((Array.isArray(sold)?sold:[]).map(r =>
+      normalizeBarcode(String(r.BR||"")+"-"+String(r.NTAGN||""))
+    ));
+
+    manualInventoryRows = (Array.isArray(stocks)?stocks:[])
+      .map(r => {
+        const br = String(r.BR||"").trim().toUpperCase();
+        const ntagn = String(r.NTAGN||"").trim();
+        const barcode = normalizeBarcode(br+"-"+ntagn);
+        return {
+          barcode,
+          BR: br,
+          NTAGN: ntagn,
+          CATEGORY: String(r.CATEGORY||"").trim(),
+          LENSTYPE: String(r.LENSTYPE||"").trim(),
+          DESCRIPTION: String(r.DESCRIPTION||"").trim()
+        };
+      })
+      .filter(r => r.BR && r.NTAGN && !auditedSet.has(r.barcode) && !soldSet.has(r.barcode));
+
+    populateManualInventoryFilters();
+    manualInventoryLoaded = true;
+    renderManualInventoryList();
+  }catch(err){
+    document.getElementById("manualInventoryList").innerHTML =
+      '<div class="card red">❌ '+manualEscape(err.message || err)+'</div>';
+    document.getElementById("manualInventoryCount").textContent = "";
+  }
+}
+
+function populateManualInventoryFilters(){
+  const category = document.getElementById("manualCategoryFilter");
+  const lensType = document.getElementById("manualLensTypeFilter");
+  const oldCategory = category.value;
+  const oldLensType = lensType.value;
+
+  const categories = [...new Set(manualInventoryRows.map(r => r.CATEGORY))]
+    .sort((a,b) => a.localeCompare(b));
+  const lensTypes = [...new Set(manualInventoryRows.map(r => r.LENSTYPE).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b));
+
+  category.innerHTML = '<option value="">ALL CATEGORIES</option>' +
+    categories.map(v => v === ""
+      ? '<option value="__BLANK__">BLANK / NO CATEGORY</option>'
+      : '<option value="'+manualEscape(v)+'">'+manualEscape(v)+'</option>'
+    ).join("");
+
+  lensType.innerHTML = '<option value="">ALL LENSTYPE</option>' +
+    lensTypes.map(v => '<option value="'+manualEscape(v)+'">'+manualEscape(v)+'</option>').join("");
+
+  if([...category.options].some(o => o.value === oldCategory)) category.value = oldCategory;
+  if([...lensType.options].some(o => o.value === oldLensType)) lensType.value = oldLensType;
+}
+
+function renderManualInventoryList(){
+  const list = document.getElementById("manualInventoryList");
+  if(!list) return;
+
+  const category = document.getElementById("manualCategoryFilter").value;
+  const lensType = document.getElementById("manualLensTypeFilter").value;
+  const description = document.getElementById("manualDescriptionFilter").value.trim().toLowerCase();
+  const tag = document.getElementById("manualTagFilter").value.trim().toLowerCase();
+
+  const filtered = manualInventoryRows.filter(r => {
+    const categoryOK = category === "" ||
+      (category === "__BLANK__" ? !r.CATEGORY : r.CATEGORY === category);
+    const lensOK = lensType === "" || r.LENSTYPE === lensType;
+    const descOK = !description || r.DESCRIPTION.toLowerCase().includes(description);
+    const tagOK = !tag || r.NTAGN.toLowerCase().includes(tag);
+    return categoryOK && lensOK && descOK && tagOK;
+  });
+
+  document.getElementById("manualInventoryCount").textContent =
+    filtered.length + " item(s) available for manual audit";
+
+  if(!filtered.length){
+    list.innerHTML = '<div class="card">✅ No matching items waiting for audit.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(r => `
+    <label class="manual-inventory-row">
+      <input type="checkbox" class="manual-audit-check" data-barcode="${manualEscape(r.barcode)}">
+      <span class="manual-inventory-info">
+        <span class="manual-inventory-main">${manualEscape(r.DESCRIPTION || "NO DESCRIPTION")}</span>
+        <span class="manual-inventory-meta">
+          <span class="manual-inventory-pill">LENSTYPE: ${manualEscape(r.LENSTYPE || "—")}</span>
+          <span class="manual-inventory-pill">CATEGORY: ${manualEscape(r.CATEGORY || "BLANK")}</span>
+          <span class="manual-inventory-pill">TAG: ${manualEscape(r.NTAGN)}</span>
+        </span>
+      </span>
+    </label>
+  `).join("");
+
+  list.querySelectorAll(".manual-audit-check").forEach(cb => {
+    cb.addEventListener("change", function(){
+      if(this.checked) manualInventoryQueueItem(this.dataset.barcode);
+    });
+  });
+}
+
+function manualInventoryQueueItem(barcode){
+  if(!isManualInventoryAllowed()) return;
+  barcode = decodeBarcode(normalizeBarcode(barcode));
+  if(!barcode || manualInventoryQueue.includes(barcode)) return;
+
+  /* Remove immediately, then save through the same sequential queue idea as Re-Inventory. */
+  manualInventoryRows = manualInventoryRows.filter(r => r.barcode !== barcode);
+  renderManualInventoryList();
+
+  manualInventoryQueue.push(barcode);
+  processManualInventoryQueue();
+}
+
+async function processManualInventoryQueue(){
+  if(manualInventoryProcessing) return;
+  manualInventoryProcessing = true;
+
+  try{
+    while(manualInventoryQueue.length){
+      const barcode = manualInventoryQueue.shift();
+      try{
+        const result = await directSaveAudit(barcode);
+
+        if(result.status === "RECORDED"){
+          document.getElementById("result").innerHTML = `
+            <div class="card green scan-animate">
+              ✅ MANUAL AUDIT RECORDED<br><br>
+              <b>${manualEscape(result.colO || "")}</b><br>
+              ${manualEscape(result.colJ || "")}<br>
+              🏷 Tag: <b>${manualEscape(result.tag || "")}</b>
+            </div>`;
+        }else if(result.status !== "ALREADY_AUDITED"){
+          document.getElementById("result").innerHTML =
+            '<div class="card red">❌ '+manualEscape(result.status || "AUDIT FAILED")+'</div>';
+        }
+      }catch(err){
+        document.getElementById("result").innerHTML =
+          '<div class="card red">❌ MANUAL AUDIT FAILED<br><br>'+manualEscape(err.message || err)+'</div>';
+      }
+    }
+  }finally{
+    manualInventoryProcessing = false;
+  }
+}
+
+function closeManualInventory(){
+  document.getElementById("manualInventoryDialog").style.display = "none";
+}
 
 /* ================= BRANCH SELECTION ================= */
 
@@ -2963,7 +2942,6 @@ function openApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
-  startScannerSessionMonitor();
 }
 
 async function changeBranch(){
@@ -2975,13 +2953,6 @@ async function changeBranch(){
     scanner = null;
     isScanning = false;
   }
-
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  notifyScannerLogout();
 
   BRANCH = "";
   localStorage.removeItem("inventorySelectedBranch");
@@ -3000,79 +2971,61 @@ async function sendOTP(){
 
 try {
 
-const emailInput = document.getElementById("email");
-const email = emailInput.value.trim();
+const email = document.getElementById("email").value.trim();
 
 if(!email){
-  if(emailInput){
-    emailInput.focus();
-    emailInput.classList.remove("si-input-attention");
-    void emailInput.offsetWidth;
-    emailInput.classList.add("si-input-attention");
-    if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
-  }
+  alert("Enter Gmail");
   return;
 }
-
-const statusBox = document.getElementById("loginStatus");
-const otpBox = document.getElementById("otp");
-const verifyBtn = document.getElementById("verifyBtn");
-
-statusBox.innerText = "Sending OTP...";
 
 const res = await fetch(
-  API_URL +
-  "?action=sendOTP" +
-  "&branch=" + encodeURIComponent(BRANCH) +
-  "&email=" + encodeURIComponent(email),
-  {
-    method: "GET",
-    redirect: "follow",
-    cache: "no-store"
-  }
+API_URL +
+"?action=sendOTP" +
+"&branch=" + encodeURIComponent(BRANCH) +
+"&email=" + encodeURIComponent(email)
 );
 
+// ===== DEBUG SERVER RESPONSE =====
 const text = await res.text();
 
-console.log("SEND OTP RAW RESPONSE:", text);
+console.log("SEND OTP RAW RESPONSE:");
+console.log(text);
 
-let data = null;
+let data;
 
-try {
-  data = JSON.parse(text);
-} catch(e) {
-  data = null;
+try{
+    data = JSON.parse(text);
 }
+catch(e){
 
-/*
-   IMPORTANT OTP FIX:
-   Some Google Apps Script deployments can return an HTML wrapper/page
-   even though sendOTP has already completed and the email was sent.
-   The old code stopped here and never displayed the OTP textbox.
+    document.getElementById("loginStatus").innerHTML = `
+    <div style="color:red">
+    ❌ SERVER RETURNED HTML
+    <br><br>
+    <pre style="
+        white-space:pre-wrap;
+        font-size:12px;
+        max-height:300px;
+        overflow:auto;
+        background:#f5f5f5;
+        padding:10px;
+        border-radius:8px;
+    ">
+${text.replace(/</g,"&lt;")}
+    </pre>
+    </div>
+    `;
 
-   If the request completed successfully but the response is not JSON,
-   do NOT dump the HTML into the page. Show the OTP box instead.
-*/
-if (!data) {
-  if (res.ok) {
-    statusBox.innerText = "✅ OTP sent to Gmail. Enter the OTP below.";
-    otpBox.style.display = "block";
-    verifyBtn.style.display = "block";
-    otpBox.focus();
-    otpBox.select();
+    console.log(text);
     return;
-  }
-
-  statusBox.innerText = "❌ Unable to send OTP.";
-  console.log("SEND OTP NON-JSON RESPONSE:", text);
-  return;
 }
+// ================================
 
 if (data.status === "OTP_SENT") {
 
     if (data.alreadyLoggedIn) {
 
-      statusBox.innerHTML =
+      document.getElementById("loginStatus").innerHTML =
       `
       <div class="login-warning">
       ⚠ Account already logged in.<br><br>
@@ -3096,13 +3049,15 @@ if (data.status === "OTP_SENT") {
 
     } else {
 
-      statusBox.innerText =
+      document.getElementById("loginStatus").innerText =
       "✅ OTP sent to Gmail";
 
     }
 
+    const otpBox = document.getElementById("otp");
+
     otpBox.style.display = "block";
-    verifyBtn.style.display = "block";
+    document.getElementById("verifyBtn").style.display = "block";
 
     otpBox.focus();
     otpBox.select();
@@ -3110,16 +3065,13 @@ if (data.status === "OTP_SENT") {
 }
 else if(data.status === "EMAIL_DENIED"){
 
-    statusBox.innerText =
+    document.getElementById("loginStatus").innerText =
     "❌ Gmail not allowed.";
-
-    otpBox.style.display = "none";
-    verifyBtn.style.display = "none";
 
 }
 else{
 
-    statusBox.innerText =
+    document.getElementById("loginStatus").innerText =
     "❌ Login error.";
 
 }
@@ -3127,157 +3079,98 @@ else{
 }
 catch(err){
 
-console.error("SEND OTP ERROR:", err);
+document.getElementById("loginStatus").innerHTML =
+`
+<div style="color:red">
+❌ ERROR:<br>
+${err}
+</div>
+`;
 
-document.getElementById("loginStatus").innerText =
-"❌ Cannot connect to server.";
+console.log(err);
 
 }
 
 }
-
-let otpVerifyBusy = false;
-
 async function verifyOTP() {
 
-  if (otpVerifyBusy) return;
-
-  const email = document.getElementById("email").value.trim();
-  const otp = document.getElementById("otp").value.trim();
-  const statusBox = document.getElementById("loginStatus");
-  const verifyBtn = document.getElementById("verifyBtn");
-
-  if (!email) {
-    const emailInput = document.getElementById("email");
-    if(emailInput){
-      emailInput.focus();
-      emailInput.classList.remove("si-input-attention");
-      void emailInput.offsetWidth;
-      emailInput.classList.add("si-input-attention");
-      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
-    }
-    return;
-  }
-
-  if (!otp) {
-    const otpInput = document.getElementById("otp");
-    if(otpInput){
-      otpInput.focus();
-      otpInput.classList.remove("si-input-attention");
-      void otpInput.offsetWidth;
-      otpInput.classList.add("si-input-attention");
-      if(navigator.vibrate) navigator.vibrate([150, 80, 150]);
-    }
-    return;
-  }
-
-  if (!BRANCH) {
-    statusBox.innerText = "❌ Please select a branch.";
-    return;
-  }
-
-  otpVerifyBusy = true;
-
-  if (verifyBtn) {
-    verifyBtn.disabled = true;
-    verifyBtn.innerText = "VERIFYING...";
-  }
-
-  statusBox.innerText = "🔐 Verifying OTP...";
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
-
   try {
-    const url =
-      API_URL +
-      "?action=verifyOTP" +
-      "&branch=" + encodeURIComponent(BRANCH) +
-      "&email=" + encodeURIComponent(email) +
-      "&otp=" + encodeURIComponent(otp) +
-      "&_=" + Date.now();
 
-    const res = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      cache: "no-store",
-      signal: controller.signal
-    });
+    const email = document.getElementById("email").value.trim();
+    const otp = document.getElementById("otp").value.trim();
 
-    clearTimeout(timeout);
+    const res = await fetch(
+  API_URL +
+  "?action=verifyOTP" +
+  "&branch=" + encodeURIComponent(BRANCH) +
+  "&email=" + encodeURIComponent(email) +
+  "&otp=" + encodeURIComponent(otp)
+);
 
-    const text = await res.text();
-    console.log("VERIFY OTP HTTP:", res.status);
-    console.log("VERIFY OTP RAW RESPONSE:", text);
+const text = await res.text();
 
-    let data = null;
+console.log(text);
+    let data;
+
     try {
-      data = JSON.parse(text.trim());
+      data = JSON.parse(text);
     } catch (e) {
-      data = null;
-    }
+      console.log(text);
 
-    if (!data) {
-      statusBox.innerText =
-        "⚠ Server response was delayed. Please press VERIFY OTP again.";
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Server returned invalid response.<br>Please try again.";
+
       return;
     }
 
     if (data.status === "OK") {
-      localStorage.setItem("inventoryLoggedIn", "true");
+
       localStorage.setItem(
         "inventorySession_" + BRANCH,
         JSON.stringify({
-          email: email,
+          email,
           sessionId: data.sessionId,
           time: Date.now()
         })
       );
+
       localStorage.setItem("loginTime_" + BRANCH, Date.now());
-      statusBox.innerText = "✅ Login successful.";
+
       openApp();
       return;
     }
 
     if (data.status === "ALREADY_LOGGED_IN") {
+
       if (confirm("Already logged in.\nForce logout other device?")) {
-        await forceLogin();
+        forceLogin();
       }
+
       return;
     }
 
     if (data.status === "INVALID") {
-      statusBox.innerText = "❌ Wrong or expired OTP.";
+
+      document.getElementById("loginStatus").innerHTML =
+      "❌ Wrong OTP.";
+
       return;
     }
 
-    if (data.status === "EMAIL_DENIED") {
-      statusBox.innerText = "❌ Gmail not allowed for this branch.";
-      return;
-    }
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Login failed.";
 
-    statusBox.innerText =
-      "❌ " + (data.error || "Login failed.");
-
-  } catch (err) {
-    clearTimeout(timeout);
-    console.error("VERIFY OTP ERROR:", err);
-
-    if (err.name === "AbortError") {
-      statusBox.innerText =
-        "⚠ Server is taking too long. Please press VERIFY OTP again.";
-    } else {
-      statusBox.innerText =
-        "⚠ Connection problem. Please try VERIFY OTP again.";
-    }
-
-  } finally {
-    otpVerifyBusy = false;
-    if (verifyBtn) {
-      verifyBtn.disabled = false;
-      verifyBtn.innerText = "VERIFY OTP";
-    }
   }
+
+  catch(err){
+
+    console.error(err);
+
+    document.getElementById("loginStatus").innerHTML =
+    "❌ Cannot connect to server.";
+
+  }
+
 }
 
   async function forceLogin() {
@@ -3351,44 +3244,7 @@ function setUIScanning(state) {
 
 async function toggleScan() {
   const siNo = document.getElementById("siNo").value;
-  if (!siNo) {
-    const siInput = document.getElementById("siNo");
-    if(siInput){
-      siInput.focus();
-      siInput.classList.remove("si-input-attention");
-      void siInput.offsetWidth;
-      siInput.classList.add("si-input-attention");
-    }
-    showProNotification(
-      "Please enter the SI No before starting the scanner.",
-      "SI No Required",
-      "📄"
-    );
-    return;
-  }
-
-  if (!isScanning) {
-    try {
-      const marked = await isSiNoMarked(siNo);
-
-      if (marked) {
-        showProNotification(
-          "This SI No. is already marked and cannot be used for scanning.",
-          "SI No. Already Marked",
-          "🛑"
-        );
-        return;
-      }
-    } catch (error) {
-      console.error("Marked SI check failed:", error);
-      showProNotification(
-        error?.message || "Unable to verify the SI No.",
-        "SI No Check Failed",
-        "⚠️"
-      );
-      return;
-    }
-  }
+  if (!siNo) return alert("Enter SI No");
 
   if (isScanning) {
     isScanning = false;
@@ -3500,19 +3356,15 @@ let tag = data.tag || row[12] || "";
                 </div>
             `;
         }
-else if (data.status === "WRONG BRANCH") {
-
-    document.getElementById("result").innerHTML = `
-        <div class="card red scan-animate">
-            ❌ WRONG BRANCH
-        </div>
-    `;
-
-    tempCode = "";
-    tempSi = "";
-
-    return;
-}
+        else if (data.status === "WRONG BRANCH") {
+            document.getElementById("result").innerHTML = `
+                <div class="card red">
+                    ❌ WRONG BRANCH<br><br>
+                    Selected: <b>${data.selectedBranch || BRANCH}</b><br>
+                    QR Branch: <b>${data.barcodeBranch || "UNKNOWN"}</b>
+                </div>
+            `;
+        }
         else if (data.status === "DUPLICATE") {
             document.getElementById("result").innerHTML = `
                 <div class="card red">
@@ -4005,19 +3857,6 @@ async function processAuditQueue() {
             switch (saveData.status) {
 
 
-                case "WRONG BRANCH":
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card red scan-animate">
-
-                    ❌ WRONG BRANCH
-
-                    </div>
-                    `;
-
-                break;
-
-
                 case "RECORDED":
 
                     auditCount++;
@@ -4140,35 +3979,6 @@ async function saveYes() {
 }
 
   
-
-try{
-  const marked = await isSiNoMarked(tempSi);
-
-  if(marked){
-    document.getElementById("result").innerHTML = `
-      <div class="card red">
-        🛑 SI NO. ALREADY MARKED
-        <br><br>
-        SI No: <b>${tempSi}</b>
-        <br><br>
-        This SI No. cannot be used until it is unmarked in the Dashboard.
-      </div>
-    `;
-    tempCode = "";
-    tempSi = "";
-    return;
-  }
-}catch(error){
-  console.error("Marked SI save check failed:", error);
-  document.getElementById("result").innerHTML = `
-    <div class="card red">
-      ❌ SI NO. CHECK FAILED
-      <br><br>
-      ${error.message || error}
-    </div>
-  `;
-  return;
-}
 
 if (isSaving) return;
 
@@ -4366,7 +4176,7 @@ function cancelNo() {
 }
 
 async function refreshPage() {
-window.location.reload();
+
  // STOP NORMAL CAMERA
 if(scanner){
 
@@ -4483,52 +4293,12 @@ document.getElementById("siNo")
 .value.trim();
 
 if(!siNo){
-  const siInput = document.getElementById("siNo");
-  if(siInput){
-    siInput.focus();
-    siInput.classList.remove("si-input-attention");
-    void siInput.offsetWidth;
-    siInput.classList.add("si-input-attention");
-  }
-  showProNotification(
-    "Please enter the SI No before adding a tag.",
-    "SI No Required",
-    "📄"
-  );
-  return;
-}
-
-try{
-  const marked = await isSiNoMarked(siNo);
-
-  if(marked){
-    showProNotification(
-      "This SI No. is already marked and cannot be used.",
-      "SI No. Already Marked",
-      "🛑"
-    );
-    return;
-  }
-}catch(error){
-  console.error("Marked SI check failed:", error);
-  showProNotification(
-    error?.message || "Unable to verify the SI No.",
-    "SI No Check Failed",
-    "⚠️"
-  );
+  alert("Enter SI No first");
   return;
 }
 
 if(!tag){
-  const tagInput = document.getElementById("tagNumberInput");
-  if(tagInput){
-    tagInput.focus();
-  }
-  showProNotification(
-    "Please enter a tag number to continue.",
-    "Tag Number Required",
-    "🏷️"
-  );
+  alert("Enter Tag Number");
   return;
 }
 
@@ -4658,146 +4428,11 @@ function vibrate() {
 
 document.addEventListener("click", initAudio, { once: true });
 
-let scannerSessionMonitorTimer = null;
-let scannerForcedLogoutHandling = false;
-
-function startScannerSessionMonitor(){
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  const check = async function(){
-    if(scannerForcedLogoutHandling) return;
-
-    const session = currentSession();
-    const email = String(session.email || "").trim().toLowerCase();
-    const sessionId = String(session.sessionId || "").trim();
-
-    if(!BRANCH || !email || !sessionId){
-      return;
-    }
-
-    try{
-      const url =
-        API_URL +
-        "?action=checkSession" +
-        "&branch=" + encodeURIComponent(BRANCH) +
-        "&email=" + encodeURIComponent(email) +
-        "&sessionId=" + encodeURIComponent(sessionId);
-
-      const res = await fetch(url, {
-        method:"GET",
-        redirect:"follow",
-        cache:"no-store"
-      });
-
-      const data = await res.json();
-
-      if(!data || data.status !== "OK"){
-        await handleScannerForcedLogout(
-          "Your scanner session was logged out by the administrator."
-        );
-      }
-    }catch(err){
-      /*
-       * Do NOT log the user out just because the internet or
-       * Apps Script is temporarily unavailable.
-       */
-      console.warn("Scanner session check failed:", err);
-    }
-  };
-
-  check();
-  scannerSessionMonitorTimer = setInterval(check, 15000);
-}
-
-async function handleScannerForcedLogout(message){
-  if(scannerForcedLogoutHandling) return;
-  scannerForcedLogoutHandling = true;
-
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  try{
-    await stopNormalScanner();
-  }catch(e){}
-
-  try{
-    if(typeof stopAuditScanner === "function"){
-      await stopAuditScanner();
-    }
-  }catch(e){}
-
+async function logout() {
   localStorage.removeItem("inventorySession_" + BRANCH);
   localStorage.removeItem("loginTime_" + BRANCH);
-
-  alert(message);
-  location.reload();
-}
-
-function notifyScannerLogout(){
-  const session = currentSession();
-  const branch = String(BRANCH || "").trim().toUpperCase();
-  const email = String(session.email || "").trim().toLowerCase();
-  const sessionId = String(session.sessionId || "").trim();
-
-  if(!branch || !email || !sessionId){
-    return;
-  }
-
-  const url =
-    API_URL +
-    "?action=logout" +
-    "&branch=" + encodeURIComponent(branch) +
-    "&email=" + encodeURIComponent(email) +
-    "&sessionId=" + encodeURIComponent(sessionId) +
-    "&_=" + Date.now();
-
-  // DO NOT await this request.
-  // The browser can leave/reload immediately while the request
-  // continues in the background.
-  try{
-    fetch(url, {
-      method:"GET",
-      redirect:"follow",
-      cache:"no-store",
-      keepalive:true
-    }).catch(err => {
-      console.warn("Scanner logout notification failed:", err);
-    });
-  }catch(err){
-    console.warn("Scanner logout notification failed:", err);
-  }
-}
-
-function logout() {
-  if(scannerSessionMonitorTimer){
-    clearInterval(scannerSessionMonitorTimer);
-    scannerSessionMonitorTimer = null;
-  }
-
-  // Capture/send server logout FIRST, but NEVER wait for it.
-  notifyScannerLogout();
-
-  const oldBranch = BRANCH;
-
-  // Remove local session immediately.
-  localStorage.removeItem("inventorySession_" + oldBranch);
-  localStorage.removeItem("loginTime_" + oldBranch);
   localStorage.removeItem("inventorySelectedBranch");
-
-  // Stop camera in the background. Do NOT wait for it.
-  try { stopNormalScanner().catch(() => {}); } catch(e) {}
-
-  // Instant UI reset.
-  BRANCH = "";
-  document.getElementById("app").style.display = "none";
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("branchScreen").style.display = "flex";
-
+  try { await stopNormalScanner(); } catch(e) {}
   location.reload();
 }
 
@@ -4880,6 +4515,10 @@ window.addEventListener("DOMContentLoaded", async function(){
   try {
     await requireSupabaseAccess();
     openApp();
+    const manualBtn = document.getElementById("manualInventoryBtn");
+    if(manualBtn){
+      manualBtn.style.display = isManualInventoryAllowed() ? "block" : "none";
+    }
   } catch (err) {
     localStorage.removeItem("inventorySession_" + BRANCH);
     document.getElementById("branchScreen").style.display = "none";
@@ -4964,48 +4603,9 @@ function cancelQuitAudit(){
   
 
   
-
-
-/* ================= PRIVATE CHAT: BRANCH -> ADMIN ================= */
-let aoChatOpen=false, aoChatSending=false, aoChatTimer=null, aoChatUnread=0;
-function aoChatEsc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
-function aoChatStatus(t){const e=document.getElementById("aoChatStatus");if(e)e.textContent=t||"";}
-function aoChatSession(){try{return currentSession()||{};}catch(e){return {};}}
-function aoChatBranch(){return String(BRANCH||"").trim().toUpperCase();}
-function aoChatEmail(){return String(aoChatSession().email||"").trim().toLowerCase();}
-function aoChatTime(v){const d=new Date(v);return Number.isNaN(d.getTime())?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}
-function aoChatKey(){return "aoChatRead:BRANCH:"+aoChatBranch()+":"+aoChatEmail();}
-function aoChatRead(){return Number(localStorage.getItem(aoChatKey())||0);}
-function aoChatMark(ts){if(ts)localStorage.setItem(aoChatKey(),String(ts));}
-function aoChatBadge(n){aoChatUnread=Math.max(0,Number(n)||0);const b=document.getElementById("aoChatBadge");if(b){b.textContent=aoChatUnread>99?"99+":String(aoChatUnread);b.style.display=aoChatUnread?"flex":"none";}}
-async function aoChatLoad(){
- const branch=aoChatBranch(),email=aoChatEmail(),box=document.getElementById("aoChatMessages");if(!box||!branch||!email)return;
- try{
-  const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+"&order=created_at.asc&limit=500");
-  const list=Array.isArray(rows)?rows:[],read=aoChatRead();
-  const incoming=list.filter(r=>r.sender_type==="DASHBOARD"),unread=incoming.filter(r=>new Date(r.created_at).getTime()>read);
-  if(!aoChatOpen)aoChatBadge(unread.length);
-  const old=box.scrollTop,bottom=(box.scrollHeight-box.clientHeight-old)<60;
-  if(!list.length)box.innerHTML='<div class="ao-chat-empty">No messages yet. Send a message to Admin.</div>';
-  else{
-   let firstUnreadId=unread.length?unread[0].id:null;
-   box.innerHTML=list.map(r=>{
-    const mine=String(r.sender_email||"").toLowerCase()===email,label=r.sender_type==="SCANNER"?"BRANCH":(r.sender_type==="DASHBOARD"?"ADMIN":r.sender_type||"");
-    const sep=firstUnreadId!==null&&r.id===firstUnreadId?'<div class="ao-chat-unread-divider">'+unread.length+' UNREAD MESSAGE'+(unread.length===1?'':'S')+' FROM ADMIN</div>':'';
-    return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(r.sender_email||"")+'</div><div class="ao-chat-text">'+aoChatEsc(r.message||"")+'</div><div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
-   }).join("");
-   if(aoChatOpen&&bottom)box.scrollTop=box.scrollHeight;
-  }
-  if(aoChatOpen){const last=incoming.length?new Date(incoming[incoming.length-1].created_at).getTime():0;if(last)aoChatMark(last);aoChatBadge(0);}
-  const sub=document.getElementById("aoChatSub");if(sub)sub.textContent=branch+" · "+email;
- }catch(e){console.warn("Scanner chat load failed:",e);aoChatStatus(e?.message||"Chat temporarily unavailable.");}
-}
-function aoChatToggle(){aoChatOpen=!aoChatOpen;const p=document.getElementById("aoChatPanel");if(!p)return;p.classList.toggle("open",aoChatOpen);p.setAttribute("aria-hidden",String(!aoChatOpen));if(aoChatOpen){aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}else aoChatLoad();}
-async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),branch=aoChatBranch(),email=aoChatEmail();if(!text)return;if(!branch||!email){aoChatStatus("Please log in first.");return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");try{await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:text})});input.value="";aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
-document.addEventListener("DOMContentLoaded",()=>{const input=document.getElementById("aoChatInput");if(input)input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();aoChatSend();}});setTimeout(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},1500);if(!aoChatTimer)aoChatTimer=setInterval(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},3000);});
 </script>
-<!-- PRIVATE BRANCH <-> ADMIN CHAT -->
-<button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
-<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div class="ao-chat-compose"><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+
 </body>
 </html>
+
+<!-- redeploy -->
