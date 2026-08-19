@@ -2394,17 +2394,18 @@ input:focus-visible{
 
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:minmax(80px,1fr) minmax(150px,2.4fr) minmax(90px,1fr) 64px;
-    gap:6px;
+    grid-template-columns:90px minmax(0,1fr) 105px 68px;
+    gap:7px;
   }
 }
 
 .manual-inventory-head,
 .manual-inventory-row{
   display:grid;
-  grid-template-columns:minmax(90px,1fr) minmax(240px,3.2fr) minmax(110px,1.25fr) 76px;
-  gap:8px;
+  grid-template-columns:110px minmax(0,1fr) 135px 78px;
+  column-gap:10px;
   align-items:center;
+  width:100%;
 }
 
 .manual-inventory-head{
@@ -2419,7 +2420,8 @@ input:focus-visible{
 }
 
 .manual-check-head{
-  text-align:center;
+  text-align:right;
+  padding-right:2px;
 }
 
 .manual-inventory-list{
@@ -2464,6 +2466,7 @@ input:focus-visible{
   margin:0 !important;
   padding:6px 8px !important;
   justify-self:end;
+  align-self:center;
   border-radius:10px !important;
   background:linear-gradient(135deg,#60a5fa,#2563eb) !important;
   color:#fff !important;
