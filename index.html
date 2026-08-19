@@ -2394,7 +2394,7 @@ input:focus-visible{
 
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:1fr 1.8fr 1fr 40px;
+    grid-template-columns:minmax(80px,1fr) minmax(150px,2.4fr) minmax(90px,1fr) 64px;
     gap:6px;
   }
 }
@@ -2402,7 +2402,7 @@ input:focus-visible{
 .manual-inventory-head,
 .manual-inventory-row{
   display:grid;
-  grid-template-columns:1.05fr 2.35fr 1.25fr 44px;
+  grid-template-columns:minmax(90px,1fr) minmax(240px,3.2fr) minmax(110px,1.25fr) 76px;
   gap:8px;
   align-items:center;
 }
@@ -2448,20 +2448,38 @@ input:focus-visible{
 
 .manual-inventory-cell{
   min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  line-height:1.35;
 }
 
-.manual-inventory-checkbox{
-  width:22px !important;
-  height:22px;
-  min-height:22px !important;
+.manual-inventory-action{
+  width:64px !important;
+  min-width:64px !important;
+  min-height:36px !important;
+  height:36px;
   margin:0 !important;
-  justify-self:center;
-  accent-color:#2563eb;
-  cursor:pointer;
-  box-shadow:none !important;
+  padding:6px 8px !important;
+  justify-self:end;
+  border-radius:10px !important;
+  background:linear-gradient(135deg,#60a5fa,#2563eb) !important;
+  color:#fff !important;
+  box-shadow:0 5px 14px rgba(37,99,235,.16) !important;
+  font-size:11px !important;
+  font-weight:900 !important;
+}
+
+.manual-inventory-action:hover{
+  transform:translateY(-1px);
+}
+
+.manual-inventory-row.removing{
+  opacity:.45;
+  transform:scale(.99);
+  transition:opacity .08s ease,transform .08s ease;
 }
 
 .manual-inventory-empty{
@@ -2777,7 +2795,7 @@ CANCEL
       <div>LENSTYPE</div>
       <div>DESCRIPTION</div>
       <div>TAG NUMBER</div>
-      <div class="manual-check-head">✓</div>
+      <div class="manual-check-head">ACTION</div>
     </div>
 
     <div id="manualInventoryList" class="manual-inventory-list">
@@ -5441,39 +5459,41 @@ function manualInventoryRender(){
       <div class="manual-inventory-cell" title="${manualInventoryEscape(item.tag)}">
         ${manualInventoryEscape(item.tag)}
       </div>
-      <input type="checkbox"
-             class="manual-inventory-checkbox"
-             aria-label="Mark ${manualInventoryEscape(item.tag)} as audited"
-             onchange="manualInventorySelectItem('${manualInventoryEscape(item.barcode)}', this)">
+      <button type="button"
+              class="manual-inventory-action"
+              onclick="manualInventorySelectItem('${manualInventoryEscape(item.barcode)}', this)">
+        AUDIT
+      </button>
     </div>
   `).join("");
 }
 
-function manualInventorySelectItem(barcode, checkbox){
-  if(!checkbox || !checkbox.checked) return;
-
+function manualInventorySelectItem(barcode, button){
   const normalized = normalizeBarcode(barcode);
+  if(!normalized) return;
 
-  // Remove immediately from the visible working list.
-  manualInventoryItems =
-    manualInventoryItems.filter(item => item.barcode !== normalized);
-  manualInventoryFiltered =
-    manualInventoryFiltered.filter(item => item.barcode !== normalized);
+  const row = button ? button.closest('.manual-inventory-row') : null;
+  if(row){
+    // Visually remove immediately. No Supabase wait.
+    row.remove();
+  }
 
-  manualInventoryRender();
+  manualInventoryItems = manualInventoryItems.filter(item => item.barcode !== normalized);
+  manualInventoryFiltered = manualInventoryFiltered.filter(item => item.barcode !== normalized);
 
-  // Add to its own queue; Re-Inventory queue is untouched.
   if(!manualInventoryQueue.includes(normalized)){
     manualInventoryQueue.push(normalized);
     manualInventoryProcessQueue();
   }
 
-  const status = document.getElementById("manualInventoryStatus");
+  const list = document.getElementById('manualInventoryList');
+  if(list && !list.querySelector('.manual-inventory-row')){
+    list.innerHTML = '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
+  }
+
+  const status = document.getElementById('manualInventoryStatus');
   if(status){
-    status.textContent =
-      "Saving queue: " +
-      manualInventoryQueue.length +
-      (manualInventoryProcessing ? " • saving..." : "");
+    status.textContent = 'Saving queue: ' + manualInventoryQueue.length + (manualInventoryProcessing ? ' • saving in background...' : '');
   }
 }
 
@@ -5490,7 +5510,7 @@ async function manualInventoryProcessQueue(){
 
       if(status){
         status.textContent =
-          "Saving manual audit • " +
+          "Saving manual audit in background • " +
           manualInventoryQueue.length +
           " remaining...";
       }
