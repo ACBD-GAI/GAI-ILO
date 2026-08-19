@@ -41,6 +41,357 @@ function hideProNotification(){
   }
 }
 
+
+
+/* =========================================================
+   MANUAL INVENTORY — ADDITIVE ONLY
+   Restricted to STOCK_ADMIN users.
+========================================================= */
+let manualInventoryRows = [];
+let manualInventoryQueue = [];
+let manualInventoryProcessing = false;
+let manualInventoryLoaded = false;
+
+function isManualInventoryAllowed(){
+  try{
+    const session = currentSession();
+    const email = String(session.email || "").trim().toLowerCase();
+    return STOCK_ADMIN.some(x => String(x).toLowerCase() === email);
+  }catch(e){
+    return false;
+  }
+}
+
+function updateManualInventoryButtonVisibility(){
+  const btn = document.getElementById("manualInventoryBtn");
+  if(!btn) return;
+  btn.style.display = isManualInventoryAllowed() ? "block" : "none";
+}
+
+function manualInventoryEscape(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function manualInventoryNormalize(value){
+  return String(value ?? "").trim().toUpperCase();
+}
+
+async function openManualInventory(){
+  if(!isManualInventoryAllowed()){
+    showProNotification("Manual Inventory is restricted to authorized audit users.","Access Denied","🔒");
+    return;
+  }
+
+  try{
+    await stopNormalScanner();
+
+    if(auditScanning){
+      try{
+        await toggleAuditScan();
+      }catch(e){}
+    }
+
+    const dialog = document.getElementById("manualInventoryDialog");
+    if(dialog){
+      dialog.style.display = "flex";
+    }
+
+    await loadManualInventory();
+  }catch(err){
+    console.error("Manual Inventory:", err);
+    showProNotification(err.message || "Unable to load Manual Inventory.","Manual Inventory","❌");
+  }
+}
+
+function closeManualInventory(){
+  const dialog = document.getElementById("manualInventoryDialog");
+  if(dialog){
+    dialog.style.display = "none";
+  }
+}
+
+async function loadManualInventory(){
+  if(!isManualInventoryAllowed()){
+    throw new Error("MANUAL INVENTORY ACCESS DENIED");
+  }
+
+  const status = document.getElementById("manualInventoryStatus");
+  const list = document.getElementById("manualInventoryList");
+
+  if(status){
+    status.textContent = "Loading inventory...";
+  }
+
+  if(list){
+    list.innerHTML = '<div class="manual-inventory-empty">Loading...</div>';
+  }
+
+  const access = await requireSupabaseAccess();
+
+  const stockTable = branchTable(BRANCH,"stocks");
+  const auditTable = branchTable(BRANCH,"audit");
+  const soldTable = branchTable(BRANCH,"scanresults");
+
+  const [stocks,audits,sold] = await Promise.all([
+    sbRequest(
+      "/rest/v1/" + stockTable +
+      "?select=BR,NTAGN,CATEGORY,LENSTYPE,DESCRIPTION" +
+      "&order=CATEGORY.asc,LENSTYPE.asc,DESCRIPTION.asc,NTAGN.asc"
+    ),
+    sbRequest(
+      "/rest/v1/" + auditTable +
+      "?select=BR,NTAGN"
+    ),
+    sbRequest(
+      "/rest/v1/" + soldTable +
+      "?select=BR,NTAGN"
+    )
+  ]);
+
+  const makeKey = (row) =>
+    manualInventoryNormalize(row.BR) + "|" +
+    manualInventoryNormalize(row.NTAGN);
+
+  const auditedKeys = new Set(
+    (Array.isArray(audits) ? audits : []).map(makeKey)
+  );
+
+  const soldKeys = new Set(
+    (Array.isArray(sold) ? sold : []).map(makeKey)
+  );
+
+  manualInventoryRows = (Array.isArray(stocks) ? stocks : [])
+    .filter(row => row && String(row.NTAGN || "").trim() !== "")
+    .filter(row => !auditedKeys.has(makeKey(row)))
+    .filter(row => !soldKeys.has(makeKey(row)))
+    .map(row => ({
+      BR:String(row.BR || "").trim().toUpperCase(),
+      NTAGN:String(row.NTAGN || "").trim(),
+      CATEGORY:String(row.CATEGORY || "").trim(),
+      LENSTYPE:String(row.LENSTYPE || "").trim(),
+      DESCRIPTION:String(row.DESCRIPTION || "").trim()
+    }));
+
+  manualInventoryLoaded = true;
+
+  const filter = document.getElementById("manualInventoryCategoryFilter");
+  if(filter){
+    const current = filter.value;
+    const categories = [...new Set(
+      manualInventoryRows
+        .map(row => row.CATEGORY)
+        .filter(value => value !== "")
+    )].sort((a,b)=>a.localeCompare(b));
+
+    filter.innerHTML =
+      '<option value="">ALL CATEGORIES</option>' +
+      '<option value="__BLANK__">NO CATEGORY</option>' +
+      categories.map(category =>
+        '<option value="' + manualInventoryEscape(category) + '">' +
+        manualInventoryEscape(category) +
+        '</option>'
+      ).join("");
+
+    if(
+      current === "__BLANK__" ||
+      current === "" ||
+      categories.includes(current)
+    ){
+      filter.value = current;
+    }
+  }
+
+  renderManualInventory();
+}
+
+function renderManualInventory(){
+  const list = document.getElementById("manualInventoryList");
+  const status = document.getElementById("manualInventoryStatus");
+  const filter = document.getElementById("manualInventoryCategoryFilter");
+  const searchBox = document.getElementById("manualInventorySearch");
+
+  if(!list) return;
+
+  const categoryFilter = filter ? String(filter.value || "") : "";
+  const search = manualInventoryNormalize(
+    searchBox ? searchBox.value : ""
+  );
+
+  const rows = manualInventoryRows.filter(row => {
+    const categoryMatches =
+      !categoryFilter ||
+      (categoryFilter === "__BLANK__"
+        ? row.CATEGORY === ""
+        : row.CATEGORY === categoryFilter);
+
+    if(!categoryMatches) return false;
+
+    if(!search) return true;
+
+    return [
+      row.CATEGORY,
+      row.LENSTYPE,
+      row.DESCRIPTION,
+      row.NTAGN
+    ].some(value =>
+      manualInventoryNormalize(value).includes(search)
+    );
+  });
+
+  list.innerHTML = `
+    <div class="manual-inventory-row manual-inventory-head">
+      <div class="manual-inventory-cell">CATEGORY</div>
+      <div class="manual-inventory-cell">LENSTYPE</div>
+      <div class="manual-inventory-cell manual-description">DESCRIPTION</div>
+      <div class="manual-inventory-cell manual-tag">TAG NUMBER</div>
+      <div class="manual-inventory-cell manual-check-cell">✓</div>
+    </div>
+  `;
+
+  if(!rows.length){
+    list.insertAdjacentHTML(
+      "beforeend",
+      '<div class="manual-inventory-empty">No inventory items found.</div>'
+    );
+  }else{
+    rows.forEach(row => {
+      const item = document.createElement("div");
+      item.className = "manual-inventory-row";
+      item.dataset.manualKey =
+        manualInventoryNormalize(row.BR) + "|" +
+        manualInventoryNormalize(row.NTAGN);
+
+      item.innerHTML = `
+        <div class="manual-inventory-cell">
+          ${row.CATEGORY
+            ? manualInventoryEscape(row.CATEGORY)
+            : '<span style="color:#94a3b8;">NO CATEGORY</span>'}
+        </div>
+
+        <div class="manual-inventory-cell">
+          ${manualInventoryEscape(row.LENSTYPE) || "—"}
+        </div>
+
+        <div class="manual-inventory-cell manual-description" title="${manualInventoryEscape(row.DESCRIPTION)}">
+          ${manualInventoryEscape(row.DESCRIPTION) || "—"}
+        </div>
+
+        <div class="manual-inventory-cell manual-tag">
+          <b>${manualInventoryEscape(row.NTAGN)}</b>
+        </div>
+
+        <div class="manual-inventory-cell manual-check-cell">
+          <input
+            type="checkbox"
+            class="manual-inventory-check"
+            onchange="manualInventoryChecked(this,'${manualInventoryEscape(row.BR)}','${manualInventoryEscape(row.NTAGN)}')">
+        </div>
+      `;
+
+      list.appendChild(item);
+    });
+  }
+
+  if(status){
+    status.textContent =
+      rows.length + " item" + (rows.length === 1 ? "" : "s") + " shown";
+  }
+}
+
+function manualInventoryChecked(box, branch, tag){
+  if(!box || !box.checked) return;
+
+  const row = box.closest(".manual-inventory-row");
+  const key =
+    manualInventoryNormalize(branch) + "|" +
+    manualInventoryNormalize(tag);
+
+  if(row){
+    row.remove();
+  }
+
+  const index = manualInventoryRows.findIndex(item =>
+    manualInventoryNormalize(item.BR) === manualInventoryNormalize(branch) &&
+    manualInventoryNormalize(item.NTAGN) === manualInventoryNormalize(tag)
+  );
+
+  let item = null;
+  if(index >= 0){
+    item = manualInventoryRows[index];
+    manualInventoryRows.splice(index,1);
+  }
+
+  if(item){
+    manualInventoryQueue.push(item);
+    updateManualInventoryStatus();
+    processManualInventoryQueue();
+  }
+}
+
+function updateManualInventoryStatus(){
+  const status = document.getElementById("manualInventoryStatus");
+  if(!status) return;
+
+  status.textContent =
+    "Queue: " + manualInventoryQueue.length +
+    (manualInventoryProcessing ? " • Saving..." : "");
+}
+
+async function processManualInventoryQueue(){
+  if(manualInventoryProcessing) return;
+
+  manualInventoryProcessing = true;
+  updateManualInventoryStatus();
+
+  try{
+    while(manualInventoryQueue.length){
+      const item = manualInventoryQueue.shift();
+
+      try{
+        const barcode =
+          manualInventoryNormalize(item.BR) + "-" +
+          manualInventoryNormalize(item.NTAGN);
+
+        const result = await directSaveAudit(barcode);
+
+        if(
+          result.status !== "RECORDED" &&
+          result.status !== "ALREADY_AUDITED"
+        ){
+          showProNotification(
+            "Tag " + item.NTAGN + ": " +
+            (result.status || "Unable to save."),
+            "Manual Inventory",
+            "❌"
+          );
+        }
+      }catch(err){
+        console.error("Manual Inventory Save:", err);
+        showProNotification(
+          "Tag " + item.NTAGN + ": " +
+          (err.message || "Save failed."),
+          "Manual Inventory",
+          "❌"
+        );
+      }
+
+      updateManualInventoryStatus();
+    }
+
+    if(manualInventoryLoaded){
+      await loadManualInventory();
+    }
+  }finally{
+    manualInventoryProcessing = false;
+    updateManualInventoryStatus();
+  }
+}
+
 </script>
 <style>
 /* =========================================================
@@ -2292,6 +2643,31 @@ input:focus-visible{
 }
    
 
+</style>
+<style>
+
+/* ================= PRIVATE DASHBOARD CHAT ================= */
+.ao-chat-fab{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border:0;border-radius:50%;background:#111827;color:#fff;font-size:25px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99990;display:flex;align-items:center;justify-content:center}
+.ao-chat-fab:hover{transform:translateY(-2px)}
+.ao-chat-badge{position:absolute;right:-2px;top:-2px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ef4444;color:#fff;font:bold 11px Arial;display:none;align-items:center;justify-content:center}
+.ao-chat-panel{position:fixed;right:22px;bottom:92px;width:min(390px,calc(100vw - 30px));height:min(570px,calc(100vh - 125px));background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:99989;display:none;overflow:hidden}
+.ao-chat-panel.open{display:flex;flex-direction:column}
+.ao-chat-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#111827;color:#fff}
+.ao-chat-title{font-weight:800;font-size:15px}.ao-chat-sub{font-size:11px;opacity:.75;margin-top:2px}
+.ao-chat-close{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
+.ao-chat-recipient{padding:10px;border-bottom:1px solid #e5e7eb;background:#f9fafb}
+.ao-chat-select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;font-size:13px;outline:none}
+.ao-chat-messages{flex:1;overflow-y:auto;padding:14px;background:#f3f4f6}
+.ao-chat-row{display:flex;justify-content:flex-start;margin:7px 0}.ao-chat-row.mine{justify-content:flex-end}
+.ao-chat-bubble{max-width:82%;padding:9px 11px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);word-break:break-word}
+.ao-chat-row.mine .ao-chat-bubble{background:#111827;color:#fff}
+.ao-chat-name{font-size:10px;font-weight:700;opacity:.65;margin-bottom:4px}.ao-chat-text{font-size:13px;line-height:1.4;white-space:pre-wrap}.ao-chat-time{font-size:9px;opacity:.55;margin-top:5px}
+.ao-chat-empty{text-align:center;color:#6b7280;font-size:12px;padding:35px 15px}
+.ao-chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}.ao-chat-input{flex:1;min-width:0;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;outline:none;font-size:13px}.ao-chat-send{width:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:18px;cursor:pointer}.ao-chat-send:disabled{opacity:.5;cursor:not-allowed}
+.ao-chat-status{min-height:17px;padding:0 11px 8px;color:#dc2626;font-size:10px;background:#fff}
+@media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}}
+
+
 
 /* =========================================================
    MANUAL INVENTORY
@@ -2367,6 +2743,22 @@ input:focus-visible{
   border:1px solid #e5eaf1;
   border-radius:14px;
   background:#f8fbff;
+}
+
+.manual-check-cell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.manual-inventory-check{
+  width:22px !important;
+  min-width:22px !important;
+  height:22px;
+  margin:0 !important;
+  accent-color:#2563eb;
+  cursor:pointer;
 }
 
 .manual-inventory-row{
@@ -2454,29 +2846,6 @@ input:focus-visible{
   }
 }
 
-</style>
-<style>
-
-/* ================= PRIVATE DASHBOARD CHAT ================= */
-.ao-chat-fab{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border:0;border-radius:50%;background:#111827;color:#fff;font-size:25px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99990;display:flex;align-items:center;justify-content:center}
-.ao-chat-fab:hover{transform:translateY(-2px)}
-.ao-chat-badge{position:absolute;right:-2px;top:-2px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#ef4444;color:#fff;font:bold 11px Arial;display:none;align-items:center;justify-content:center}
-.ao-chat-panel{position:fixed;right:22px;bottom:92px;width:min(390px,calc(100vw - 30px));height:min(570px,calc(100vh - 125px));background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:99989;display:none;overflow:hidden}
-.ao-chat-panel.open{display:flex;flex-direction:column}
-.ao-chat-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#111827;color:#fff}
-.ao-chat-title{font-weight:800;font-size:15px}.ao-chat-sub{font-size:11px;opacity:.75;margin-top:2px}
-.ao-chat-close{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
-.ao-chat-recipient{padding:10px;border-bottom:1px solid #e5e7eb;background:#f9fafb}
-.ao-chat-select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;font-size:13px;outline:none}
-.ao-chat-messages{flex:1;overflow-y:auto;padding:14px;background:#f3f4f6}
-.ao-chat-row{display:flex;justify-content:flex-start;margin:7px 0}.ao-chat-row.mine{justify-content:flex-end}
-.ao-chat-bubble{max-width:82%;padding:9px 11px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.07);word-break:break-word}
-.ao-chat-row.mine .ao-chat-bubble{background:#111827;color:#fff}
-.ao-chat-name{font-size:10px;font-weight:700;opacity:.65;margin-bottom:4px}.ao-chat-text{font-size:13px;line-height:1.4;white-space:pre-wrap}.ao-chat-time{font-size:9px;opacity:.55;margin-top:5px}
-.ao-chat-empty{text-align:center;color:#6b7280;font-size:12px;padding:35px 15px}
-.ao-chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}.ao-chat-input{flex:1;min-width:0;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;outline:none;font-size:13px}.ao-chat-send{width:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:18px;cursor:pointer}.ao-chat-send:disabled{opacity:.5;cursor:not-allowed}
-.ao-chat-status{min-height:17px;padding:0 11px 8px;color:#dc2626;font-size:10px;background:#fff}
-@media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}}
 
 </style>
 </head>
@@ -2630,7 +2999,8 @@ class="btn-orange"
 onclick="toggleAuditScan()">
 🔄 RE-INVENTORY
 </button>
-\n<button
+
+<button
 id="manualInventoryBtn"
 class="btn-blue"
 onclick="openManualInventory()"
@@ -2707,8 +3077,7 @@ CANCEL
 </div>
   
 </div>
-  
-<div id="manualInventoryDialog" class="report-overlay">
+  <div id="manualInventoryDialog" class="report-overlay">
   <div class="report-modal manual-inventory-modal">
 
     <button
@@ -3173,12 +3542,11 @@ location.reload();
 
 function openApp(){
   updateBranchUI();
+  updateManualInventoryButtonVisibility();
 
   document.getElementById("branchScreen").style.display = "none";
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
-
-  updateManualInventoryButtonVisibility();
 
   startScannerSessionMonitor();
 }
@@ -4582,358 +4950,7 @@ function cancelNo() {
 `;
 }
 
-async 
-/* =========================================================
-   MANUAL INVENTORY — ADDITIVE ONLY
-   Restricted to STOCK_ADMIN users.
-========================================================= */
-let manualInventoryRows = [];
-let manualInventoryQueue = [];
-let manualInventoryProcessing = false;
-let manualInventoryLoaded = false;
-
-function isManualInventoryAllowed(){
-  try{
-    const session = currentSession();
-    const email = String(session.email || "").trim().toLowerCase();
-    return STOCK_ADMIN.some(x => String(x).toLowerCase() === email);
-  }catch(e){
-    return false;
-  }
-}
-
-function updateManualInventoryButtonVisibility(){
-  const btn = document.getElementById("manualInventoryBtn");
-  if(!btn) return;
-  btn.style.display = isManualInventoryAllowed() ? "block" : "none";
-}
-
-function manualInventoryEscape(value){
-  return String(value ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
-}
-
-function manualInventoryNormalize(value){
-  return String(value ?? "").trim().toUpperCase();
-}
-
-async function openManualInventory(){
-  if(!isManualInventoryAllowed()){
-    showProNotification("Manual Inventory is restricted to authorized audit users.","Access Denied","🔒");
-    return;
-  }
-
-  try{
-    await stopNormalScanner();
-
-    if(auditScanning){
-      try{
-        await toggleAuditScan();
-      }catch(e){}
-    }
-
-    const dialog = document.getElementById("manualInventoryDialog");
-    if(dialog){
-      dialog.style.display = "flex";
-    }
-
-    await loadManualInventory();
-  }catch(err){
-    console.error("Manual Inventory:", err);
-    showProNotification(err.message || "Unable to load Manual Inventory.","Manual Inventory","❌");
-  }
-}
-
-function closeManualInventory(){
-  const dialog = document.getElementById("manualInventoryDialog");
-  if(dialog){
-    dialog.style.display = "none";
-  }
-}
-
-async function loadManualInventory(){
-  if(!isManualInventoryAllowed()){
-    throw new Error("MANUAL INVENTORY ACCESS DENIED");
-  }
-
-  const status = document.getElementById("manualInventoryStatus");
-  const list = document.getElementById("manualInventoryList");
-
-  if(status){
-    status.textContent = "Loading inventory...";
-  }
-
-  if(list){
-    list.innerHTML = '<div class="manual-inventory-empty">Loading...</div>';
-  }
-
-  const access = await requireSupabaseAccess();
-
-  const stockTable = branchTable(BRANCH,"stocks");
-  const auditTable = branchTable(BRANCH,"audit");
-  const soldTable = branchTable(BRANCH,"scanresults");
-
-  const [stocks,audits,sold] = await Promise.all([
-    sbRequest(
-      "/rest/v1/" + stockTable +
-      "?select=BR,NTAGN,CATEGORY,LENSTYPE,DESCRIPTION" +
-      "&order=CATEGORY.asc,LENSTYPE.asc,DESCRIPTION.asc,NTAGN.asc"
-    ),
-    sbRequest(
-      "/rest/v1/" + auditTable +
-      "?select=BR,NTAGN"
-    ),
-    sbRequest(
-      "/rest/v1/" + soldTable +
-      "?select=BR,NTAGN"
-    )
-  ]);
-
-  const makeKey = (row) =>
-    manualInventoryNormalize(row.BR) + "|" +
-    manualInventoryNormalize(row.NTAGN);
-
-  const auditedKeys = new Set(
-    (Array.isArray(audits) ? audits : []).map(makeKey)
-  );
-
-  const soldKeys = new Set(
-    (Array.isArray(sold) ? sold : []).map(makeKey)
-  );
-
-  manualInventoryRows = (Array.isArray(stocks) ? stocks : [])
-    .filter(row => row && String(row.NTAGN || "").trim() !== "")
-    .filter(row => !auditedKeys.has(makeKey(row)))
-    .filter(row => !soldKeys.has(makeKey(row)))
-    .map(row => ({
-      BR:String(row.BR || "").trim().toUpperCase(),
-      NTAGN:String(row.NTAGN || "").trim(),
-      CATEGORY:String(row.CATEGORY || "").trim(),
-      LENSTYPE:String(row.LENSTYPE || "").trim(),
-      DESCRIPTION:String(row.DESCRIPTION || "").trim()
-    }));
-
-  manualInventoryLoaded = true;
-
-  const filter = document.getElementById("manualInventoryCategoryFilter");
-  if(filter){
-    const current = filter.value;
-    const categories = [...new Set(
-      manualInventoryRows
-        .map(row => row.CATEGORY)
-        .filter(value => value !== "")
-    )].sort((a,b)=>a.localeCompare(b));
-
-    filter.innerHTML =
-      '<option value="">ALL CATEGORIES</option>' +
-      '<option value="__BLANK__">NO CATEGORY</option>' +
-      categories.map(category =>
-        '<option value="' + manualInventoryEscape(category) + '">' +
-        manualInventoryEscape(category) +
-        '</option>'
-      ).join("");
-
-    if(
-      current === "__BLANK__" ||
-      current === "" ||
-      categories.includes(current)
-    ){
-      filter.value = current;
-    }
-  }
-
-  renderManualInventory();
-}
-
-function renderManualInventory(){
-  const list = document.getElementById("manualInventoryList");
-  const status = document.getElementById("manualInventoryStatus");
-  const filter = document.getElementById("manualInventoryCategoryFilter");
-  const searchBox = document.getElementById("manualInventorySearch");
-
-  if(!list) return;
-
-  const categoryFilter = filter ? String(filter.value || "") : "";
-  const search = manualInventoryNormalize(
-    searchBox ? searchBox.value : ""
-  );
-
-  const rows = manualInventoryRows.filter(row => {
-    const categoryMatches =
-      !categoryFilter ||
-      (categoryFilter === "__BLANK__"
-        ? row.CATEGORY === ""
-        : row.CATEGORY === categoryFilter);
-
-    if(!categoryMatches) return false;
-
-    if(!search) return true;
-
-    return [
-      row.CATEGORY,
-      row.LENSTYPE,
-      row.DESCRIPTION,
-      row.NTAGN
-    ].some(value =>
-      manualInventoryNormalize(value).includes(search)
-    );
-  });
-
-  list.innerHTML = `
-    <div class="manual-inventory-row manual-inventory-head">
-      <div class="manual-inventory-cell">✓</div>
-      <div class="manual-inventory-cell">CATEGORY</div>
-      <div class="manual-inventory-cell">LENSTYPE</div>
-      <div class="manual-inventory-cell manual-description">DESCRIPTION</div>
-      <div class="manual-inventory-cell manual-tag">TAG NUMBER</div>
-    </div>
-  `;
-
-  if(!rows.length){
-    list.insertAdjacentHTML(
-      "beforeend",
-      '<div class="manual-inventory-empty">No inventory items found.</div>'
-    );
-  }else{
-    rows.forEach(row => {
-      const item = document.createElement("div");
-      item.className = "manual-inventory-row";
-      item.dataset.manualKey =
-        manualInventoryNormalize(row.BR) + "|" +
-        manualInventoryNormalize(row.NTAGN);
-
-      item.innerHTML = `
-        <div class="manual-inventory-cell">
-          <input
-            type="checkbox"
-            class="manual-inventory-check"
-            onchange="manualInventoryChecked(this,'${manualInventoryEscape(row.BR)}','${manualInventoryEscape(row.NTAGN)}')">
-        </div>
-
-        <div class="manual-inventory-cell">
-          ${row.CATEGORY
-            ? manualInventoryEscape(row.CATEGORY)
-            : '<span style="color:#94a3b8;">NO CATEGORY</span>'}
-        </div>
-
-        <div class="manual-inventory-cell">
-          ${manualInventoryEscape(row.LENSTYPE) || "—"}
-        </div>
-
-        <div class="manual-inventory-cell manual-description" title="${manualInventoryEscape(row.DESCRIPTION)}">
-          ${manualInventoryEscape(row.DESCRIPTION) || "—"}
-        </div>
-
-        <div class="manual-inventory-cell manual-tag">
-          <b>${manualInventoryEscape(row.NTAGN)}</b>
-        </div>
-      `;
-
-      list.appendChild(item);
-    });
-  }
-
-  if(status){
-    status.textContent =
-      rows.length + " item" + (rows.length === 1 ? "" : "s") + " shown";
-  }
-}
-
-function manualInventoryChecked(box, branch, tag){
-  if(!box || !box.checked) return;
-
-  const row = box.closest(".manual-inventory-row");
-  const key =
-    manualInventoryNormalize(branch) + "|" +
-    manualInventoryNormalize(tag);
-
-  if(row){
-    row.remove();
-  }
-
-  const index = manualInventoryRows.findIndex(item =>
-    manualInventoryNormalize(item.BR) === manualInventoryNormalize(branch) &&
-    manualInventoryNormalize(item.NTAGN) === manualInventoryNormalize(tag)
-  );
-
-  let item = null;
-  if(index >= 0){
-    item = manualInventoryRows[index];
-    manualInventoryRows.splice(index,1);
-  }
-
-  if(item){
-    manualInventoryQueue.push(item);
-    updateManualInventoryStatus();
-    processManualInventoryQueue();
-  }
-}
-
-function updateManualInventoryStatus(){
-  const status = document.getElementById("manualInventoryStatus");
-  if(!status) return;
-
-  status.textContent =
-    "Queue: " + manualInventoryQueue.length +
-    (manualInventoryProcessing ? " • Saving..." : "");
-}
-
-async function processManualInventoryQueue(){
-  if(manualInventoryProcessing) return;
-
-  manualInventoryProcessing = true;
-  updateManualInventoryStatus();
-
-  try{
-    while(manualInventoryQueue.length){
-      const item = manualInventoryQueue.shift();
-
-      try{
-        const barcode =
-          manualInventoryNormalize(item.BR) + "-" +
-          manualInventoryNormalize(item.NTAGN);
-
-        const result = await directSaveAudit(barcode);
-
-        if(
-          result.status !== "RECORDED" &&
-          result.status !== "ALREADY_AUDITED"
-        ){
-          showProNotification(
-            "Tag " + item.NTAGN + ": " +
-            (result.status || "Unable to save."),
-            "Manual Inventory",
-            "❌"
-          );
-        }
-      }catch(err){
-        console.error("Manual Inventory Save:", err);
-        showProNotification(
-          "Tag " + item.NTAGN + ": " +
-          (err.message || "Save failed."),
-          "Manual Inventory",
-          "❌"
-        );
-      }
-
-      updateManualInventoryStatus();
-    }
-
-    if(manualInventoryLoaded){
-      await loadManualInventory();
-    }
-  }finally{
-    manualInventoryProcessing = false;
-    updateManualInventoryStatus();
-  }
-}
-
-
-function refreshPage() {
+async function refreshPage() {
 window.location.reload();
  // STOP NORMAL CAMERA
 if(scanner){
