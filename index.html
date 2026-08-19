@@ -2204,6 +2204,78 @@ input:focus-visible{
     width:calc(100vw - 28px);
   }
 }
+/* =========================================================
+   🔐 LOGIN + OTP INPUT SIZE FIX
+   Inputs will stay inside the login card and padding
+   will NOT make them overflow or become wider.
+   HTML / JAVASCRIPT UNCHANGED.
+   ========================================================= */
+
+#loginScreen input,
+#loginScreen input[type="text"],
+#loginScreen input[type="email"],
+#loginScreen input[type="password"],
+#loginScreen input[type="number"],
+#loginScreen input[type="tel"]{
+  width:100% !important;
+  max-width:100% !important;
+
+  min-width:0 !important;
+
+  box-sizing:border-box !important;
+
+  padding-left:15px !important;
+  padding-right:15px !important;
+
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+/* OTP TEXTBOXES */
+#loginScreen input[id*="otp"],
+#loginScreen input[name*="otp"],
+#loginScreen input[class*="otp"]{
+  box-sizing:border-box !important;
+
+  width:100% !important;
+  max-width:100% !important;
+
+  min-width:0 !important;
+}
+
+/* Login buttons also stay inside the same width */
+#loginScreen button{
+  box-sizing:border-box !important;
+
+  max-width:100% !important;
+}
+
+/* MOBILE — same rule, no forced 270px width */
+@media(max-width:600px){
+
+  #loginScreen input,
+  #loginScreen input[type="text"],
+  #loginScreen input[type="email"],
+  #loginScreen input[type="password"],
+  #loginScreen input[type="number"],
+  #loginScreen input[type="tel"]{
+    width:100% !important;
+    max-width:100% !important;
+
+    min-width:0 !important;
+
+    box-sizing:border-box !important;
+
+    padding-left:15px !important;
+    padding-right:15px !important;
+  }
+
+  #loginScreen button{
+    width:100% !important;
+    max-width:100% !important;
+  }
+}
+   
 
 </style>
 <style>
