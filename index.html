@@ -2473,11 +2473,75 @@ input:focus-visible{
   transform:translateY(-1px);
 }
 
-.manual-inventory-row.removing{
-  opacity:.45;
-  transform:scale(.99);
-  transition:opacity .08s ease,transform .08s ease;
+/* Larger, high-visibility tag number for Manual Audit */
+.manual-inventory-tag{
+  font-size:16px !important;
+  font-weight:950 !important;
+  letter-spacing:.35px;
+  color:#0f172a;
+  line-height:1.2;
 }
+
+/* Fast visual feedback when AUDIT is clicked */
+.manual-inventory-row.removing{
+  position:relative;
+  overflow:visible;
+  opacity:.45;
+  transform:scale(.98);
+  transition:opacity .18s ease,transform .18s ease;
+}
+
+.manual-audit-burst{
+  position:absolute;
+  left:calc(100% - 45px);
+  top:50%;
+  transform:translate(-50%,-50%) scale(.35);
+  z-index:20;
+  font-size:34px;
+  line-height:1;
+  pointer-events:none;
+  filter:drop-shadow(0 5px 10px rgba(245,158,11,.28));
+  animation:manualAuditBurst .34s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+.manual-audit-burst::before{
+  content:"✦  •  ✧  •  ✦";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  white-space:nowrap;
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:4px;
+  color:#f59e0b;
+  animation:manualAuditSpark .34s ease-out forwards;
+}
+
+@keyframes manualAuditBurst{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(-15deg);}
+  35%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(6deg);}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.45) rotate(18deg);}
+}
+
+@keyframes manualAuditSpark{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.45);}
+  35%{opacity:1;}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.55);}
+}
+
+.manual-inventory-more{
+  padding:10px 12px;
+  margin-top:6px;
+  text-align:center;
+  font-size:11px;
+  font-weight:800;
+  color:#64748b;
+  background:#f8fafc;
+  border:1px dashed #cbd5e1;
+  border-radius:10px;
+}
+
 
 .manual-inventory-empty{
   padding:25px 15px;
@@ -5263,6 +5327,8 @@ let manualInventoryFiltered = [];
 let manualInventoryQueue = [];
 let manualInventoryProcessing = false;
 let manualInventoryLoading = false;
+let manualInventoryRenderLimit = 120;
+let manualInventorySearchTimer = null;
 
 async function manualInventoryIsAuthorized(forceRefresh=false){
   try{
@@ -5403,7 +5469,12 @@ async function manualInventoryLoad(){
           category: String(row.CATEGORY || "").trim(),
           lenstype: String(row.LENSTYPE || "").trim(),
           description: String(row.DESCRIPTION || "").trim(),
-          tag: ntagn
+          tag: ntagn,
+          searchText: [
+            String(row.LENSTYPE || "").trim(),
+            String(row.DESCRIPTION || "").trim(),
+            ntagn
+          ].join(" ").toLowerCase()
         };
       })
       .filter(item =>
@@ -5481,12 +5552,7 @@ function manualInventoryApplyFilters(){
     if(category && categoryValue !== category) return false;
 
     if(search){
-      const haystack = [
-        item.lenstype,
-        item.description,
-        item.tag
-      ].join(" ").toLowerCase();
-
+      const haystack = item.searchText || "";
       if(!haystack.includes(search)) return false;
     }
 
@@ -5496,7 +5562,72 @@ function manualInventoryApplyFilters(){
   manualInventoryRender();
 }
 
-function manualInventoryRender(){
+function manualInventoryAppendRows(startIndex, count){
+  const list = document.getElementById("manualInventoryList");
+  if(!list) return;
+
+  const endIndex = Math.min(
+    startIndex + count,
+    manualInventoryFiltered.length
+  );
+
+  if(startIndex >= endIndex) return;
+
+  const fragment = document.createDocumentFragment();
+
+  for(let i=startIndex; i<endIndex; i++){
+    const item = manualInventoryFiltered[i];
+
+    const row = document.createElement("div");
+    row.className = "manual-inventory-row";
+    row.dataset.manualBarcode = String(item.barcode || "");
+
+    const lenCell = document.createElement("div");
+    lenCell.className = "manual-inventory-cell";
+    lenCell.title = item.lenstype || "";
+    lenCell.textContent = item.lenstype || "";
+
+    const descCell = document.createElement("div");
+    descCell.className = "manual-inventory-cell";
+    descCell.title = item.description || "";
+    descCell.textContent = item.description || "";
+
+    const tagCell = document.createElement("div");
+    tagCell.className = "manual-inventory-cell manual-inventory-tag";
+    tagCell.title = item.tag || "";
+    tagCell.textContent = item.tag || "";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "manual-inventory-action";
+    button.textContent = "AUDIT";
+    button.addEventListener("click", function(){
+      manualInventorySelectItem(item.barcode, button);
+    }, {once:true});
+
+    row.appendChild(lenCell);
+    row.appendChild(descCell);
+    row.appendChild(tagCell);
+    row.appendChild(button);
+    fragment.appendChild(row);
+  }
+
+  const more = list.querySelector(".manual-inventory-more");
+  if(more) more.remove();
+
+  list.appendChild(fragment);
+
+  if(endIndex < manualInventoryFiltered.length){
+    const moreBox = document.createElement("div");
+    moreBox.className = "manual-inventory-more";
+    moreBox.textContent =
+      "Showing " + endIndex + " of " + manualInventoryFiltered.length +
+      " • scroll down to load more";
+    list.appendChild(moreBox);
+  }
+}
+
+function manualInventoryRender(reset=true){
   const list = document.getElementById("manualInventoryList");
   if(!list) return;
 
@@ -5506,25 +5637,31 @@ function manualInventoryRender(){
     return;
   }
 
-  list.innerHTML = manualInventoryFiltered.map(item => `
-    <div class="manual-inventory-row"
-         data-manual-barcode="${manualInventoryEscape(item.barcode)}">
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.lenstype)}">
-        ${manualInventoryEscape(item.lenstype)}
-      </div>
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.description)}">
-        ${manualInventoryEscape(item.description)}
-      </div>
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.tag)}">
-        ${manualInventoryEscape(item.tag)}
-      </div>
-      <button type="button"
-              class="manual-inventory-action"
-              onclick="manualInventorySelectItem('${manualInventoryEscape(item.barcode)}', this)">
-        AUDIT
-      </button>
-    </div>
-  `).join("");
+  if(reset){
+    list.innerHTML = "";
+    manualInventoryRenderLimit = 120;
+    manualInventoryAppendRows(0, manualInventoryRenderLimit);
+  }else{
+    const alreadyRendered = list.querySelectorAll(".manual-inventory-row").length;
+    manualInventoryAppendRows(alreadyRendered, manualInventoryRenderLimit);
+  }
+}
+
+function manualInventoryLoadMore(){
+  const list = document.getElementById("manualInventoryList");
+  if(!list) return;
+
+  const more = list.querySelector(".manual-inventory-more");
+  if(!more) return;
+
+  const scrollBottom = list.scrollTop + list.clientHeight;
+  const nearBottom = scrollBottom >= list.scrollHeight - 180;
+  if(nearBottom){
+    manualInventoryAppendRows(
+      list.querySelectorAll(".manual-inventory-row").length,
+      manualInventoryRenderLimit
+    );
+  }
 }
 
 function manualInventorySelectItem(barcode, button){
@@ -5532,9 +5669,21 @@ function manualInventorySelectItem(barcode, button){
   if(!normalized) return;
 
   const row = button ? button.closest('.manual-inventory-row') : null;
+
   if(row){
-    // Visually remove immediately. No Supabase wait.
-    row.remove();
+    // Immediate visual feedback without waiting for Supabase.
+    row.classList.add("removing");
+
+    const burst = document.createElement("span");
+    burst.className = "manual-audit-burst";
+    burst.textContent = "💥";
+    row.appendChild(burst);
+
+    button.disabled = true;
+
+    setTimeout(()=>{
+      if(row && row.parentNode) row.remove();
+    },220);
   }
 
   manualInventoryItems = manualInventoryItems.filter(item => item.barcode !== normalized);
@@ -5546,13 +5695,15 @@ function manualInventorySelectItem(barcode, button){
   }
 
   const list = document.getElementById('manualInventoryList');
-  if(list && !list.querySelector('.manual-inventory-row')){
+  if(list && !manualInventoryFiltered.length){
     list.innerHTML = '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
   }
 
   const status = document.getElementById('manualInventoryStatus');
   if(status){
-    status.textContent = 'Saving queue: ' + manualInventoryQueue.length + (manualInventoryProcessing ? ' • saving in background...' : '');
+    status.textContent =
+      'Saving queue: ' + manualInventoryQueue.length +
+      (manualInventoryProcessing ? ' • saving in background...' : '');
   }
 }
 
@@ -5681,7 +5832,16 @@ document.addEventListener("DOMContentLoaded",()=>{
   const search = document.getElementById("manualSearchFilter");
 
   category?.addEventListener("change", manualInventoryApplyFilters);
-  search?.addEventListener("input", manualInventoryApplyFilters);
+
+  search?.addEventListener("input", ()=>{
+    clearTimeout(manualInventorySearchTimer);
+    manualInventorySearchTimer = setTimeout(()=>{
+      manualInventoryApplyFilters();
+    }, 180);
+  });
+
+  const list = document.getElementById("manualInventoryList");
+  list?.addEventListener("scroll", manualInventoryLoadMore, {passive:true});
 });
 
 
