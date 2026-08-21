@@ -3113,10 +3113,8 @@ async function directSave(rawBarcode, siNo){
   const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
   if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH"};
   if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
-
   const stock = await getStockByBarcodeDirect(barcode);
   if(!stock) return {status:"NOT FOUND"};
-
   const row = stockRowArray(stock);
   while(row.length < 27) row.push("");
   row[14] = formatLens(row[14]);
@@ -3124,38 +3122,8 @@ async function directSave(rawBarcode, siNo){
   row[24] = manilaNow();
   row[25] = access.email;
   row[26] = "";
-
   const payload = [{SDATE:row[0],SUPPLIER:row[1],DR:row[2],COST:row[3],ASG:row[4],CB:row[5],FD:row[6],UNITS:row[7],POWER:row[8],LENSTYPE:row[9],PUNIT:row[10],BR:row[11],NTAGN:row[12],CATEGORY:row[13],DESCRIPTION:row[14],LENSCODE:row[15],SELLINGPRICE:row[16],DELIVERYDATE:row[17],ORNUMBER:row[18],ORDATE:row[19],REMARKS:row[20],TAGPRICE:row[21],QR:row[22],"SI NO.":row[23],"DATE AND TIME":row[24],"USER EMAIL":row[25],STATUS:row[26]}];
-
-  // 1. Save to Sold first. Do not remove source records unless this succeeds.
-  await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {
-    method:"POST",
-    headers:{Prefer:"return=representation"},
-    body:JSON.stringify(payload)
-  });
-
-  // 2. Match Dashboard Add to Sold behavior:
-  //    remove the source Stocks record.
-  const stockTable = branchTable(BRANCH,"stocks");
-  const stockParams = new URLSearchParams();
-  stockParams.set("NTAGN","eq." + encodeURIComponent(String(row[12] || "").trim()));
-  await sbRequest("/rest/v1/" + stockTable + "?" + stockParams.toString(), {
-    method:"DELETE"
-  });
-
-  // 3. If an Audit record exists, remove that matching Audit record too.
-  const auditTable = branchTable(BRANCH,"audit");
-  const auditParams = new URLSearchParams();
-  auditParams.set("NTAGN","eq." + encodeURIComponent(String(row[12] || "").trim()));
-  const existingAudit = await sbRequest(
-    "/rest/v1/" + auditTable + "?" + auditParams.toString() + "&select=NTAGN&limit=1"
-  );
-  if(Array.isArray(existingAudit) && existingAudit.length){
-    await sbRequest("/rest/v1/" + auditTable + "?" + auditParams.toString(), {
-      method:"DELETE"
-    });
-  }
-
+  await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
   return {status:"ADDED TO SOLD",row};
 }
 
@@ -3191,36 +3159,20 @@ async function directSearchSI(siNo){
 
 async function directCheckTag(tag){
   await requireSupabaseAccess();
-  const cleanTag = String(tag).trim().toUpperCase();
+  const cleanTag = String(tag || "").trim().toUpperCase();
   if(!cleanTag) return {status:"NOT_FOUND"};
-
-  // Check Sold first so an already-sold tag is never reported as "not found"
-  // just because it is no longer present in Stocks.
-  const soldRows = await sbRequest(
-    "/rest/v1/" + branchTable(BRANCH,"scanresults") +
-    "?BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(cleanTag) +
-    "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1"
-  );
-  if(Array.isArray(soldRows) && soldRows.length){
-    const sold = soldRows[0];
+  const sold = await isAlreadySoldDirect(BRANCH + "-" + cleanTag);
+  if(sold){
     return {
       status:"DUPLICATE",
-      barcode:normalizeBarcode(String(BRANCH)+"-"+cleanTag),
-      colJ:String(sold.LENSTYPE||""),
-      colM:String(sold.NTAGN||cleanTag),
-      colO:formatLens(sold.DESCRIPTION||"")
+      barcode:normalizeBarcode(BRANCH + "-" + cleanTag),
+      colJ:String(sold.LENSTYPE || ""),
+      colM:String(sold.NTAGN || cleanTag),
+      colO:formatLens(sold.DESCRIPTION || "")
     };
   }
-
-  const rows = await sbRequest(
-    "/rest/v1/" + branchTable(BRANCH,"stocks") +
-    "?BR=eq." + encodeURIComponent(BRANCH) +
-    "&NTAGN=eq." + encodeURIComponent(cleanTag) +
-    "&select=*&limit=1"
-  );
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(cleanTag) + "&select=*&limit=1");
   if(!rows.length) return {status:"NOT_FOUND"};
-
   const s=rows[0], barcode=normalizeBarcode(s.BR+"-"+s.NTAGN);
   return {status:"FOUND",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
 }
@@ -3232,6 +3184,16 @@ async function directSaveAudit(rawBarcode){
   const parts=barcode.split("-");
   if(parts.length<2) return {status:"INVALID BARCODE"};
   const br=parts[0], ntagn=parts.slice(1).join("-");
+  const sold = await isAlreadySoldDirect(barcode);
+  if(sold){
+    return {
+      status:"ALREADY_SOLD",
+      tag:ntagn,
+      colO:String(sold.DESCRIPTION || ""),
+      colJ:String(sold.LENSTYPE || "")
+    };
+  }
+
   const auditTable=branchTable(BRANCH,"audit");
   const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
   if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
@@ -3776,16 +3738,16 @@ await scanner.start(
         deviceId: { exact: cameraId }
     },
     {
-        fps: 20,
+        fps: 10,
         qrbox: {
-            width: 300,
-            height: 300
+            width: 250,
+            height: 250
         },
         aspectRatio: 1.0,
         videoConstraints: {
             facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
         }
     },
     async (code) => {
@@ -4317,10 +4279,18 @@ ${data.colJ}
 
 }
 
-else{
-
-alert(data.status);
-
+else if(data.status==="ALREADY_SOLD"){
+  document.getElementById("result").innerHTML=`
+  <div class="card red scan-animate">
+  🛑 ALREADY SOLD
+  <br><br>
+  <b>${data.colO || ""}</b><br>
+  ${data.colJ || ""}
+  <br>
+  🏷 Tag: <b>${data.tag || ""}</b>
+  </div>`;
+}else{
+  alert(data.status);
 }
 
 }
@@ -4410,6 +4380,26 @@ async function processAuditQueue() {
 
                 break;
 
+
+                case "ALREADY_SOLD":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red scan-animate">
+
+                    🛑 ALREADY SOLD
+
+                    <br><br>
+
+                    <b>${saveData.colO || ""}</b><br>
+                    ${saveData.colJ || ""}
+                    <br>
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                break;
 
 
                 case "NOT_FOUND":
