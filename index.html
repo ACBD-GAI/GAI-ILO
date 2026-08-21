@@ -2292,6 +2292,83 @@ input:focus-visible{
 }
    
 
+/* =========================================================
+   💥 MANUAL INVENTORY AUDIT BURST
+========================================================= */
+.manual-audit-burst{
+  position:fixed;
+  z-index:999999;
+  width:1px;
+  height:1px;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+}
+.manual-audit-burst::before,
+.manual-audit-burst::after{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#fbbf24;
+  box-shadow:
+    0 -28px 0 #60a5fa,
+    20px -20px 0 #f472b6,
+    28px 0 0 #34d399,
+    20px 20px 0 #f97316,
+    0 28px 0 #a78bfa,
+    -20px 20px 0 #fb7185,
+    -28px 0 0 #38bdf8,
+    -20px -20px 0 #facc15;
+  animation:manualAuditBurst .5s ease-out forwards;
+}
+.manual-audit-burst::after{
+  width:8px;
+  height:8px;
+  background:#fff;
+  box-shadow:
+    0 -42px 0 #fde68a,
+    30px -30px 0 #93c5fd,
+    42px 0 0 #86efac,
+    30px 30px 0 #fdba74,
+    0 42px 0 #c4b5fd,
+    -30px 30px 0 #fda4af,
+    -42px 0 0 #7dd3fc,
+    -30px -30px 0 #fde68a;
+  animation:manualAuditBurst .62s ease-out forwards;
+}
+@keyframes manualAuditBurst{
+  0%{transform:scale(.15);opacity:1}
+  65%{opacity:1}
+  100%{transform:scale(1.35);opacity:0}
+}
+.manual-audit-row-disappear{
+  animation:manualAuditRowDisappear .34s ease forwards;
+  pointer-events:none;
+}
+@keyframes manualAuditRowDisappear{
+  0%{opacity:1;transform:scale(1);max-height:80px}
+  70%{opacity:0;transform:scale(.96);max-height:80px}
+  100%{opacity:0;transform:scale(.9);max-height:0;padding-top:0;padding-bottom:0;margin-bottom:0;border-width:0}
+}
+.manual-inventory-row .manual-inventory-cell:nth-child(2){
+  font-size:14px;
+  font-weight:800;
+  color:#1e293b;
+}
+.manual-inventory-row .manual-inventory-cell:nth-child(3){
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.02em;
+  color:#0f172a;
+}
+@media(max-width:520px){
+  .manual-inventory-row .manual-inventory-cell:nth-child(2){font-size:13px}
+  .manual-inventory-row .manual-inventory-cell:nth-child(3){font-size:15px}
+}
+
 </style>
 <style>
 
@@ -5580,9 +5657,19 @@ function manualInventorySelectItem(barcode, button){
   if(!normalized) return;
 
   const row = button ? button.closest('.manual-inventory-row') : null;
+
+  // Immediate visual feedback: burst + row disappearance.
   if(row){
-    // Visually remove immediately. No Supabase wait.
-    row.remove();
+    const rect = row.getBoundingClientRect();
+    const burst = document.createElement('div');
+    burst.className = 'manual-audit-burst';
+    burst.style.left = (rect.left + rect.width - 34) + 'px';
+    burst.style.top = (rect.top + rect.height / 2) + 'px';
+    document.body.appendChild(burst);
+    setTimeout(()=>burst.remove(),700);
+
+    row.classList.add('manual-audit-row-disappear');
+    setTimeout(()=>row.remove(),340);
   }
 
   manualInventoryItems = manualInventoryItems.filter(item => item.barcode !== normalized);
@@ -5595,7 +5682,11 @@ function manualInventorySelectItem(barcode, button){
 
   const list = document.getElementById('manualInventoryList');
   if(list && !list.querySelector('.manual-inventory-row')){
-    list.innerHTML = '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
+    setTimeout(()=>{
+      if(!list.querySelector('.manual-inventory-row')){
+        list.innerHTML = '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
+      }
+    },350);
   }
 
   const status = document.getElementById('manualInventoryStatus');
