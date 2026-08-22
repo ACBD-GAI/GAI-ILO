@@ -4995,7 +4995,7 @@ function startScannerSessionMonitor(){
   };
 
   check();
-  scannerSessionMonitorTimer = setInterval(check, 15000);
+  scannerSessionMonitorTimer = setInterval(check, 2000);
 }
 
 async function handleScannerForcedLogout(message){
@@ -5007,20 +5007,23 @@ async function handleScannerForcedLogout(message){
     scannerSessionMonitorTimer = null;
   }
 
+  // Remove local session immediately.
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+
+  // Show the administrator logout popup immediately.
+  // Camera cleanup continues in the background and must not delay the popup.
+  showScannerForcedLogoutPopup(message);
+
   try{
-    await stopNormalScanner();
+    Promise.resolve(stopNormalScanner()).catch(()=>{});
   }catch(e){}
 
   try{
     if(typeof stopAuditScanner === "function"){
-      await stopAuditScanner();
+      Promise.resolve(stopAuditScanner()).catch(()=>{});
     }
   }catch(e){}
-
-  localStorage.removeItem("inventorySession_" + BRANCH);
-  localStorage.removeItem("loginTime_" + BRANCH);
-
-  showScannerForcedLogoutPopup(message);
 }
 
 function showScannerForcedLogoutPopup(message){
