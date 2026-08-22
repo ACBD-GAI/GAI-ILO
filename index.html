@@ -5121,7 +5121,7 @@ function startScannerSessionMonitor(){
   };
 
   check();
-  scannerSessionMonitorTimer = setInterval(check, 15000);
+  scannerSessionMonitorTimer = setInterval(check, 2000);
 }
 
 async function handleScannerForcedLogout(message){
@@ -5133,21 +5133,134 @@ async function handleScannerForcedLogout(message){
     scannerSessionMonitorTimer = null;
   }
 
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+
+  // Show the logout popup immediately.
+  showScannerForcedLogoutPopup(message);
+
+  // Clean up cameras in the background so they cannot delay the popup.
   try{
-    await stopNormalScanner();
+    Promise.resolve(stopNormalScanner()).catch(()=>{});
   }catch(e){}
 
   try{
     if(typeof stopAuditScanner === "function"){
-      await stopAuditScanner();
+      Promise.resolve(stopAuditScanner()).catch(()=>{});
     }
   }catch(e){}
+}
 
-  localStorage.removeItem("inventorySession_" + BRANCH);
-  localStorage.removeItem("loginTime_" + BRANCH);
+function showScannerForcedLogoutPopup(message){
+  const existing = document.getElementById("scannerForcedLogoutModal");
+  if(existing) existing.remove();
 
-  alert(message);
-  location.reload();
+  const modal = document.createElement("div");
+  modal.id = "scannerForcedLogoutModal";
+  modal.innerHTML = `
+    <div class="scanner-logout-backdrop">
+      <div class="scanner-logout-card" role="dialog" aria-modal="true" aria-label="Scanner Session Logged Out">
+        <div class="scanner-logout-icon">🔐</div>
+        <div class="scanner-logout-title">Session Logged Out</div>
+        <div class="scanner-logout-message">
+          Your scanner session was logged out by the administrator.
+        </div>
+        <button type="button" class="scanner-logout-btn" id="scannerLogoutOkBtn">
+          OK
+        </button>
+      </div>
+    </div>
+  `;
+
+  const style = document.createElement("style");
+  style.id = "scannerForcedLogoutStyles";
+  style.textContent = `
+    #scannerForcedLogoutModal{
+      position:fixed;
+      inset:0;
+      z-index:999999;
+    }
+    #scannerForcedLogoutModal .scanner-logout-backdrop{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(15,23,42,.58);
+      backdrop-filter:blur(5px);
+      -webkit-backdrop-filter:blur(5px);
+    }
+    #scannerForcedLogoutModal .scanner-logout-card{
+      width:min(390px,92vw);
+      background:#fff;
+      border:1px solid #fee2e2;
+      border-radius:22px;
+      padding:24px 22px 20px;
+      text-align:center;
+      box-shadow:0 28px 80px rgba(15,23,42,.28);
+      animation:scannerLogoutPop .18s ease-out;
+    }
+    #scannerForcedLogoutModal .scanner-logout-icon{
+      width:68px;
+      height:68px;
+      margin:0 auto 14px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#fff1f2;
+      border:1px solid #fecaca;
+      font-size:31px;
+    }
+    #scannerForcedLogoutModal .scanner-logout-title{
+      margin:0;
+      color:#991b1b;
+      font-size:22px;
+      line-height:1.2;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+    #scannerForcedLogoutModal .scanner-logout-message{
+      margin:11px auto 19px;
+      max-width:320px;
+      color:#475569;
+      font-size:14px;
+      line-height:1.55;
+      font-weight:700;
+    }
+    #scannerForcedLogoutModal .scanner-logout-btn{
+      width:100%;
+      min-height:46px;
+      border:0;
+      border-radius:12px;
+      background:#dc2626;
+      color:#fff;
+      font-size:14px;
+      font-weight:950;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(220,38,38,.22);
+    }
+    #scannerForcedLogoutModal .scanner-logout-btn:active{
+      transform:translateY(1px);
+    }
+    @keyframes scannerLogoutPop{
+      from{opacity:0;transform:scale(.94) translateY(8px);}
+      to{opacity:1;transform:scale(1) translateY(0);}
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
+
+  const ok = document.getElementById("scannerLogoutOkBtn");
+  if(ok){
+    ok.addEventListener("click",()=>{
+      modal.remove();
+      document.getElementById("scannerForcedLogoutStyles")?.remove();
+      location.reload();
+    });
+    setTimeout(()=>ok.focus(),50);
+  }
 }
 
 function notifyScannerLogout(){
