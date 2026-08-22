@@ -2292,6 +2292,84 @@ input:focus-visible{
 }
    
 
+/* =========================================================
+   💥 MANUAL INVENTORY AUDIT — LIGHTWEIGHT NOTICE
+   Uses the row itself instead of creating full-screen DOM overlays.
+========================================================= */
+.manual-audit-row-disappear{
+  animation:manualAuditRowDisappear .12s linear forwards;
+  pointer-events:none;
+  position:relative;
+  z-index:10;
+  overflow:visible;
+}
+.manual-audit-row-disappear::before{
+  content:"💥";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.25);
+  font-size:46px;
+  line-height:1;
+  pointer-events:none;
+  z-index:20;
+  animation:manualAuditExplosion .48s cubic-bezier(.18,.8,.2,1) forwards;
+}
+.manual-audit-row-disappear::after{
+  content:"AUDITED!";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.8);
+  white-space:nowrap;
+  padding:6px 11px;
+  border-radius:999px;
+  background:#16a34a;
+  color:#fff;
+  font-size:15px;
+  font-weight:900;
+  box-shadow:0 5px 14px rgba(22,163,74,.24);
+  pointer-events:none;
+  z-index:21;
+  animation:manualAuditNotice .55s ease-out forwards;
+}
+@keyframes manualAuditExplosion{
+  0%{transform:translate(-50%,-50%) scale(.2) rotate(-12deg);opacity:0}
+  20%{transform:translate(-50%,-50%) scale(1.05) rotate(5deg);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(1.55) rotate(3deg);opacity:0}
+}
+@keyframes manualAuditNotice{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.75)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  100%{opacity:0;transform:translate(-50%,-65%) scale(.92)}
+}
+@keyframes manualAuditRowDisappear{
+  0%{opacity:1;transform:translateX(0)}
+  100%{opacity:0;transform:translateX(-140%)}
+}
+.manual-inventory-row .manual-inventory-cell:nth-child(2){
+
+  font-size:14px;
+  font-weight:800;
+  color:#1e293b;
+}
+.manual-inventory-row .manual-inventory-cell:nth-child(2){
+
+  font-size:14px;
+  font-weight:800;
+  color:#1e293b;
+}
+.manual-inventory-row .manual-inventory-cell:nth-child(3){
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.02em;
+  color:#0f172a;
+}
+@media(max-width:520px){
+  .manual-inventory-row .manual-inventory-cell:nth-child(2){font-size:13px}
+  .manual-inventory-row .manual-inventory-cell:nth-child(3){font-size:15px}
+}
+
 </style>
 <style>
 
@@ -3159,11 +3237,21 @@ async function directSearchSI(siNo){
 
 async function directCheckTag(tag){
   await requireSupabaseAccess();
-  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(String(tag).trim().toUpperCase()) + "&select=*&limit=1");
+  const cleanTag = String(tag || "").trim().toUpperCase();
+  if(!cleanTag) return {status:"NOT_FOUND"};
+  const sold = await isAlreadySoldDirect(BRANCH + "-" + cleanTag);
+  if(sold){
+    return {
+      status:"DUPLICATE",
+      barcode:normalizeBarcode(BRANCH + "-" + cleanTag),
+      colJ:String(sold.LENSTYPE || ""),
+      colM:String(sold.NTAGN || cleanTag),
+      colO:formatLens(sold.DESCRIPTION || "")
+    };
+  }
+  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(cleanTag) + "&select=*&limit=1");
   if(!rows.length) return {status:"NOT_FOUND"};
   const s=rows[0], barcode=normalizeBarcode(s.BR+"-"+s.NTAGN);
-  const sold=await isAlreadySoldDirect(barcode);
-  if(sold) return {status:"DUPLICATE",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
   return {status:"FOUND",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
 }
 
@@ -3174,6 +3262,16 @@ async function directSaveAudit(rawBarcode){
   const parts=barcode.split("-");
   if(parts.length<2) return {status:"INVALID BARCODE"};
   const br=parts[0], ntagn=parts.slice(1).join("-");
+  const sold = await isAlreadySoldDirect(barcode);
+  if(sold){
+    return {
+      status:"ALREADY_SOLD",
+      tag:ntagn,
+      colO:String(sold.DESCRIPTION || ""),
+      colJ:String(sold.LENSTYPE || "")
+    };
+  }
+
   const auditTable=branchTable(BRANCH,"audit");
   const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
   if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
@@ -3718,16 +3816,16 @@ await scanner.start(
         deviceId: { exact: cameraId }
     },
     {
-        fps: 20,
+        fps: 10,
         qrbox: {
-            width: 300,
-            height: 300
+            width: 250,
+            height: 250
         },
         aspectRatio: 1.0,
         videoConstraints: {
             facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
         }
     },
     async (code) => {
@@ -4259,10 +4357,18 @@ ${data.colJ}
 
 }
 
-else{
-
-alert(data.status);
-
+else if(data.status==="ALREADY_SOLD"){
+  document.getElementById("result").innerHTML=`
+  <div class="card red scan-animate">
+  🛑 ALREADY SOLD
+  <br><br>
+  <b>${data.colO || ""}</b><br>
+  ${data.colJ || ""}
+  <br>
+  🏷 Tag: <b>${data.tag || ""}</b>
+  </div>`;
+}else{
+  alert(data.status);
 }
 
 }
@@ -4352,6 +4458,26 @@ async function processAuditQueue() {
 
                 break;
 
+
+                case "ALREADY_SOLD":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red scan-animate">
+
+                    🛑 ALREADY SOLD
+
+                    <br><br>
+
+                    <b>${saveData.colO || ""}</b><br>
+                    ${saveData.colJ || ""}
+                    <br>
+                    🏷 Tag:
+                    <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                break;
 
 
                 case "NOT_FOUND":
@@ -5007,14 +5133,13 @@ async function handleScannerForcedLogout(message){
     scannerSessionMonitorTimer = null;
   }
 
-  // Remove local session immediately.
   localStorage.removeItem("inventorySession_" + BRANCH);
   localStorage.removeItem("loginTime_" + BRANCH);
 
-  // Show the administrator logout popup immediately.
-  // Camera cleanup continues in the background and must not delay the popup.
+  // Show the logout popup immediately.
   showScannerForcedLogoutPopup(message);
 
+  // Clean up cameras in the background so they cannot delay the popup.
   try{
     Promise.resolve(stopNormalScanner()).catch(()=>{});
   }catch(e){}
@@ -5136,6 +5261,7 @@ function showScannerForcedLogoutPopup(message){
     });
     setTimeout(()=>ok.focus(),50);
   }
+}
 }
 
 function notifyScannerLogout(){
@@ -5646,9 +5772,12 @@ function manualInventorySelectItem(barcode, button){
   if(!normalized) return;
 
   const row = button ? button.closest('.manual-inventory-row') : null;
+
+  // Lightweight visual feedback: animate the row itself.
+  // No full-screen flash or extra DOM nodes are created.
   if(row){
-    // Visually remove immediately. No Supabase wait.
-    row.remove();
+    row.classList.add('manual-audit-row-disappear');
+    row.addEventListener('animationend',()=>row.remove(),{once:true});
   }
 
   manualInventoryItems = manualInventoryItems.filter(item => item.barcode !== normalized);
