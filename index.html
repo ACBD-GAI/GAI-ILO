@@ -2292,84 +2292,6 @@ input:focus-visible{
 }
    
 
-/* =========================================================
-   💥 MANUAL INVENTORY AUDIT — LIGHTWEIGHT NOTICE
-   Uses the row itself instead of creating full-screen DOM overlays.
-========================================================= */
-.manual-audit-row-disappear{
-  animation:manualAuditRowDisappear .12s linear forwards;
-  pointer-events:none;
-  position:relative;
-  z-index:10;
-  overflow:visible;
-}
-.manual-audit-row-disappear::before{
-  content:"💥";
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%) scale(.25);
-  font-size:46px;
-  line-height:1;
-  pointer-events:none;
-  z-index:20;
-  animation:manualAuditExplosion .48s cubic-bezier(.18,.8,.2,1) forwards;
-}
-.manual-audit-row-disappear::after{
-  content:"AUDITED!";
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%) scale(.8);
-  white-space:nowrap;
-  padding:6px 11px;
-  border-radius:999px;
-  background:#16a34a;
-  color:#fff;
-  font-size:15px;
-  font-weight:900;
-  box-shadow:0 5px 14px rgba(22,163,74,.24);
-  pointer-events:none;
-  z-index:21;
-  animation:manualAuditNotice .55s ease-out forwards;
-}
-@keyframes manualAuditExplosion{
-  0%{transform:translate(-50%,-50%) scale(.2) rotate(-12deg);opacity:0}
-  20%{transform:translate(-50%,-50%) scale(1.05) rotate(5deg);opacity:1}
-  100%{transform:translate(-50%,-50%) scale(1.55) rotate(3deg);opacity:0}
-}
-@keyframes manualAuditNotice{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.75)}
-  20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
-  100%{opacity:0;transform:translate(-50%,-65%) scale(.92)}
-}
-@keyframes manualAuditRowDisappear{
-  0%{opacity:1;transform:translateX(0)}
-  100%{opacity:0;transform:translateX(-140%)}
-}
-.manual-inventory-row .manual-inventory-cell:nth-child(2){
-
-  font-size:14px;
-  font-weight:800;
-  color:#1e293b;
-}
-.manual-inventory-row .manual-inventory-cell:nth-child(2){
-
-  font-size:14px;
-  font-weight:800;
-  color:#1e293b;
-}
-.manual-inventory-row .manual-inventory-cell:nth-child(3){
-  font-size:16px;
-  font-weight:900;
-  letter-spacing:.02em;
-  color:#0f172a;
-}
-@media(max-width:520px){
-  .manual-inventory-row .manual-inventory-cell:nth-child(2){font-size:13px}
-  .manual-inventory-row .manual-inventory-cell:nth-child(3){font-size:15px}
-}
-
 </style>
 <style>
 
@@ -3189,10 +3111,25 @@ async function directCheck(rawBarcode){
 async function directSave(rawBarcode, siNo){
   const access = await requireSupabaseAccess();
   const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
-  if(!validateBarcodeBranch(barcode, BRANCH)) return {status:"WRONG BRANCH"};
-  if(await isAlreadySoldDirect(barcode)) return {status:"ALREADY SAVED"};
+
+  if(!validateBarcodeBranch(barcode, BRANCH)){
+    return {status:"WRONG BRANCH"};
+  }
+
+  // Never create a second Sold record.
+  const existingSold = await isAlreadySoldDirect(barcode);
+  if(existingSold){
+    return {
+      status:"ALREADY SOLD",
+      tag:String(existingSold.NTAGN || ""),
+      colJ:String(existingSold.LENSTYPE || ""),
+      colO:String(existingSold.DESCRIPTION || "")
+    };
+  }
+
   const stock = await getStockByBarcodeDirect(barcode);
   if(!stock) return {status:"NOT FOUND"};
+
   const row = stockRowArray(stock);
   while(row.length < 27) row.push("");
   row[14] = formatLens(row[14]);
@@ -3200,10 +3137,76 @@ async function directSave(rawBarcode, siNo){
   row[24] = manilaNow();
   row[25] = access.email;
   row[26] = "";
-  const payload = [{SDATE:row[0],SUPPLIER:row[1],DR:row[2],COST:row[3],ASG:row[4],CB:row[5],FD:row[6],UNITS:row[7],POWER:row[8],LENSTYPE:row[9],PUNIT:row[10],BR:row[11],NTAGN:row[12],CATEGORY:row[13],DESCRIPTION:row[14],LENSCODE:row[15],SELLINGPRICE:row[16],DELIVERYDATE:row[17],ORNUMBER:row[18],ORDATE:row[19],REMARKS:row[20],TAGPRICE:row[21],QR:row[22],"SI NO.":row[23],"DATE AND TIME":row[24],"USER EMAIL":row[25],STATUS:row[26]}];
-  await sbRequest("/rest/v1/" + branchTable(BRANCH,"scanresults"), {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
+
+  const payload = [{
+    SDATE:row[0],
+    SUPPLIER:row[1],
+    DR:row[2],
+    COST:row[3],
+    ASG:row[4],
+    CB:row[5],
+    FD:row[6],
+    UNITS:row[7],
+    POWER:row[8],
+    LENSTYPE:row[9],
+    PUNIT:row[10],
+    BR:row[11],
+    NTAGN:row[12],
+    CATEGORY:row[13],
+    DESCRIPTION:row[14],
+    LENSCODE:row[15],
+    SELLINGPRICE:row[16],
+    DELIVERYDATE:row[17],
+    ORNUMBER:row[18],
+    ORDATE:row[19],
+    REMARKS:row[20],
+    TAGPRICE:row[21],
+    QR:row[22],
+    "SI NO.":row[23],
+    "DATE AND TIME":row[24],
+    "USER EMAIL":row[25],
+    STATUS:row[26]
+  }];
+
+  // Add to Sold first. If this fails, Stocks/Audit stay untouched.
+  await sbRequest(
+    "/rest/v1/" + branchTable(BRANCH,"scanresults"),
+    {
+      method:"POST",
+      headers:{Prefer:"return=representation"},
+      body:JSON.stringify(payload)
+    }
+  );
+
+  const parts = barcode.split("-");
+  const br = parts[0];
+  const ntagn = parts.slice(1).join("-");
+
+  // Remove this tag from Stocks after successful Sold insert.
+  await sbRequest(
+    "/rest/v1/" + branchTable(BRANCH,"stocks") +
+    "?BR=eq." + encodeURIComponent(br) +
+    "&NTAGN=eq." + encodeURIComponent(ntagn),
+    {
+      method:"DELETE",
+      headers:{Prefer:"return=minimal"}
+    }
+  );
+
+  // Remove the same tag from Audit if it exists.
+  await sbRequest(
+    "/rest/v1/" + branchTable(BRANCH,"audit") +
+    "?BR=eq." + encodeURIComponent(br) +
+    "&NTAGN=eq." + encodeURIComponent(ntagn),
+    {
+      method:"DELETE",
+      headers:{Prefer:"return=minimal"}
+    }
+  );
+
   return {status:"ADDED TO SOLD",row};
 }
+
 
 
 async function isSiNoMarked(siNo){
@@ -3237,23 +3240,46 @@ async function directSearchSI(siNo){
 
 async function directCheckTag(tag){
   await requireSupabaseAccess();
+
   const cleanTag = String(tag || "").trim().toUpperCase();
   if(!cleanTag) return {status:"NOT_FOUND"};
-  const sold = await isAlreadySoldDirect(BRANCH + "-" + cleanTag);
+
+  // Check Sold FIRST because a sold item is no longer in Stocks.
+  const soldBarcode = normalizeBarcode(BRANCH + "-" + cleanTag);
+  const sold = await isAlreadySoldDirect(soldBarcode);
+
   if(sold){
     return {
       status:"DUPLICATE",
-      barcode:normalizeBarcode(BRANCH + "-" + cleanTag),
+      barcode:soldBarcode,
       colJ:String(sold.LENSTYPE || ""),
       colM:String(sold.NTAGN || cleanTag),
       colO:formatLens(sold.DESCRIPTION || "")
     };
   }
-  const rows = await sbRequest("/rest/v1/" + branchTable(BRANCH,"stocks") + "?BR=eq." + encodeURIComponent(BRANCH) + "&NTAGN=eq." + encodeURIComponent(cleanTag) + "&select=*&limit=1");
+
+  // If not Sold, check Stocks.
+  const rows = await sbRequest(
+    "/rest/v1/" + branchTable(BRANCH,"stocks") +
+    "?BR=eq." + encodeURIComponent(BRANCH) +
+    "&NTAGN=eq." + encodeURIComponent(cleanTag) +
+    "&select=*&limit=1"
+  );
+
   if(!rows.length) return {status:"NOT_FOUND"};
-  const s=rows[0], barcode=normalizeBarcode(s.BR+"-"+s.NTAGN);
-  return {status:"FOUND",barcode,colJ:String(s.LENSTYPE||""),colM:String(s.NTAGN||""),colO:formatLens(s.DESCRIPTION||"")};
+
+  const s = rows[0];
+  const barcode = normalizeBarcode(s.BR + "-" + s.NTAGN);
+
+  return {
+    status:"FOUND",
+    barcode,
+    colJ:String(s.LENSTYPE || ""),
+    colM:String(s.NTAGN || ""),
+    colO:formatLens(s.DESCRIPTION || "")
+  };
 }
+
 
 async function directSaveAudit(rawBarcode){
   const access=await requireSupabaseAccess();
@@ -3262,16 +3288,6 @@ async function directSaveAudit(rawBarcode){
   const parts=barcode.split("-");
   if(parts.length<2) return {status:"INVALID BARCODE"};
   const br=parts[0], ntagn=parts.slice(1).join("-");
-  const sold = await isAlreadySoldDirect(barcode);
-  if(sold){
-    return {
-      status:"ALREADY_SOLD",
-      tag:ntagn,
-      colO:String(sold.DESCRIPTION || ""),
-      colJ:String(sold.LENSTYPE || "")
-    };
-  }
-
   const auditTable=branchTable(BRANCH,"audit");
   const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
   if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
@@ -3816,16 +3832,16 @@ await scanner.start(
         deviceId: { exact: cameraId }
     },
     {
-        fps: 10,
+        fps: 20,
         qrbox: {
-            width: 250,
-            height: 250
+            width: 300,
+            height: 300
         },
         aspectRatio: 1.0,
         videoConstraints: {
             facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
         }
     },
     async (code) => {
@@ -4357,18 +4373,10 @@ ${data.colJ}
 
 }
 
-else if(data.status==="ALREADY_SOLD"){
-  document.getElementById("result").innerHTML=`
-  <div class="card red scan-animate">
-  🛑 ALREADY SOLD
-  <br><br>
-  <b>${data.colO || ""}</b><br>
-  ${data.colJ || ""}
-  <br>
-  🏷 Tag: <b>${data.tag || ""}</b>
-  </div>`;
-}else{
-  alert(data.status);
+else{
+
+alert(data.status);
+
 }
 
 }
@@ -4458,26 +4466,6 @@ async function processAuditQueue() {
 
                 break;
 
-
-                case "ALREADY_SOLD":
-
-                    document.getElementById("result").innerHTML = `
-                    <div class="card red scan-animate">
-
-                    🛑 ALREADY SOLD
-
-                    <br><br>
-
-                    <b>${saveData.colO || ""}</b><br>
-                    ${saveData.colJ || ""}
-                    <br>
-                    🏷 Tag:
-                    <b>${saveData.tag || ""}</b>
-
-                    </div>
-                    `;
-
-                break;
 
 
                 case "NOT_FOUND":
@@ -4640,6 +4628,23 @@ let tag = data.tag || row[12] || "";
     isSaving = false;
     return;
 }
+    if (data.status === "ALREADY SOLD") {
+      document.getElementById("result").innerHTML = `
+        <div class="card red">
+          🛑 ALREADY SOLD
+          <br><br>
+          <b>${data.colO || ""}</b><br>
+          ${data.colJ ? `<small>${data.colJ}</small><br>` : ""}
+          <small>🏷 Tag: <b>${data.tag || ""}</b></small>
+        </div>
+      `;
+
+      tempCode = "";
+      tempSi = "";
+      return;
+    }
+
+
 
 // SUCCESS
 document.getElementById("result").innerHTML = `
@@ -5121,7 +5126,7 @@ function startScannerSessionMonitor(){
   };
 
   check();
-  scannerSessionMonitorTimer = setInterval(check, 2000);
+  scannerSessionMonitorTimer = setInterval(check, 15000);
 }
 
 async function handleScannerForcedLogout(message){
@@ -5133,22 +5138,20 @@ async function handleScannerForcedLogout(message){
     scannerSessionMonitorTimer = null;
   }
 
-  localStorage.removeItem("inventorySession_" + BRANCH);
-  localStorage.removeItem("loginTime_" + BRANCH);
-
-  // Show the logout popup immediately.
-  showScannerForcedLogoutPopup(message);
-
-  // Clean up cameras in the background so they cannot delay the popup.
   try{
-    Promise.resolve(stopNormalScanner()).catch(()=>{});
+    await stopNormalScanner();
   }catch(e){}
 
   try{
     if(typeof stopAuditScanner === "function"){
-      Promise.resolve(stopAuditScanner()).catch(()=>{});
+      await stopAuditScanner();
     }
   }catch(e){}
+
+  localStorage.removeItem("inventorySession_" + BRANCH);
+  localStorage.removeItem("loginTime_" + BRANCH);
+
+  showScannerForcedLogoutPopup(message);
 }
 
 function showScannerForcedLogoutPopup(message){
@@ -5771,12 +5774,9 @@ function manualInventorySelectItem(barcode, button){
   if(!normalized) return;
 
   const row = button ? button.closest('.manual-inventory-row') : null;
-
-  // Lightweight visual feedback: animate the row itself.
-  // No full-screen flash or extra DOM nodes are created.
   if(row){
-    row.classList.add('manual-audit-row-disappear');
-    row.addEventListener('animationend',()=>row.remove(),{once:true});
+    // Visually remove immediately. No Supabase wait.
+    row.remove();
   }
 
   manualInventoryItems = manualInventoryItems.filter(item => item.barcode !== normalized);
