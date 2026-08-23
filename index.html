@@ -2590,33 +2590,77 @@ input:focus-visible{
     grid-template-columns:1fr;
   }
 
+  /* PHONE FIX: keep the ACTION/AUDIT column inside the viewport.
+     The previous 82 + 125 + 78 + 74px grid could exceed a 360px phone. */
   .manual-inventory-head,
   .manual-inventory-row{
-    grid-template-columns:82px minmax(125px,1fr) 78px 74px;
-    column-gap:8px;
-    padding-left:8px;
-    padding-right:8px;
+    grid-template-columns:68px minmax(0,1fr) 68px 58px;
+    column-gap:5px;
+    width:100%;
+    min-width:0;
+    padding-left:6px;
+    padding-right:6px;
   }
 
   .manual-inventory-head{
-    font-size:9px;
-    white-space:nowrap;
+    font-size:8px;
+    white-space:normal;
+    overflow:hidden;
+  }
+
+  .manual-inventory-head > div{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
 
   .manual-inventory-head > div:nth-child(3){
     white-space:normal;
-    line-height:1.1;
+    line-height:1.05;
     text-align:center;
   }
 
   .manual-inventory-row{
-    font-size:10px;
+    font-size:9px;
+    overflow:hidden;
+  }
+
+  .manual-inventory-cell{
+    min-width:0 !important;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    overflow-wrap:normal;
+    word-break:normal;
   }
 
   .manual-inventory-action{
-    width:64px !important;
-    min-width:64px !important;
+    width:58px !important;
+    min-width:58px !important;
+    max-width:58px !important;
+    height:34px;
+    min-height:34px !important;
+    padding:5px 3px !important;
     justify-self:end;
+    font-size:9px !important;
+  }
+}
+
+@media(max-width:380px){
+  .manual-inventory-head,
+  .manual-inventory-row{
+    grid-template-columns:60px minmax(0,1fr) 62px 54px;
+    column-gap:4px;
+    padding-left:5px;
+    padding-right:5px;
+  }
+
+  .manual-inventory-action{
+    width:54px !important;
+    min-width:54px !important;
+    max-width:54px !important;
+    font-size:8px !important;
   }
 }
 </style>
