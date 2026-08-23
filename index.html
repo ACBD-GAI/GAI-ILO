@@ -5,7 +5,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jolly Eyeglass Inventory</title>
+<title>Acebedo Optical Inventory</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <script>
 
@@ -47,7 +47,7 @@ function hideProNotification(){
 </script>
 <style>
 /* =========================================================
-   👓 OPTICAL SHOP — JOLLY EYEGLASS THEME
+   👓 OPTICAL SHOP — ACEBEDO OPTICAL THEME
    CSS ONLY
    HTML / JAVASCRIPT UNCHANGED
    ========================================================= */
@@ -2830,6 +2830,27 @@ body::before{
 
 .branch-card .screen-eyebrow{color:#3370af;margin-top:3px;}
 
+.brand-lockup{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  margin:0 0 13px;
+}
+
+.brand-logo{
+  width:46px;
+  height:46px;
+  flex:0 0 auto;
+  object-fit:contain;
+  padding:4px;
+  border:1px solid #c7d9ed;
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 7px 17px rgba(24,70,121,.12);
+}
+
+.brand-lockup .screen-eyebrow{margin:0;}
+
 .branch-card h2{
   margin:0 0 9px;
   color:var(--navy);
@@ -2893,6 +2914,8 @@ body::before{
 }
 
 #loginScreen .screen-eyebrow{margin:0 0 13px;color:#3370af;}
+#loginScreen .brand-lockup{margin:0 0 13px;}
+#loginScreen .brand-lockup .screen-eyebrow{margin:0;}
 
 #loginScreen h2{
   margin:0 0 13px;
@@ -2947,6 +2970,7 @@ body::before{
   .button-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
   .button-grid button{min-height:50px;padding:9px 7px;font-size:10px;}
   .login-card{padding:27px 22px;border-radius:22px;}
+  .brand-logo{width:42px;height:42px;}
 }
 
 @media(prefers-reduced-motion:reduce){
@@ -2973,7 +2997,10 @@ body::before{
 
 <div id="branchScreen">
   <div class="branch-card">
-    <div class="screen-eyebrow">Jolly Eyeglass · Inventory</div>
+    <div class="brand-lockup">
+      <img class="brand-logo" src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&amp;sz=w200" alt="Acebedo Optical logo">
+      <div class="screen-eyebrow">Acebedo Optical · Inventory</div>
+    </div>
     <h2>Choose your branch</h2>
     <p>Select the branch you want to access and begin a secure inventory session.</p>
 
@@ -3012,7 +3039,10 @@ body::before{
 ">
 
   <div class="login-card">
-    <div class="screen-eyebrow">Jolly Eyeglass · Inventory</div>
+    <div class="brand-lockup">
+      <img class="brand-logo" src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&amp;sz=w200" alt="Acebedo Optical logo">
+      <div class="screen-eyebrow">Acebedo Optical · Inventory</div>
+    </div>
     <h2>Secure sign in</h2>
     <div id="loginBranchLabel" class="selected-branch-label">SELECT BRANCH</div>
     <button class="cancel-report-btn" onclick="changeBranch()">↩ CHANGE BRANCH</button>
@@ -3048,7 +3078,7 @@ body::before{
   <div class="header">
 
     <div class="header-left">
-        <img src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&sz=w200">
+        <img src="https://drive.google.com/thumbnail?id=1U9kmQ7qummOCpVppdLtmVaugMuzLYUWQ&amp;sz=w200" alt="Acebedo Optical logo">
         <h3 id="branchTitle">SELECTED BRANCH</h3>&nbsp;&nbsp;
     </div>
 
@@ -3732,7 +3762,7 @@ function updateBranchUI(){
     title.textContent = BRANCH_NAMES[BRANCH];
   }
 
-  document.title = "Inventory - " + BRANCH_NAMES[BRANCH];
+  document.title = "Acebedo Optical Inventory - " + BRANCH_NAMES[BRANCH];
 }
 
 function resetLoginForm(){
