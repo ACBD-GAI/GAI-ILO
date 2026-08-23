@@ -2635,6 +2635,26 @@ input:focus-visible{
     word-break:normal;
   }
 
+  .manual-inventory-list.is-virtualized .manual-inventory-row{
+    height:68px;
+    min-height:68px;
+    padding-top:6px;
+    padding-bottom:6px;
+  }
+
+  .manual-inventory-list.is-virtualized .manual-inventory-cell:nth-child(2){
+    white-space:normal;
+    text-overflow:clip;
+    overflow:hidden;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:3;
+    line-clamp:3;
+    line-height:1.12;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+
   .manual-inventory-action{
     width:58px !important;
     min-width:58px !important;
@@ -2654,6 +2674,10 @@ input:focus-visible{
     column-gap:4px;
     padding-left:5px;
     padding-right:5px;
+  }
+
+  .manual-inventory-list.is-virtualized .manual-inventory-cell:nth-child(2){
+    font-size:10px !important;
   }
 
   .manual-inventory-action{
@@ -2957,10 +2981,10 @@ body::before{
 }
 
 .manual-inventory-list.is-virtualized .manual-inventory-row{
-  height:56px;
-  min-height:56px;
+  height:62px;
+  min-height:62px;
   margin-bottom:6px;
-  padding:8px 12px;
+  padding:6px 12px;
   overflow:hidden;
   contain:layout paint;
 }
@@ -2969,6 +2993,20 @@ body::before{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+}
+
+/* DESCRIPTION wraps instead of being shortened to values like FMSR PRES... */
+.manual-inventory-list.is-virtualized .manual-inventory-cell:nth-child(2){
+  white-space:normal;
+  text-overflow:clip;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  line-clamp:3;
+  line-height:1.15;
+  overflow-wrap:anywhere;
+  word-break:break-word;
 }
 
 .si-input{
@@ -6246,7 +6284,7 @@ let manualInventoryVirtualTree = new Int32Array(0);
 let manualInventoryVirtualVisibleCount = 0;
 let manualInventoryVirtualFrame = 0;
 
-const MANUAL_INVENTORY_ROW_STRIDE = 62;
+const MANUAL_INVENTORY_ROW_STRIDE = window.innerWidth <= 520 ? 74 : 68;
 const MANUAL_INVENTORY_RENDER_BUFFER = 10;
 const MANUAL_INVENTORY_RECENT_LIMIT = 12;
 
