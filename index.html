@@ -2085,6 +2085,74 @@ input:focus-visible{
 
 
 /* =========================================================
+   💥 MANUAL INVENTORY — AUDIT CLICK EXPLOSION
+   Additive visual effect only. Existing audit/save logic stays intact.
+   ========================================================= */
+
+.manual-inventory-action{
+  position:relative;
+  overflow:visible !important;
+}
+
+.manual-audit-explode{
+  animation:
+    manualAuditButtonPop .42s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.manual-audit-burst{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:0;
+  height:0;
+  pointer-events:none;
+  z-index:20;
+}
+
+.manual-audit-particle{
+  position:absolute;
+  left:-6px;
+  top:-9px;
+  font-size:15px;
+  font-weight:900;
+  line-height:1;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.4);
+  animation:manualAuditParticle .42s cubic-bezier(.15,.75,.2,1) forwards;
+}
+
+.manual-audit-particle.p0{--dx:-38px;--dy:-28px;animation-delay:.01s}
+.manual-audit-particle.p1{--dx:-18px;--dy:-42px;animation-delay:.015s}
+.manual-audit-particle.p2{--dx:  5px;--dy:-46px;animation-delay:.02s}
+.manual-audit-particle.p3{--dx: 30px;--dy:-30px;animation-delay:.025s}
+.manual-audit-particle.p4{--dx: 42px;--dy:  -2px;animation-delay:.03s}
+.manual-audit-particle.p5{--dx: 28px;--dy:  27px;animation-delay:.035s}
+.manual-audit-particle.p6{--dx: -2px;--dy:  38px;animation-delay:.04s}
+.manual-audit-particle.p7{--dx:-34px;--dy:  22px;animation-delay:.045s}
+
+@keyframes manualAuditButtonPop{
+  0%{transform:scale(1);filter:brightness(1)}
+  22%{transform:scale(1.13);filter:brightness(1.18)}
+  55%{transform:scale(.94);filter:brightness(1.05)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+
+@keyframes manualAuditParticle{
+  0%{
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.35) rotate(0deg);
+  }
+  18%{opacity:1}
+  100%{
+    opacity:0;
+    transform:
+      translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)))
+      scale(1.15)
+      rotate(120deg);
+  }
+}
+
+/* =========================================================
    🧊 REDUCED MOTION
    ========================================================= */
 
@@ -3942,6 +4010,16 @@ function openApp(){
   document.getElementById("branchScreen").style.display = "none";
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
+
+  /* The DOM loads before the authenticated session exists.
+     Re-check immediately after login so authorized users see
+     Manual Inventory without needing a page refresh. */
+  manualInventoryAccessCache = {
+    email: "",
+    allowed: false,
+    checkedAt: 0
+  };
+  manualInventoryUpdateButton();
 
   startScannerSessionMonitor();
 }
@@ -6543,11 +6621,37 @@ function manualInventorySelectItem(index, button){
   manualInventoryActiveBarcodes.add(item.barcode);
   manualInventoryQueue.push(action);
   manualInventoryRecentActions.unshift(action);
+
+  /* ---------------------------------------------------------
+     💥 MANUAL INVENTORY AUDIT CLICK EXPLOSION
+     Keep the row visible briefly so the user sees the
+     confirmation effect BEFORE the item disappears.
+  --------------------------------------------------------- */
+  if(button){
+    button.classList.add("manual-audit-explode");
+    const burst = document.createElement("span");
+    burst.className = "manual-audit-burst";
+    burst.setAttribute("aria-hidden","true");
+
+    const pieces = ["✦","✧","•","✦","•","✧","✦","•"];
+    pieces.forEach((symbol, i) => {
+      const piece = document.createElement("span");
+      piece.className = "manual-audit-particle p" + i;
+      piece.textContent = symbol;
+      burst.appendChild(piece);
+    });
+
+    button.appendChild(burst);
+  }
   if(manualInventoryRecentActions.length > MANUAL_INVENTORY_RECENT_LIMIT){
     manualInventoryRecentActions.length = MANUAL_INVENTORY_RECENT_LIMIT;
   }
 
-  manualInventoryRender();
+  /* Delay the row removal until the explosion has finished. */
+  setTimeout(() => {
+    manualInventoryRender();
+  }, 430);
+
   manualInventoryRenderRecent();
   manualInventorySetStatus(
     "Saving queue: " + manualInventoryQueue.length +
