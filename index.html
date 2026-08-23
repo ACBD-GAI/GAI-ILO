@@ -5779,6 +5779,10 @@ document.addEventListener("click", initAudio, { once: true });
 
 let scannerSessionMonitorTimer = null;
 let scannerForcedLogoutHandling = false;
+// Require multiple consecutive confirmed invalid responses before logging out.
+// This prevents a temporary Apps Script/network response from causing a false logout.
+let scannerSessionInvalidCount = 0;
+let scannerSessionCheckInFlight = false;
 
 function startScannerSessionMonitor(){
   if(scannerSessionMonitorTimer){
@@ -5787,15 +5791,18 @@ function startScannerSessionMonitor(){
   }
 
   const check = async function(){
-    if(scannerForcedLogoutHandling) return;
+    if(scannerForcedLogoutHandling || scannerSessionCheckInFlight) return;
 
     const session = currentSession();
     const email = String(session.email || "").trim().toLowerCase();
     const sessionId = String(session.sessionId || "").trim();
 
     if(!BRANCH || !email || !sessionId){
+      scannerSessionInvalidCount = 0;
       return;
     }
+
+    scannerSessionCheckInFlight = true;
 
     try{
       const url =
@@ -5813,7 +5820,23 @@ function startScannerSessionMonitor(){
 
       const data = await res.json();
 
-      if(!data || data.status !== "OK"){
+      if(data && data.status === "OK"){
+        // A successful check proves the session is still valid.
+        scannerSessionInvalidCount = 0;
+        return;
+      }
+
+      // Do not immediately log out. Require 3 consecutive confirmed
+      // invalid responses so a temporary server/session hiccup cannot
+      // accidentally remove the user's working login.
+      scannerSessionInvalidCount++;
+      console.warn(
+        "Scanner session check returned non-OK (" +
+        scannerSessionInvalidCount + "/3):",
+        data
+      );
+
+      if(scannerSessionInvalidCount >= 3){
         await handleScannerForcedLogout(
           "Your scanner session was logged out by the administrator."
         );
@@ -5821,12 +5844,16 @@ function startScannerSessionMonitor(){
     }catch(err){
       /*
        * Do NOT log the user out just because the internet or
-       * Apps Script is temporarily unavailable.
+       * Apps Script is temporarily unavailable. A network error
+       * also does not count toward the 3 confirmed invalid checks.
        */
       console.warn("Scanner session check failed:", err);
+    }finally{
+      scannerSessionCheckInFlight = false;
     }
   };
 
+  scannerSessionInvalidCount = 0;
   check();
   scannerSessionMonitorTimer = setInterval(check, 1000);
 }
