@@ -2741,6 +2741,124 @@ body::before{
   box-shadow:0 0 0 4px rgba(94,234,212,.15);
 }
 
+/* Large manual-audit lists stay fast by rendering only visible rows. */
+.manual-inventory-modal{
+  width:min(980px,96vw);
+  height:min(88vh,790px);
+}
+
+.manual-inventory-recent{
+  margin:0 0 10px;
+  padding:10px 11px;
+  border:1px solid #dbe7f3;
+  border-radius:13px;
+  background:#f8fbff;
+}
+
+.manual-inventory-recent-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 8px;
+  color:#2a5d94;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+
+.manual-inventory-recent-count{
+  color:#718096;
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:0;
+}
+
+.manual-inventory-recent-list{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:1px;
+  scrollbar-width:thin;
+}
+
+.manual-inventory-recent-empty{
+  padding:2px 0;
+  color:#8290a2;
+  font-size:11px;
+  font-weight:650;
+}
+
+.manual-inventory-recent-item{
+  display:grid;
+  grid-template-columns:minmax(90px,1fr) auto;
+  gap:9px;
+  align-items:center;
+  flex:0 0 min(260px,80%);
+  min-width:190px;
+  padding:8px 9px;
+  border:1px solid #dce7f2;
+  border-radius:10px;
+  background:#fff;
+}
+
+.manual-inventory-recent-main{min-width:0;}
+.manual-inventory-recent-tag{display:block;overflow:hidden;color:#1e3f69;font-size:11px;font-weight:900;text-overflow:ellipsis;white-space:nowrap;}
+.manual-inventory-recent-description{display:block;overflow:hidden;margin-top:2px;color:#718096;font-size:10px;text-overflow:ellipsis;white-space:nowrap;}
+.manual-inventory-recent-state{display:inline-block;margin-top:4px;color:#4f739c;font-size:9px;font-weight:800;}
+.manual-inventory-recent-state.is-saved{color:#16806e;}
+.manual-inventory-recent-state.is-undoing{color:#b45d08;}
+.manual-inventory-recent-state.is-failed,.manual-inventory-recent-state.is-unknown{color:#c2414c;}
+
+.manual-inventory-undo{
+  width:auto !important;
+  min-width:62px !important;
+  min-height:31px !important;
+  height:31px;
+  margin:0 !important;
+  padding:5px 8px !important;
+  border:1px solid #bfd7f2 !important;
+  border-radius:9px !important;
+  background:#edf6ff !important;
+  color:#205d9d !important;
+  box-shadow:none !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+}
+
+.manual-inventory-undo:hover{background:#dceeff !important;transform:translateY(-1px);}
+
+.manual-inventory-list.is-virtualized{
+  position:relative;
+  contain:layout paint;
+  overscroll-behavior:contain;
+}
+
+.manual-inventory-virtual-spacer{width:1px;opacity:0;pointer-events:none;}
+
+.manual-inventory-virtual-rows{
+  position:absolute;
+  top:0;
+  left:0;
+  right:2px;
+  will-change:transform;
+}
+
+.manual-inventory-list.is-virtualized .manual-inventory-row{
+  height:56px;
+  min-height:56px;
+  margin-bottom:6px;
+  padding:8px 12px;
+  overflow:hidden;
+  contain:layout paint;
+}
+
+.manual-inventory-list.is-virtualized .manual-inventory-cell{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 .si-input{
   min-height:58px;
   margin:0;
@@ -2971,6 +3089,15 @@ body::before{
   .button-grid button{min-height:50px;padding:9px 7px;font-size:10px;}
   .login-card{padding:27px 22px;border-radius:22px;}
   .brand-logo{width:42px;height:42px;}
+}
+
+@media(max-width:600px){
+  /* The scanner banner is useful on wide screens, but costs valuable phone space. */
+  .scanner-hero{display:none;}
+  .manual-inventory-modal{height:92vh;}
+  .manual-inventory-recent{padding:8px;}
+  .manual-inventory-recent-item{flex-basis:225px;min-width:175px;}
+  .manual-inventory-list.is-virtualized .manual-inventory-row{height:56px;min-height:56px;margin-bottom:6px;padding:7px 8px;}
 }
 
 @media(prefers-reduced-motion:reduce){
@@ -3243,6 +3370,16 @@ CANCEL
              type="search"
              placeholder="🔍 Search Lenstype, Description or Tag Number"
              autocomplete="off">
+    </div>
+
+    <div class="manual-inventory-recent" aria-label="Recent manual audit actions">
+      <div class="manual-inventory-recent-head">
+        <span>RECENT CLICKS</span>
+        <span id="manualInventoryRecentCount" class="manual-inventory-recent-count">Undo is available for recent items.</span>
+      </div>
+      <div id="manualInventoryRecentList" class="manual-inventory-recent-list" aria-live="polite">
+        <div class="manual-inventory-recent-empty">Recent audited items will appear here.</div>
+      </div>
     </div>
 
     <div class="manual-inventory-head">
@@ -5950,6 +6087,19 @@ let manualInventoryFiltered = [];
 let manualInventoryQueue = [];
 let manualInventoryProcessing = false;
 let manualInventoryLoading = false;
+let manualInventoryLoaded = false;
+let manualInventoryActiveBarcodes = new Set();
+let manualInventoryRecentActions = [];
+let manualInventoryNextActionId = 1;
+let manualInventoryFilterVersion = 0;
+let manualInventoryVirtualValues = new Uint8Array(0);
+let manualInventoryVirtualTree = new Int32Array(0);
+let manualInventoryVirtualVisibleCount = 0;
+let manualInventoryVirtualFrame = 0;
+
+const MANUAL_INVENTORY_ROW_STRIDE = 62;
+const MANUAL_INVENTORY_RENDER_BUFFER = 10;
+const MANUAL_INVENTORY_RECENT_LIMIT = 12;
 
 async function manualInventoryIsAuthorized(forceRefresh=false){
   try{
@@ -6090,7 +6240,13 @@ async function manualInventoryLoad(){
           category: String(row.CATEGORY || "").trim(),
           lenstype: String(row.LENSTYPE || "").trim(),
           description: String(row.DESCRIPTION || "").trim(),
-          tag: ntagn
+          tag: ntagn,
+          searchText: [
+            String(row.CATEGORY || "").trim(),
+            String(row.LENSTYPE || "").trim(),
+            String(row.DESCRIPTION || "").trim(),
+            ntagn
+          ].join(" ").toLowerCase()
         };
       })
       .filter(item =>
@@ -6098,6 +6254,13 @@ async function manualInventoryLoad(){
         !auditKeys.has(item.barcode) &&
         !soldKeys.has(item.barcode)
       );
+
+    manualInventoryActiveBarcodes = new Set();
+    manualInventoryRecentActions = [];
+    manualInventoryQueue = [];
+    manualInventoryFilterVersion = 0;
+    manualInventoryLoaded = true;
+    manualInventoryRenderRecent();
 
     manualInventoryBuildCategoryFilter();
     manualInventoryApplyFilters();
@@ -6152,172 +6315,368 @@ function manualInventoryBuildCategoryFilter(){
   }
 }
 
-function manualInventoryApplyFilters(){
-  const category = String(
-    document.getElementById("manualCategoryFilter")?.value || ""
-  );
+function manualInventoryTreeBuild(length){
+  manualInventoryVirtualValues = new Uint8Array(length);
+  manualInventoryVirtualTree = new Int32Array(length + 1);
+  manualInventoryVirtualVisibleCount = length;
 
-  const search = String(
-    document.getElementById("manualSearchFilter")?.value || ""
-  ).trim().toLowerCase();
+  for(let i = 1; i <= length; i++){
+    manualInventoryVirtualValues[i - 1] = 1;
+    manualInventoryVirtualTree[i] = i & -i;
+  }
+}
 
-  manualInventoryFiltered = manualInventoryItems.filter(item => {
-    const categoryValue =
-      item.category === "" ? "__BLANK__" : item.category;
+function manualInventoryTreeAdd(index, delta){
+  if(index < 0 || index >= manualInventoryVirtualValues.length) return false;
 
-    if(category && categoryValue !== category) return false;
+  const current = manualInventoryVirtualValues[index];
+  const next = Math.max(0, Math.min(1, current + delta));
+  const applied = next - current;
+  if(!applied) return false;
 
-    if(search){
-      const haystack = [
-        item.lenstype,
-        item.description,
-        item.tag
-      ].join(" ").toLowerCase();
+  manualInventoryVirtualValues[index] = next;
+  manualInventoryVirtualVisibleCount += applied;
 
-      if(!haystack.includes(search)) return false;
+  for(let i = index + 1; i < manualInventoryVirtualTree.length; i += i & -i){
+    manualInventoryVirtualTree[i] += applied;
+  }
+  return true;
+}
+
+function manualInventoryTreeFindByOrder(order){
+  if(order < 0 || order >= manualInventoryVirtualVisibleCount) return -1;
+
+  let index = 0;
+  let target = order + 1;
+  let bit = 1;
+  const length = manualInventoryVirtualValues.length;
+
+  while((bit << 1) <= length) bit <<= 1;
+
+  while(bit){
+    const next = index + bit;
+    if(next <= length && manualInventoryVirtualTree[next] < target){
+      index = next;
+      target -= manualInventoryVirtualTree[next];
     }
+    bit >>= 1;
+  }
 
-    return true;
+  return index;
+}
+
+function manualInventorySetStatus(message){
+  const status = document.getElementById("manualInventoryStatus");
+  if(status) status.textContent = message || "";
+}
+
+function manualInventoryRemainingCount(){
+  return Math.max(0, manualInventoryItems.length - manualInventoryActiveBarcodes.size);
+}
+
+function manualInventoryActionState(action){
+  const labels = {
+    queued:"Queued",
+    saving:"Saving",
+    saved:"Audited",
+    undoing:"Undoing…",
+    undone:"Restored",
+    already:"Already audited",
+    failed:"Not saved",
+    unknown:"Check status"
+  };
+  return labels[action.state] || "Processing";
+}
+
+function manualInventoryCanUndo(action){
+  return ["queued","saving","saved"].includes(action.state);
+}
+
+function manualInventoryRenderRecent(){
+  const list = document.getElementById("manualInventoryRecentList");
+  const count = document.getElementById("manualInventoryRecentCount");
+  if(!list || !count) return;
+
+  const actions = manualInventoryRecentActions.slice(0, MANUAL_INVENTORY_RECENT_LIMIT);
+  const undoable = actions.filter(manualInventoryCanUndo).length;
+
+  count.textContent = actions.length
+    ? undoable + " undo" + (undoable === 1 ? "" : "s") + " available"
+    : "Undo is available for recent items.";
+
+  if(!actions.length){
+    list.innerHTML = '<div class="manual-inventory-recent-empty">Recent audited items will appear here.</div>';
+    return;
+  }
+
+  list.innerHTML = actions.map(action => {
+    const undoableAction = manualInventoryCanUndo(action);
+    const stateClass = "is-" + manualInventoryEscape(action.state);
+    return `
+      <div class="manual-inventory-recent-item">
+        <div class="manual-inventory-recent-main">
+          <span class="manual-inventory-recent-tag" title="${manualInventoryEscape(action.tag)}">${manualInventoryEscape(action.tag)}</span>
+          <span class="manual-inventory-recent-description" title="${manualInventoryEscape(action.description)}">${manualInventoryEscape(action.description || action.lenstype || "Inventory item")}</span>
+          <span class="manual-inventory-recent-state ${stateClass}">${manualInventoryEscape(manualInventoryActionState(action))}</span>
+        </div>
+        ${undoableAction
+          ? `<button type="button" class="manual-inventory-undo" onclick="manualInventoryUndoAction(${action.id})">UNDO</button>`
+          : `<button type="button" class="manual-inventory-undo" disabled>${action.state === "undone" ? "RESTORED" : "DONE"}</button>`}
+      </div>`;
+  }).join("");
+}
+
+function manualInventoryRenderRow(item, index){
+  return `
+    <div class="manual-inventory-row" data-manual-index="${index}">
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.lenstype)}">${manualInventoryEscape(item.lenstype)}</div>
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.description)}">${manualInventoryEscape(item.description)}</div>
+      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.tag)}">${manualInventoryEscape(item.tag)}</div>
+      <button type="button" class="manual-inventory-action" onclick="manualInventorySelectItem(${index}, this)">AUDIT</button>
+    </div>`;
+}
+
+function manualInventoryRenderVirtualRows(){
+  const list = document.getElementById("manualInventoryList");
+  const rows = list?.querySelector(".manual-inventory-virtual-rows");
+  if(!list || !rows || !manualInventoryVirtualVisibleCount) return;
+
+  const viewportHeight = list.clientHeight || 320;
+  const first = Math.max(0, Math.floor(list.scrollTop / MANUAL_INVENTORY_ROW_STRIDE) - MANUAL_INVENTORY_RENDER_BUFFER);
+  const visibleRows = Math.ceil(viewportHeight / MANUAL_INVENTORY_ROW_STRIDE) + (MANUAL_INVENTORY_RENDER_BUFFER * 2);
+  const last = Math.min(manualInventoryVirtualVisibleCount, first + visibleRows);
+  let html = "";
+
+  for(let order = first; order < last; order++){
+    const index = manualInventoryTreeFindByOrder(order);
+    const item = manualInventoryFiltered[index];
+    if(item) html += manualInventoryRenderRow(item, index);
+  }
+
+  rows.style.transform = "translateY(" + (first * MANUAL_INVENTORY_ROW_STRIDE) + "px)";
+  rows.innerHTML = html;
+}
+
+function manualInventoryScheduleVirtualRender(){
+  if(manualInventoryVirtualFrame) return;
+  manualInventoryVirtualFrame = requestAnimationFrame(()=>{
+    manualInventoryVirtualFrame = 0;
+    manualInventoryRenderVirtualRows();
   });
-
-  manualInventoryRender();
 }
 
 function manualInventoryRender(){
   const list = document.getElementById("manualInventoryList");
   if(!list) return;
 
-  if(!manualInventoryFiltered.length){
-    list.innerHTML =
-      '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
+  if(!manualInventoryFiltered.length || !manualInventoryVirtualVisibleCount){
+    list.classList.remove("is-virtualized");
+    list.innerHTML = '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
     return;
   }
 
-  list.innerHTML = manualInventoryFiltered.map(item => `
-    <div class="manual-inventory-row"
-         data-manual-barcode="${manualInventoryEscape(item.barcode)}">
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.lenstype)}">
-        ${manualInventoryEscape(item.lenstype)}
-      </div>
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.description)}">
-        ${manualInventoryEscape(item.description)}
-      </div>
-      <div class="manual-inventory-cell" title="${manualInventoryEscape(item.tag)}">
-        ${manualInventoryEscape(item.tag)}
-      </div>
-      <button type="button"
-              class="manual-inventory-action"
-              onclick="manualInventorySelectItem('${manualInventoryEscape(item.barcode)}', this)">
-        AUDIT
-      </button>
-    </div>
-  `).join("");
+  list.classList.add("is-virtualized");
+  list.innerHTML = '<div class="manual-inventory-virtual-spacer"></div><div class="manual-inventory-virtual-rows"></div>';
+  const spacer = list.querySelector(".manual-inventory-virtual-spacer");
+  spacer.style.height = (manualInventoryVirtualVisibleCount * MANUAL_INVENTORY_ROW_STRIDE) + "px";
+  manualInventoryRenderVirtualRows();
 }
 
-function manualInventorySelectItem(barcode, button){
-  const normalized = normalizeBarcode(barcode);
-  if(!normalized) return;
+function manualInventoryApplyFilters(options={}){
+  const category = String(document.getElementById("manualCategoryFilter")?.value || "");
+  const search = String(document.getElementById("manualSearchFilter")?.value || "").trim().toLowerCase();
+  const preserveScroll = options && options.preserveScroll === true;
 
-  const row = button ? button.closest('.manual-inventory-row') : null;
-  if(row){
-    // Fast, noticeable left-slide audit removal.
-    row.classList.add('manual-fast-auditing');
+  manualInventoryFiltered = manualInventoryItems.filter(item => {
+    if(manualInventoryActiveBarcodes.has(item.barcode)) return false;
 
-    // Remove from the DOM immediately after the short visual slide.
-    setTimeout(()=>{
-      if(row && row.isConnected){
-        row.remove();
-      }
-    }, 140);
+    const categoryValue = item.category === "" ? "__BLANK__" : item.category;
+    if(category && categoryValue !== category) return false;
+    return !search || item.searchText.includes(search);
+  });
+
+  manualInventoryFilterVersion += 1;
+  manualInventoryTreeBuild(manualInventoryFiltered.length);
+
+  const list = document.getElementById("manualInventoryList");
+  if(list && !preserveScroll) list.scrollTop = 0;
+  manualInventoryRender();
+}
+
+function manualInventoryRestoreAction(action, state="undone"){
+  manualInventoryActiveBarcodes.delete(action.barcode);
+  action.state = state;
+
+  const sameFilter =
+    action.filterVersion === manualInventoryFilterVersion &&
+    manualInventoryFiltered[action.visibleIndex]?.barcode === action.barcode;
+
+  if(sameFilter && manualInventoryTreeAdd(action.visibleIndex, 1)){
+    manualInventoryRender();
+  }else{
+    manualInventoryApplyFilters({preserveScroll:true});
   }
 
-  manualInventoryItems = manualInventoryItems.filter(item => item.barcode !== normalized);
-  manualInventoryFiltered = manualInventoryFiltered.filter(item => item.barcode !== normalized);
+  manualInventoryRenderRecent();
+}
 
-  if(!manualInventoryQueue.includes(normalized)){
-    manualInventoryQueue.push(normalized);
-    manualInventoryProcessQueue();
+function manualInventorySelectItem(index, button){
+  index = Number(index);
+  const item = manualInventoryFiltered[index];
+  if(!item || manualInventoryActiveBarcodes.has(item.barcode)) return;
+  if(!manualInventoryTreeAdd(index, -1)) return;
+
+  if(button) button.disabled = true;
+
+  const action = {
+    id: manualInventoryNextActionId++,
+    barcode: item.barcode,
+    tag: item.tag,
+    lenstype: item.lenstype,
+    description: item.description,
+    visibleIndex: index,
+    filterVersion: manualInventoryFilterVersion,
+    state: "queued",
+    undoRequested: false
+  };
+
+  manualInventoryActiveBarcodes.add(item.barcode);
+  manualInventoryQueue.push(action);
+  manualInventoryRecentActions.unshift(action);
+  if(manualInventoryRecentActions.length > MANUAL_INVENTORY_RECENT_LIMIT){
+    manualInventoryRecentActions.length = MANUAL_INVENTORY_RECENT_LIMIT;
   }
 
-  const list = document.getElementById('manualInventoryList');
-  if(list && !list.querySelector('.manual-inventory-row')){
-    list.innerHTML = '<div class="manual-inventory-empty">✅ No matching items remaining.</div>';
+  manualInventoryRender();
+  manualInventoryRenderRecent();
+  manualInventorySetStatus(
+    "Saving queue: " + manualInventoryQueue.length +
+    (manualInventoryProcessing ? " • saving in background..." : "")
+  );
+  manualInventoryProcessQueue();
+}
+
+async function manualInventoryDeleteSavedAudit(action){
+  await requireSupabaseAccess();
+
+  const parts = String(action.barcode || "").split("-");
+  const br = String(parts.shift() || "").trim().toUpperCase();
+  const tag = parts.join("-").trim().toUpperCase();
+  if(!br || !tag) throw new Error("Invalid audit item.");
+
+  const auditTable = branchTable(BRANCH, "audit");
+  const deleted = await sbRequest(
+    "/rest/v1/" + auditTable +
+    "?BR=eq." + encodeURIComponent(br) +
+    "&NTAGN=eq." + encodeURIComponent(tag),
+    {method:"DELETE", headers:{Prefer:"return=representation"}}
+  );
+
+  if(Array.isArray(deleted) && !deleted.length){
+    throw new Error("The audit record could not be found.");
+  }
+}
+
+async function manualInventoryUndoAction(id){
+  const action = manualInventoryRecentActions.find(item => item.id === Number(id));
+  if(!action || !manualInventoryCanUndo(action)) return;
+
+  action.undoRequested = true;
+
+  if(action.state === "queued"){
+    manualInventoryQueue = manualInventoryQueue.filter(item => item.id !== action.id);
+    manualInventoryRestoreAction(action, "undone");
+    manualInventorySetStatus("↩ " + action.tag + " restored to the list.");
+    return;
   }
 
-  const status = document.getElementById('manualInventoryStatus');
-  if(status){
-    status.textContent = 'Saving queue: ' + manualInventoryQueue.length + (manualInventoryProcessing ? ' • saving in background...' : '');
+  if(action.state === "saving"){
+    action.state = "undoing";
+    manualInventoryRenderRecent();
+    manualInventorySetStatus("↩ Finishing the undo for " + action.tag + "...");
+    return;
+  }
+
+  action.state = "undoing";
+  manualInventoryRenderRecent();
+  manualInventorySetStatus("↩ Removing the audit for " + action.tag + "...");
+
+  try{
+    await manualInventoryDeleteSavedAudit(action);
+    manualInventoryRestoreAction(action, "undone");
+    manualInventorySetStatus("↩ " + action.tag + " restored to the list.");
+  }catch(err){
+    console.error("Manual Inventory undo failed:", err);
+    action.undoRequested = false;
+    action.state = "saved";
+    manualInventoryRenderRecent();
+    manualInventorySetStatus("⚠ Could not undo " + action.tag + ". Please try again.");
   }
 }
 
 async function manualInventoryProcessQueue(){
   if(manualInventoryProcessing) return;
-
   manualInventoryProcessing = true;
-
-  const status = document.getElementById("manualInventoryStatus");
 
   try{
     while(manualInventoryQueue.length){
-      const barcode = manualInventoryQueue.shift();
+      const action = manualInventoryQueue.shift();
+      if(!action || action.state !== "queued") continue;
 
-      if(status){
-        status.textContent =
-          "Saving manual audit in background • " +
-          manualInventoryQueue.length +
-          " remaining...";
-      }
+      action.state = "saving";
+      manualInventoryRenderRecent();
+      manualInventorySetStatus(
+        "Saving manual audit in background • " + manualInventoryQueue.length + " remaining..."
+      );
 
       try{
-        const result = await directSaveAudit(barcode);
+        const result = await directSaveAudit(action.barcode);
 
         if(result.status === "RECORDED"){
-          if(status){
-            status.textContent =
-              "✅ " + (result.tag || barcode) + " marked AUDITED.";
+          action.state = "saved";
+
+          if(action.undoRequested){
+            action.state = "undoing";
+            manualInventoryRenderRecent();
+            try{
+              await manualInventoryDeleteSavedAudit(action);
+              manualInventoryRestoreAction(action, "undone");
+              manualInventorySetStatus("↩ " + action.tag + " restored to the list.");
+            }catch(undoErr){
+              console.error("Manual Inventory queued undo failed:", undoErr);
+              action.undoRequested = false;
+              action.state = "saved";
+              manualInventoryRenderRecent();
+              manualInventorySetStatus("⚠ Could not undo " + action.tag + ". Please try again.");
+            }
+          }else{
+            manualInventoryRenderRecent();
+            manualInventorySetStatus("✅ " + (result.tag || action.tag) + " marked AUDITED.");
           }
         }else if(result.status === "ALREADY_AUDITED"){
-          if(status){
-            status.textContent =
-              "ℹ️ " + (result.tag || barcode) + " was already AUDITED.";
-          }
+          action.state = "already";
+          action.undoRequested = false;
+          manualInventoryRenderRecent();
+          manualInventorySetStatus("ℹ️ " + (result.tag || action.tag) + " was already AUDITED.");
         }else{
-          console.warn(
-            "Manual Inventory save result:",
-            result
-          );
-          if(status){
-            status.textContent =
-              "⚠️ " + barcode + " • " + (result.status || "SAVE FAILED");
-          }
+          console.warn("Manual Inventory save result:", result);
+          manualInventoryRestoreAction(action, "failed");
+          manualInventorySetStatus("⚠️ " + action.tag + " • " + (result.status || "SAVE FAILED"));
         }
       }catch(err){
-        console.error(
-          "Manual Inventory item save failed:",
-          barcode,
-          err
-        );
-
-        // Keep processing the rest of the queue.
-        if(status){
-          status.textContent =
-            "⚠️ Save failed for " +
-            barcode +
-            ". Continuing queue...";
-        }
+        console.error("Manual Inventory item save failed:", action.barcode, err);
+        action.state = "unknown";
+        action.undoRequested = false;
+        manualInventoryRenderRecent();
+        manualInventorySetStatus("⚠️ Save status for " + action.tag + " could not be confirmed. Refresh to verify it.");
       }
     }
   }finally{
     manualInventoryProcessing = false;
-
-    if(status){
-      status.textContent =
-        "✅ Manual Inventory queue saved. " +
-        manualInventoryItems.length +
-        " item" +
-        (manualInventoryItems.length === 1 ? "" : "s") +
-        " remaining.";
-    }
+    manualInventorySetStatus(
+      "✅ Queue complete. " + manualInventoryRemainingCount() +
+      " item" + (manualInventoryRemainingCount() === 1 ? "" : "s") + " remaining."
+    );
   }
 }
 
@@ -6337,8 +6696,8 @@ async function openManualInventory(){
   dialog.style.display = "flex";
   dialog.setAttribute("aria-hidden","false");
 
-  // Never interrupt an already-running background save queue.
-  if(!manualInventoryProcessing && manualInventoryQueue.length === 0){
+  // Load only once per audit session. Reopening keeps the recent-click undo list.
+  if(!manualInventoryLoaded && !manualInventoryProcessing && manualInventoryQueue.length === 0){
     const category = document.getElementById("manualCategoryFilter");
     const search = document.getElementById("manualSearchFilter");
     if(category) category.value = "";
@@ -6347,6 +6706,7 @@ async function openManualInventory(){
   }else{
     manualInventoryBuildCategoryFilter();
     manualInventoryApplyFilters();
+    manualInventoryRenderRecent();
   }
 }
 
@@ -6373,9 +6733,14 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   const category = document.getElementById("manualCategoryFilter");
   const search = document.getElementById("manualSearchFilter");
+  const list = document.getElementById("manualInventoryList");
 
   category?.addEventListener("change", manualInventoryApplyFilters);
-  search?.addEventListener("input", manualInventoryApplyFilters);
+  search?.addEventListener("input", ()=>{
+    clearTimeout(window.manualInventorySearchTimer);
+    window.manualInventorySearchTimer = setTimeout(manualInventoryApplyFilters, 120);
+  });
+  list?.addEventListener("scroll", manualInventoryScheduleVirtualRender, {passive:true});
 });
 
 
