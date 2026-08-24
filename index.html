@@ -5488,7 +5488,20 @@ async function searchSI() {
         ${item.colJ ? `<small>${item.colJ}</small><br>` : ""}
         <small>🏷 Tag: <b>${item.tag || ""}</b></small><br>
         <small>📄 SI No: <b>${item.siNo || siNo}</b></small><br>
-        <small>📅 ${item.date || "No Date"}</small>
+        <small>📅 ${
+  item.date
+    ? new Date(item.date).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      })
+    : "No Date"
+}</small>
       </div>
     `).join("");
 
