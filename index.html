@@ -7022,11 +7022,24 @@ async function aoChatCompressImage(file){
  if(!blob)throw new Error("Image compression failed.");
  return new File([blob],"chat-image.jpg",{type:"image/jpeg",lastModified:Date.now()});
 }
+function aoChatStorageFileName(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const ms = String(d.getMilliseconds()).padStart(3,"0");
+  return d.getFullYear() + "-" +
+    pad(d.getMonth() + 1) + "-" +
+    pad(d.getDate()) + "_" +
+    pad(d.getHours()) + "-" +
+    pad(d.getMinutes()) + "-" +
+    pad(d.getSeconds()) + "-" +
+    ms + ".jpg";
+}
+
 async function aoChatUploadImage(file){
  const compressed=await aoChatCompressImage(file);
  const safeBranch=String(aoChatBranch()||"CHAT").replace(/[^A-Z0-9_-]/gi,"_").slice(0,20)||"CHAT";
  const safeEmail=String(aoChatEmail()||"scanner").toLowerCase().replace(/[^a-z0-9._-]/gi,"_").slice(0,45)||"scanner";
- const fileName=Date.now()+"-"+(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2))+".jpg";
+ const fileName=aoChatStorageFileName();
  const path=safeBranch+"/"+safeEmail+"/"+fileName;
  const res=await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+path,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"image/jpeg","x-upsert":"false"},body:compressed});
  if(!res.ok){let msg="Image upload failed.";try{const d=await res.json();msg=d?.message||d?.error||msg;}catch(e){}throw new Error(msg);}
