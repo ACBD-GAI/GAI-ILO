@@ -2398,6 +2398,10 @@ input:focus-visible{
 .ao-chat-emoji-picker[hidden]{display:none !important}
 .ao-chat-emoji-picker button{width:100%;min-height:34px;padding:0;border:0;border-radius:8px;background:#fff;color:#111827;font-size:20px;cursor:pointer;box-shadow:none}
 .ao-chat-emoji-picker button:hover{background:#f3f4f6;transform:none}
+.ao-chat-attach-menu{position:absolute;left:10px;bottom:58px;display:flex;gap:6px;padding:7px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 14px 35px rgba(0,0,0,.18);z-index:30}
+.ao-chat-attach-menu[hidden]{display:none !important}
+.ao-chat-attach-menu button{min-height:38px;padding:7px 10px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#374151;font-size:12px;cursor:pointer;box-shadow:none;white-space:nowrap}
+.ao-chat-attach-menu button:hover{background:#f3f4f6;transform:none}
 @media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}.ao-chat-emoji-picker{right:4px;bottom:58px;width:min(300px,calc(100vw - 28px));grid-template-columns:repeat(7,1fr)}}
 
 </style>
@@ -7076,7 +7080,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 </script>
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
-<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 <script id="aoChatEmojiScript">
 (function(){
   const emojis=["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😍","🥰","😘","😋","😛","😜","🤪","🤨","🤓","😎","🤩","🥳","😏","😞","😔","😟","😕","🙁","😣","😫","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","😱","😨","😰","🤗","🤔","🫡","🤭","🤫","😶","😐","😬","🙄","😮","😲","🥱","😴","🤢","🤮","🤧","😷","❤️","🧡","💛","💚","💙","💜","🖤","🤍","💯","🔥","👍","👎","👏","🙌","🙏","👌","✌️","🤝","💪","🎉","🎊","⭐","✨","💡","✅","❌","⚠️","❗","❓","💬","📌","🚀"];
@@ -7086,11 +7090,36 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     if(!picker){picker=document.createElement("div");picker.id="aoChatEmojiPicker";picker.className="ao-chat-emoji-picker";picker.hidden=true;emojis.forEach(emoji=>{const b=document.createElement("button");b.type="button";b.textContent=emoji;b.title=emoji;b.addEventListener("click",()=>{const start=input.selectionStart??input.value.length,end=input.selectionEnd??input.value.length,next=input.value.slice(0,start)+emoji+input.value.slice(end);if(next.length>500)return;input.value=next;const pos=start+emoji.length;input.focus();input.setSelectionRange(pos,pos);picker.hidden=true;});picker.appendChild(b);});compose.appendChild(picker);}
     if(!emojiBtn.dataset.bound){emojiBtn.dataset.bound="1";emojiBtn.addEventListener("click",e=>{e.stopPropagation();picker.hidden=!picker.hidden;if(!picker.hidden)input.focus();});}
     if(!document.documentElement.dataset.aoChatEmojiOutside){document.documentElement.dataset.aoChatEmojiOutside="1";document.addEventListener("click",e=>{if(!picker.hidden&&!picker.contains(e.target)&&e.target!==emojiBtn)picker.hidden=true;});}
-    const attach=document.getElementById("aoChatAttach"),imageInput=document.getElementById("aoChatImageInput"),preview=document.getElementById("aoChatImagePreview"),thumb=document.getElementById("aoChatImageThumb"),nameEl=document.getElementById("aoChatImageName"),remove=document.getElementById("aoChatImageRemove");
-    window.aoChatClearPendingImage=function(){aoChatPendingImage=null;if(imageInput)imageInput.value="";if(preview)preview.hidden=true;if(thumb)thumb.removeAttribute("src");if(nameEl)nameEl.textContent="Image selected";};
-    attach?.addEventListener("click",()=>imageInput?.click());
-    imageInput?.addEventListener("change",e=>{const file=e.target.files?.[0];if(!file)return;if(!String(file.type||"").startsWith("image/")){aoChatStatus("Please select an image file.");imageInput.value="";return;}if(file.size>8*1024*1024){aoChatStatus("Image is too large. Maximum is 8 MB.");imageInput.value="";return;}aoChatPendingImage=file;const url=URL.createObjectURL(file);if(thumb){thumb.src=url;thumb.onload=()=>URL.revokeObjectURL(url);}if(nameEl)nameEl.textContent=file.name||"Image selected";if(preview)preview.hidden=false;aoChatStatus("");});
+    const attach=document.getElementById("aoChatAttach"),imageInput=document.getElementById("aoChatImageInput"),captureInput=document.getElementById("aoChatCaptureInput"),preview=document.getElementById("aoChatImagePreview"),thumb=document.getElementById("aoChatImageThumb"),nameEl=document.getElementById("aoChatImageName"),remove=document.getElementById("aoChatImageRemove");
+    let attachMenu=document.getElementById("aoChatAttachMenu");
+    if(!attachMenu && attach && compose){
+      attachMenu=document.createElement("div");
+      attachMenu.id="aoChatAttachMenu";
+      attachMenu.className="ao-chat-attach-menu";
+      attachMenu.hidden=true;
+      attachMenu.innerHTML='<button type="button" data-ao-chat-capture>📷 Capture</button><button type="button" data-ao-chat-upload>🖼️ Upload</button>';
+      compose.appendChild(attachMenu);
+    }
+    window.aoChatClearPendingImage=function(){aoChatPendingImage=null;if(imageInput)imageInput.value="";if(captureInput)captureInput.value="";if(preview)preview.hidden=true;if(thumb)thumb.removeAttribute("src");if(nameEl)nameEl.textContent="Image selected";};
+    function handleChatImageFile(file){
+      if(!file)return;
+      if(!String(file.type||"").startsWith("image/")){aoChatStatus("Please select an image file.");return;}
+      if(file.size>8*1024*1024){aoChatStatus("Image is too large. Maximum is 8 MB.");return;}
+      aoChatPendingImage=file;
+      const url=URL.createObjectURL(file);
+      if(thumb){thumb.src=url;thumb.onload=()=>URL.revokeObjectURL(url);}
+      if(nameEl)nameEl.textContent=file.name||"Image selected";
+      if(preview)preview.hidden=false;
+      aoChatStatus("");
+      if(attachMenu)attachMenu.hidden=true;
+    }
+    attach?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=!attachMenu.hidden;});
+    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;captureInput?.click();});
+    attachMenu?.querySelector("[data-ao-chat-upload]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;imageInput?.click();});
+    imageInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
+    captureInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
     remove?.addEventListener("click",()=>window.aoChatClearPendingImage());
+    document.addEventListener("click",e=>{if(attachMenu&&!attachMenu.hidden&&!attachMenu.contains(e.target)&&e.target!==attach)attachMenu.hidden=true;});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
