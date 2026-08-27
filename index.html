@@ -7436,6 +7436,14 @@ async function startPullOutRequestScan(){
   }
 }
 
+async function cancelPullOutRequestScan(){
+  await stopPullOutRequestScanner();
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("chooser");
+}
+
 async function stopPullOutRequestScanner(){
   if(!pullOutRequestScanner) return;
   try{await pullOutRequestScanner.stop();}catch(e){}
