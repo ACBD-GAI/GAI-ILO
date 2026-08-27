@@ -3270,6 +3270,83 @@ body::before{
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
 }
+
+
+/* =========================================================
+   REQUEST FOR PULL OUT — ADDITIVE FEATURE ONLY
+========================================================= */
+.pullout-request-modal{
+  width:min(460px,92vw);
+}
+.pullout-request-chooser{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+.pullout-request-chooser button,
+#pullOutRequestTagArea button,
+#pullOutRequestScanArea button{
+  width:100%;
+}
+.pullout-request-reader{
+  width:100%;
+  min-height:300px;
+  margin:4px 0 12px;
+  border:2px solid #bfdbfe;
+  border-radius:16px;
+  overflow:hidden;
+  background:#f8fbff;
+}
+.pullout-request-preview-card{
+  margin-top:6px;
+  padding:18px;
+  border:1px solid #bfdbfe;
+  border-radius:16px;
+  background:linear-gradient(145deg,#f8fbff,#ffffff);
+  box-shadow:0 10px 26px rgba(37,99,235,.08);
+}
+.pullout-request-preview-title{
+  color:#1d4ed8;
+  font-size:14px;
+  font-weight:900;
+  margin-bottom:12px;
+}
+.pullout-request-preview-row{
+  display:grid;
+  grid-template-columns:110px 1fr;
+  gap:8px;
+  padding:7px 0;
+  border-bottom:1px solid #edf2f7;
+  font-size:12px;
+}
+.pullout-request-preview-row:last-child{border-bottom:0;}
+.pullout-request-preview-label{
+  color:#64748b;
+  font-weight:800;
+}
+.pullout-request-preview-value{
+  color:#172033;
+  font-weight:850;
+  overflow-wrap:anywhere;
+}
+.pullout-request-preview-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin-top:14px;
+}
+.pullout-request-status{
+  margin-top:10px;
+  min-height:18px;
+  color:#64748b;
+  font-size:11px;
+  font-weight:700;
+}
+@media(max-width:600px){
+  .pullout-request-modal{width:min(94vw,460px);padding:20px;}
+  .pullout-request-reader{min-height:260px;}
+  .pullout-request-preview-row{grid-template-columns:92px 1fr;}
+}
 </style>
 </head>
 
@@ -3446,6 +3523,14 @@ disabled>
 🏷 ADD VIA TAG NUMBER
 </button>
 
+<button
+ id="requestPullOutBtn"
+ class="btn-orange"
+ type="button"
+ onclick="openPullOutRequest()">
+↗ REQUEST FOR PULL OUT
+</button>
+
 <button class="btn-blue" onclick="searchSI()">
 🔍 SEARCH SI
 </button>
@@ -3513,6 +3598,37 @@ CANCEL
 
 </div>
   
+</div>
+
+<!-- =========================================================
+     REQUEST FOR PULL OUT — ADDITIVE FEATURE ONLY
+     Uses existing branch Stocks + Audit tables and the central pull_out table.
+     Does NOT change the existing scanner / Sold / Audit / Manual Inventory logic.
+========================================================= -->
+<div id="pullOutRequestDialog" class="report-overlay" aria-hidden="true">
+  <div class="report-modal pullout-request-modal" role="dialog" aria-modal="true" aria-labelledby="pullOutRequestTitle">
+    <div class="report-title" id="pullOutRequestTitle">↗ Request for Pull Out</div>
+    <div class="report-subtitle">Choose how to identify the item for pull out.</div>
+
+    <div id="pullOutRequestChooser" class="pullout-request-chooser">
+      <button type="button" class="btn-blue" onclick="startPullOutRequestScan()">📷 SCAN</button>
+      <button type="button" class="btn-orange" onclick="startPullOutRequestTag()">🏷 ADD VIA TAG NUMBER</button>
+      <button type="button" class="cancel-report-btn" onclick="closePullOutRequest()">CANCEL</button>
+    </div>
+
+    <div id="pullOutRequestScanArea" style="display:none;">
+      <div id="pullOutRequestReader" class="pullout-request-reader"></div>
+      <button type="button" class="cancel-report-btn" onclick="cancelPullOutRequestScan()">STOP SCANNING</button>
+    </div>
+
+    <div id="pullOutRequestTagArea" style="display:none;">
+      <input id="pullOutRequestTagInput" placeholder="Enter Tag Number" autocomplete="off" inputmode="text">
+      <button type="button" class="send-report-btn" onclick="findPullOutRequestByTag()">SEARCH</button>
+      <button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">BACK</button>
+    </div>
+
+    <div id="pullOutRequestPreview" style="display:none;"></div>
+  </div>
 </div>
 
 <!-- =========================================================
@@ -7137,6 +7253,253 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
+
+
+/* =========================================================
+   REQUEST FOR PULL OUT — ADDITIVE FEATURE ONLY
+   No existing scanner functions are replaced.
+========================================================= */
+let pullOutRequestScanner = null;
+let pullOutRequestBusy = false;
+let pullOutRequestPendingStock = null;
+
+function pullOutRequestEsc(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function pullOutRequestSetArea(area){
+  const chooser=document.getElementById("pullOutRequestChooser");
+  const scan=document.getElementById("pullOutRequestScanArea");
+  const tag=document.getElementById("pullOutRequestTagArea");
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(chooser) chooser.style.display=area==="chooser"?"grid":"none";
+  if(scan) scan.style.display=area==="scan"?"block":"none";
+  if(tag) tag.style.display=area==="tag"?"block":"none";
+  if(preview && area!=="preview") preview.style.display="none";
+}
+
+function openPullOutRequest(){
+  if(pullOutRequestBusy) return;
+  if(typeof stopNormalScanner === "function" && isScanning){
+    showProNotification("Stop the normal scanner before requesting a pull out.","Scanner Busy","⚠️");
+    return;
+  }
+  if(typeof auditScanning !== "undefined" && auditScanning){
+    showProNotification("Stop Re-Inventory before requesting a pull out.","Re-Inventory Busy","⚠️");
+    return;
+  }
+  const modal=document.getElementById("pullOutRequestDialog");
+  if(!modal) return;
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
+  pullOutRequestPendingStock=null;
+  const tagInput=document.getElementById("pullOutRequestTagInput");
+  if(tagInput) tagInput.value="";
+  pullOutRequestSetArea("chooser");
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+}
+
+async function closePullOutRequest(){
+  await stopPullOutRequestScanner();
+  const modal=document.getElementById("pullOutRequestDialog");
+  if(modal){
+    modal.style.display="none";
+    modal.setAttribute("aria-hidden","true");
+  }
+  pullOutRequestPendingStock=null;
+  pullOutRequestBusy=false;
+}
+
+async function returnPullOutRequestChooser(){
+  await stopPullOutRequestScanner();
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("chooser");
+}
+
+async function startPullOutRequestScan(){
+  const required = await requireSupabaseAccess();
+  if(!required) return;
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("scan");
+  const reader=document.getElementById("pullOutRequestReader");
+  if(!reader) return;
+  reader.innerHTML="";
+
+  try{
+    const cameras=await Html5Qrcode.getCameras();
+    if(!cameras.length) throw new Error("No camera detected.");
+    let cameraId=cameras[0].id;
+    for(const cam of cameras){
+      const label=String(cam.label||"").toLowerCase();
+      if(label.includes("back")||label.includes("rear")){cameraId=cam.id;break;}
+    }
+    pullOutRequestScanner=new Html5Qrcode("pullOutRequestReader");
+    await pullOutRequestScanner.start(
+      {deviceId:{exact:cameraId}},
+      {fps:20,qrbox:{width:280,height:280},aspectRatio:1.0,videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}},
+      async decodedText=>{
+        if(pullOutRequestBusy) return;
+        pullOutRequestBusy=true;
+        try{
+          await stopPullOutRequestScanner();
+          await preparePullOutRequestByBarcode(decodedText);
+        }catch(error){
+          console.error("Pull Out request scan failed:",error);
+          showPullOutRequestError(error?.message||error);
+        }finally{
+          pullOutRequestBusy=false;
+        }
+      },
+      ()=>{}
+    );
+  }catch(error){
+    console.error("Pull Out request camera failed:",error);
+    showPullOutRequestError(error?.message||error);
+  }
+}
+
+async function stopPullOutRequestScanner(){
+  if(!pullOutRequestScanner) return;
+  try{await pullOutRequestScanner.stop();}catch(e){}
+  try{await pullOutRequestScanner.clear();}catch(e){}
+  pullOutRequestScanner=null;
+}
+
+async function startPullOutRequestTag(){
+  await stopPullOutRequestScanner();
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("tag");
+  const input=document.getElementById("pullOutRequestTagInput");
+  if(input){input.value="";setTimeout(()=>input.focus(),40);}
+}
+
+async function findPullOutRequestByTag(){
+  if(pullOutRequestBusy) return;
+  const input=document.getElementById("pullOutRequestTagInput");
+  const tag=String(input?.value||"").trim().toUpperCase();
+  if(!tag){showProNotification("Please enter a tag number to continue.","Tag Number Required","🏷️");return;}
+  pullOutRequestBusy=true;
+  try{
+    await preparePullOutRequestByTag(tag);
+  }catch(error){
+    console.error("Pull Out request tag search failed:",error);
+    showPullOutRequestError(error?.message||error);
+  }finally{
+    pullOutRequestBusy=false;
+  }
+}
+
+async function preparePullOutRequestByBarcode(rawBarcode){
+  await requireSupabaseAccess();
+  const checked=await directCheck(rawBarcode);
+  if(checked.status==="WRONG BRANCH") throw new Error("WRONG BRANCH");
+  if(checked.status==="DUPLICATE") throw new Error("This item is already SOLD and cannot be pulled out.");
+  if(checked.status!=="FOUND") throw new Error("Stock item was not found.");
+  const stock=await getStockByBarcodeDirect(rawBarcode);
+  if(!stock) throw new Error("Stock item was not found.");
+  await showPullOutRequestPreview(stock);
+}
+
+async function preparePullOutRequestByTag(tag){
+  await requireSupabaseAccess();
+  const barcode=normalizeBarcode(BRANCH+"-"+tag);
+  const sold=await isAlreadySoldDirect(barcode);
+  if(sold) throw new Error("This item is already SOLD and cannot be pulled out.");
+  const stock=await getStockByBarcodeDirect(barcode);
+  if(!stock) throw new Error("Tag number " + tag + " was not found in " + BRANCH + " Stocks.");
+  await showPullOutRequestPreview(stock);
+}
+
+async function showPullOutRequestPreview(stock){
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(!preview) return;
+  const branch=String(stock.BR||BRANCH||"").trim().toUpperCase();
+  const tag=String(stock.NTAGN||"").trim();
+  const lenstype=String(stock.LENSTYPE||"").trim();
+  const description=String(stock.DESCRIPTION||"").trim();
+  if(!branch||!tag) throw new Error("Stock item is missing BR or NTAGN.");
+  pullOutRequestPendingStock=stock;
+  pullOutRequestSetArea("preview");
+  preview.style.display="block";
+  preview.innerHTML=`
+    <div class="pullout-request-preview-card">
+      <div class="pullout-request-preview-title">CONFIRM PULL OUT REQUEST</div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">BRANCH</div><div class="pullout-request-preview-value">${pullOutRequestEsc(branch)}</div></div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">LENS TYPE</div><div class="pullout-request-preview-value">${pullOutRequestEsc(lenstype||"—")}</div></div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">DESCRIPTION</div><div class="pullout-request-preview-value">${pullOutRequestEsc(description||"—")}</div></div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">TAG NUMBER</div><div class="pullout-request-preview-value">${pullOutRequestEsc(tag)}</div></div>
+      <div class="pullout-request-status">The item will be added to Pull Out and removed from both Stocks and Audit.</div>
+      <div class="pullout-request-preview-actions">
+        <button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">CANCEL</button>
+        <button type="button" class="send-report-btn" onclick="confirmPullOutRequest()">CONFIRM</button>
+      </div>
+    </div>`;
+}
+
+function showPullOutRequestError(message){
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(!preview) return;
+  pullOutRequestSetArea("preview");
+  preview.style.display="block";
+  preview.innerHTML=`<div class="card red"><b>❌ ${pullOutRequestEsc(message)}</b><br><br><button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">BACK</button></div>`;
+}
+
+async function confirmPullOutRequest(){
+  if(pullOutRequestBusy) return;
+  const stock=pullOutRequestPendingStock;
+  if(!stock) return;
+  pullOutRequestBusy=true;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview) preview.innerHTML='<div class="card saving"><div class="spinner"></div><div class="saving-text">Saving pull out request...</div></div>';
+  try{
+    await requireSupabaseAccess();
+    const branch=String(stock.BR||BRANCH||"").trim().toUpperCase();
+    const tag=String(stock.NTAGN||"").trim();
+    if(!branch||!tag) throw new Error("Missing branch or tag number.");
+
+    const existing=await sbRequest("/rest/v1/pull_out?BR=eq."+encodeURIComponent(branch)+"&NTAGN=eq."+encodeURIComponent(tag)+"&select=BR,NTAGN&limit=1");
+    if(Array.isArray(existing)&&existing.length) throw new Error(tag+" is already in Pull Out.");
+
+    const record={};
+    const columns=["SDATE","SUPPLIER","DR","COST","ASG","CB","FD","UNITS","POWER","LENSTYPE","PUNIT","BR","NTAGN","CATEGORY","DESCRIPTION","LENSCODE","SELLINGPRICE","DELIVERYDATE","ORNUMBER","ORDATE","REMARKS","TAGPRICE","QR","SI NO.","DATE AND TIME","USER EMAIL","STATUS"];
+    columns.forEach(col=>{record[col]=stock[col]!==undefined&&stock[col]!==null?stock[col]:null;});
+    record.BR=branch;
+    record.NTAGN=tag;
+    record["SI NO."]=stock["SI NO."]!==undefined?stock["SI NO."]:"";
+    record["DATE AND TIME"]=manilaNow();
+    record["USER EMAIL"]=(currentSession().email||"");
+    record.STATUS="PULL OUT";
+
+    await sbRequest("/rest/v1/pull_out",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify([record])});
+
+    const filter="?BR=eq."+encodeURIComponent(branch)+"&NTAGN=eq."+encodeURIComponent(tag);
+    await Promise.all([
+      sbRequest("/rest/v1/"+branchTable(branch,"stocks")+filter,{method:"DELETE",headers:{Prefer:"return=minimal"}}),
+      sbRequest("/rest/v1/"+branchTable(branch,"audit")+filter,{method:"DELETE",headers:{Prefer:"return=minimal"}})
+    ]);
+
+    document.getElementById("result").innerHTML=`<div class="card green scan-animate">✅ PULL OUT REQUESTED<br><br><b>${pullOutRequestEsc(record.DESCRIPTION||"")}</b><br>${pullOutRequestEsc(record.LENSTYPE||"")}<br><small>🏷 Tag: <b>${pullOutRequestEsc(tag)}</b></small><br><small>Branch: <b>${pullOutRequestEsc(branch)}</b></small></div>`;
+    await closePullOutRequest();
+  }catch(error){
+    console.error("Confirm Pull Out failed:",error);
+    if(preview){preview.innerHTML=`<div class="card red"><b>❌ PULL OUT FAILED</b><br><br>${pullOutRequestEsc(error?.message||error)}<br><br><button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">BACK</button></div>`;}
+  }finally{
+    pullOutRequestBusy=false;
+  }
+}
+
 </script>
 </body>
 </html>
