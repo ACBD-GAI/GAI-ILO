@@ -3504,8 +3504,8 @@ Scanned : 0
 
    <div class="button-grid">
 
-<button id="scanBtn" class="btn-blue" onclick="toggleScan()">
-📷 START SCAN
+<button id="scanBtn" class="btn-blue" onclick="openNormalInventoryChooser()">
+📦 INVENTORY
 </button>
 
 <button
@@ -3519,7 +3519,8 @@ onclick="toggleAuditScan()">
 id="tagBtn"
 class="btn-blue"
 onclick="showTagDialog()"
-disabled>
+disabled
+style="display:none;">
 🏷 ADD VIA TAG NUMBER
 </button>
 
@@ -3598,6 +3599,22 @@ CANCEL
 
 </div>
   
+</div>
+
+<!-- =========================================================
+     NORMAL INVENTORY METHOD CHOOSER — ADDITIVE ONLY
+========================================================= -->
+<div id="normalInventoryChooser" class="report-overlay" aria-hidden="true">
+  <div class="report-modal" role="dialog" aria-modal="true" aria-labelledby="normalInventoryChooserTitle">
+    <div class="report-title" id="normalInventoryChooserTitle">📦 Inventory</div>
+    <div class="report-subtitle">Choose how to add the item to Sold Out.</div>
+
+    <div style="display:grid;gap:10px;">
+      <button type="button" class="btn-blue" onclick="startNormalInventoryScanChoice()">📷 SCAN</button>
+      <button type="button" class="btn-orange" onclick="startNormalInventoryTagChoice()">🏷 ADD VIA TAG NUMBER</button>
+      <button type="button" class="cancel-report-btn" onclick="closeNormalInventoryChooser()">CANCEL</button>
+    </div>
+  </div>
 </div>
 
 <!-- =========================================================
@@ -7256,6 +7273,57 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 
 
 /* =========================================================
+   NORMAL INVENTORY METHOD CHOOSER — ADDITIVE ONLY
+   Existing toggleScan() and searchTagNumber() remain unchanged.
+========================================================= */
+function openNormalInventoryChooser(){
+  if(typeof isScanning !== "undefined" && isScanning){
+    // Preserve the existing STOP SCANNING behavior when already scanning.
+    toggleScan();
+    return;
+  }
+  if(typeof auditScanning !== "undefined" && auditScanning){
+    showProNotification("Stop Re-Inventory before using Inventory.","Re-Inventory Busy","⚠️");
+    return;
+  }
+  const modal=document.getElementById("normalInventoryChooser");
+  if(!modal) return;
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
+}
+
+function closeNormalInventoryChooser(){
+  const modal=document.getElementById("normalInventoryChooser");
+  if(modal){
+    modal.style.display="none";
+    modal.setAttribute("aria-hidden","true");
+  }
+}
+
+(function initNormalInventoryChooserBackdrop(){
+  const init=()=>{
+    const modal=document.getElementById("normalInventoryChooser");
+    if(!modal || modal.dataset.bound==="1") return;
+    modal.dataset.bound="1";
+    modal.addEventListener("click",event=>{
+      if(event.target===modal) closeNormalInventoryChooser();
+    });
+  };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
+  else init();
+})();
+
+async function startNormalInventoryScanChoice(){
+  closeNormalInventoryChooser();
+  await toggleScan();
+}
+
+function startNormalInventoryTagChoice(){
+  closeNormalInventoryChooser();
+  showTagDialog();
+}
+
+/* =========================================================
    REQUEST FOR PULL OUT — ADDITIVE FEATURE ONLY
    No existing scanner functions are replaced.
 ========================================================= */
@@ -7405,15 +7473,33 @@ async function preparePullOutRequestByBarcode(rawBarcode){
   await requireSupabaseAccess();
 
   /* Use the SAME barcode decoding path as the normal scanner.
-     directCheck() decodes the scanned QR before looking in Stocks.
-     The previous Pull Out code checked the decoded value correctly,
-     but then queried Stocks again with the ORIGINAL raw QR text,
-     which caused encoded QR items to appear as NOT FOUND. */
+     Existing normal scanner decode logic is intentionally reused. */
   const scannedBarcode = normalizeBarcode(rawBarcode);
   const decodedBarcode = decodeBarcode(scannedBarcode);
 
+  const parts = decodedBarcode.split("-");
+  if(parts.length < 2) throw new Error("INVALID BARCODE");
+
+  const qrBranch = String(parts[0] || "").trim().toUpperCase();
+  const selectedBranch = String(BRANCH || "").trim().toUpperCase();
+  const tag = parts.slice(1).join("-").trim();
+
+  if(!qrBranch || !selectedBranch || qrBranch !== selectedBranch){
+    throw new Error("WRONG BRANCH");
+  }
+
+  /* IMPORTANT: check Pull Out FIRST so an existing request is reported
+     instead of falling through to the Stocks NOT FOUND message. */
+  const existingPullOut = await sbRequest(
+    "/rest/v1/pull_out?BR=eq." + encodeURIComponent(qrBranch) +
+    "&NTAGN=eq." + encodeURIComponent(tag) +
+    "&select=BR,NTAGN&limit=1"
+  );
+  if(Array.isArray(existingPullOut) && existingPullOut.length){
+    throw new Error("This item is already added to a Pull Out request.");
+  }
+
   const checked=await directCheck(decodedBarcode);
-  if(checked.status==="WRONG BRANCH") throw new Error("WRONG BRANCH");
   if(checked.status==="DUPLICATE") throw new Error("This item is already SOLD and cannot be pulled out.");
   if(checked.status!=="FOUND") throw new Error("Stock item was not found.");
 
@@ -7424,11 +7510,26 @@ async function preparePullOutRequestByBarcode(rawBarcode){
 
 async function preparePullOutRequestByTag(tag){
   await requireSupabaseAccess();
-  const barcode=normalizeBarcode(BRANCH+"-"+tag);
+  tag=String(tag||"").trim().toUpperCase();
+  if(!tag) throw new Error("Tag number is required.");
+
+  const branch=String(BRANCH||"").trim().toUpperCase();
+
+  /* IMPORTANT: check Pull Out FIRST for the same BR + NTAGN. */
+  const existingPullOut = await sbRequest(
+    "/rest/v1/pull_out?BR=eq." + encodeURIComponent(branch) +
+    "&NTAGN=eq." + encodeURIComponent(tag) +
+    "&select=BR,NTAGN&limit=1"
+  );
+  if(Array.isArray(existingPullOut) && existingPullOut.length){
+    throw new Error("This item is already added to a Pull Out request.");
+  }
+
+  const barcode=normalizeBarcode(branch+"-"+tag);
   const sold=await isAlreadySoldDirect(barcode);
   if(sold) throw new Error("This item is already SOLD and cannot be pulled out.");
   const stock=await getStockByBarcodeDirect(barcode);
-  if(!stock) throw new Error("Tag number " + tag + " was not found in " + BRANCH + " Stocks.");
+  if(!stock) throw new Error("Tag number " + tag + " was not found in " + branch + " Stocks.");
   await showPullOutRequestPreview(stock);
 }
 
