@@ -7403,11 +7403,21 @@ async function findPullOutRequestByTag(){
 
 async function preparePullOutRequestByBarcode(rawBarcode){
   await requireSupabaseAccess();
-  const checked=await directCheck(rawBarcode);
+
+  /* Use the SAME barcode decoding path as the normal scanner.
+     directCheck() decodes the scanned QR before looking in Stocks.
+     The previous Pull Out code checked the decoded value correctly,
+     but then queried Stocks again with the ORIGINAL raw QR text,
+     which caused encoded QR items to appear as NOT FOUND. */
+  const scannedBarcode = normalizeBarcode(rawBarcode);
+  const decodedBarcode = decodeBarcode(scannedBarcode);
+
+  const checked=await directCheck(decodedBarcode);
   if(checked.status==="WRONG BRANCH") throw new Error("WRONG BRANCH");
   if(checked.status==="DUPLICATE") throw new Error("This item is already SOLD and cannot be pulled out.");
   if(checked.status!=="FOUND") throw new Error("Stock item was not found.");
-  const stock=await getStockByBarcodeDirect(rawBarcode);
+
+  const stock=await getStockByBarcodeDirect(decodedBarcode);
   if(!stock) throw new Error("Stock item was not found.");
   await showPullOutRequestPreview(stock);
 }
