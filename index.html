@@ -6713,6 +6713,20 @@ function manualInventoryApplyFilters(options={}){
     return !search || item.searchText.includes(search);
   });
 
+  // Manual Inventory result order: numeric NTAGN ascending.
+  // NTAGN is stored as TEXT, so plain text sorting would place 100 before 99.
+  manualInventoryFiltered.sort((a,b)=>{
+    const aTag = String(a?.tag ?? "").trim();
+    const bTag = String(b?.tag ?? "").trim();
+    const aNum = /^\d+$/.test(aTag) ? Number(aTag) : NaN;
+    const bNum = /^\d+$/.test(bTag) ? Number(bTag) : NaN;
+
+    if(Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+    if(Number.isFinite(aNum)) return -1;
+    if(Number.isFinite(bNum)) return 1;
+    return aTag.localeCompare(bTag, undefined, {numeric:true, sensitivity:"base"});
+  });
+
   manualInventoryFilterVersion += 1;
   manualInventoryTreeBuild(manualInventoryFiltered.length);
 
