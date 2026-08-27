@@ -6451,6 +6451,293 @@ const MANUAL_INVENTORY_ROW_STRIDE = window.innerWidth <= 520 ? 74 : 68;
 const MANUAL_INVENTORY_RENDER_BUFFER = 10;
 const MANUAL_INVENTORY_RECENT_LIMIT = 12;
 
+/* =========================================================
+   MANUAL INVENTORY — LIVE MULTI-DEVICE SYNC
+   Additive only. Watches this branch's audit table through
+   Supabase Realtime so audit/restore changes appear on
+   the other auditing devices without changing the existing
+   save queue, Undo logic, filters, or scanner functions.
+========================================================= */
+let manualInventoryRealtimeChannel = null;
+let manualInventoryRealtimeSupabase = null;
+let manualInventoryRealtimeLoader = null;
+let manualInventoryRealtimeBranch = "";
+
+function manualInventoryRealtimeLoadClient(){
+  if(window.supabase?.createClient){
+    return Promise.resolve(window.supabase);
+  }
+
+  if(manualInventoryRealtimeLoader) return manualInventoryRealtimeLoader;
+
+  manualInventoryRealtimeLoader = new Promise((resolve,reject)=>{
+    const existing = document.querySelector('script[data-ao-supabase-realtime="1"]');
+    if(existing){
+      existing.addEventListener("load",()=>{
+        if(window.supabase?.createClient) resolve(window.supabase);
+        else reject(new Error("Supabase Realtime client was not available."));
+      },{once:true});
+      existing.addEventListener("error",()=>reject(new Error("Could not load Supabase Realtime client.")),{once:true});
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    script.async = true;
+    script.dataset.aoSupabaseRealtime = "1";
+    script.onload = ()=>{
+      if(window.supabase?.createClient) resolve(window.supabase);
+      else reject(new Error("Supabase Realtime client was not available."));
+    };
+    script.onerror = ()=>reject(new Error("Could not load Supabase Realtime client."));
+    document.head.appendChild(script);
+  });
+
+  return manualInventoryRealtimeLoader;
+}
+
+function manualInventoryFindItemIndex(barcode){
+  const key = normalizeBarcode(barcode);
+  return manualInventoryItems.findIndex(item => item?.barcode === key);
+}
+
+function manualInventoryRealtimeHideBarcode(barcode){
+  const key = normalizeBarcode(barcode);
+  if(!key || manualInventoryActiveBarcodes.has(key)) return false;
+
+  const localPendingAction = manualInventoryRecentActions.some(action =>
+    action && action.barcode === key &&
+    ["queued","saving","undoing","unknown"].includes(action.state)
+  );
+  if(localPendingAction) return false;
+
+  const index = manualInventoryFindItemIndex(key);
+  if(index < 0) return false;
+
+  manualInventoryActiveBarcodes.add(key);
+  manualInventoryApplyFilters({preserveScroll:true});
+  return true;
+}
+
+async function manualInventoryRealtimeRestoreBarcode(barcode){
+  const key = normalizeBarcode(barcode);
+  if(!key || manualInventoryActiveBarcodes.has(key)) return false;
+
+  const localPendingAction = manualInventoryRecentActions.some(action =>
+    action && action.barcode === key &&
+    ["queued","saving","undoing","unknown"].includes(action.state)
+  );
+  if(localPendingAction) return false;
+
+  /* Confirm it is still stock and is not sold before restoring it. */
+  try{
+    await requireSupabaseAccess();
+    const parts = key.split("-");
+    const br = String(parts.shift() || "").trim().toUpperCase();
+    const tag = parts.join("-").trim().toUpperCase();
+    if(!br || !tag) return false;
+
+    const [stockRows,soldRows] = await Promise.all([
+      sbRequest(
+        "/rest/v1/" + branchTable(BRANCH,"stocks") +
+        "?BR=eq." + encodeURIComponent(br) +
+        "&NTAGN=eq." + encodeURIComponent(tag) +
+        "&select=BR,NTAGN,CATEGORY,LENSTYPE,DESCRIPTION&limit=1"
+      ),
+      sbRequest(
+        "/rest/v1/" + branchTable(BRANCH,"scanresults") +
+        "?BR=eq." + encodeURIComponent(br) +
+        "&NTAGN=eq." + encodeURIComponent(tag) +
+        "&select=BR,NTAGN&limit=1"
+      )
+    ]);
+
+    if(!Array.isArray(stockRows) || !stockRows.length) return false;
+    if(Array.isArray(soldRows) && soldRows.length) return false;
+
+    const stock = stockRows[0];
+    const existingIndex = manualInventoryFindItemIndex(key);
+
+    if(existingIndex >= 0){
+      manualInventoryApplyFilters({preserveScroll:true});
+      return true;
+    }
+
+    manualInventoryItems.push({
+      row: stock,
+      barcode: key,
+      category: String(stock.CATEGORY || "").trim(),
+      lenstype: String(stock.LENSTYPE || "").trim(),
+      description: String(stock.DESCRIPTION || "").trim(),
+      tag,
+      searchText: [
+        String(stock.CATEGORY || "").trim(),
+        String(stock.LENSTYPE || "").trim(),
+        String(stock.DESCRIPTION || "").trim(),
+        tag
+      ].join(" ").toLowerCase()
+    });
+
+    manualInventoryItems.sort((a,b)=>{
+      const aTag = String(a?.tag ?? "").trim();
+      const bTag = String(b?.tag ?? "").trim();
+      const aNum = /^\d+$/.test(aTag) ? Number(aTag) : NaN;
+      const bNum = /^\d+$/.test(bTag) ? Number(bTag) : NaN;
+      if(Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+      if(Number.isFinite(aNum)) return -1;
+      if(Number.isFinite(bNum)) return 1;
+      return aTag.localeCompare(bTag, undefined, {numeric:true, sensitivity:"base"});
+    });
+
+    manualInventoryBuildCategoryFilter();
+    manualInventoryApplyFilters({preserveScroll:true});
+    return true;
+  }catch(err){
+    console.warn("Manual Inventory realtime restore check failed:", err);
+    return false;
+  }
+}
+
+async function manualInventoryRealtimeResync(){
+  if(!manualInventoryLoaded || manualInventoryLoading) return;
+
+  try{
+    await requireSupabaseAccess();
+
+    const auditTable = branchTable(BRANCH,"audit");
+    const soldTable = branchTable(BRANCH,"scanresults");
+
+    const [audits,sold] = await Promise.all([
+      manualInventoryFetchAll(auditTable,'BR,NTAGN'),
+      manualInventoryFetchAll(soldTable,'BR,NTAGN')
+    ]);
+
+    const remoteBlocked = new Set();
+    (Array.isArray(audits) ? audits : []).forEach(row=>{
+      const br = String(row?.BR || "").trim().toUpperCase();
+      const tag = String(row?.NTAGN || "").trim().toUpperCase();
+      if(br && tag) remoteBlocked.add(normalizeBarcode(br + "-" + tag));
+    });
+    (Array.isArray(sold) ? sold : []).forEach(row=>{
+      const br = String(row?.BR || "").trim().toUpperCase();
+      const tag = String(row?.NTAGN || "").trim().toUpperCase();
+      if(br && tag) remoteBlocked.add(normalizeBarcode(br + "-" + tag));
+    });
+
+    let changed = false;
+
+    manualInventoryItems.forEach(item=>{
+      const key = normalizeBarcode(item?.barcode || "");
+      if(!key) return;
+
+      const localPendingAction = manualInventoryRecentActions.some(action =>
+        action && action.barcode === key &&
+        ["queued","saving","undoing","unknown"].includes(action.state)
+      );
+
+      if(remoteBlocked.has(key)){
+        if(!manualInventoryActiveBarcodes.has(key)){
+          manualInventoryActiveBarcodes.add(key);
+          changed = true;
+        }
+      }else if(!localPendingAction && manualInventoryActiveBarcodes.has(key)){
+        manualInventoryActiveBarcodes.delete(key);
+        changed = true;
+      }
+    });
+
+    if(changed) manualInventoryApplyFilters({preserveScroll:true});
+  }catch(err){
+    console.warn("Manual Inventory realtime resync failed:", err);
+  }
+}
+
+async function manualInventoryStartRealtime(){
+  const branch = String(BRANCH || "").trim().toUpperCase();
+  if(!branch) return;
+
+  if(manualInventoryRealtimeChannel && manualInventoryRealtimeBranch === branch){
+    return;
+  }
+
+  manualInventoryStopRealtime();
+
+  try{
+    const clientLib = await manualInventoryRealtimeLoadClient();
+    manualInventoryRealtimeSupabase = clientLib.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      realtime: {
+        params: { eventsPerSecond: 10 }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
+
+    const auditTable = branchTable(branch,"audit");
+    const channelName = "manual-inventory-live-" + branch.toLowerCase();
+
+    manualInventoryRealtimeChannel = manualInventoryRealtimeSupabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {event:"INSERT", schema:"public", table:auditTable},
+        payload=>{
+          const row = payload?.new || {};
+          const br = String(row.BR || "").trim().toUpperCase();
+          const tag = String(row.NTAGN || "").trim().toUpperCase();
+          if(br === branch && tag){
+            manualInventoryRealtimeHideBarcode(normalizeBarcode(br + "-" + tag));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {event:"DELETE", schema:"public", table:auditTable},
+        payload=>{
+          const row = payload?.old || {};
+          const br = String(row.BR || "").trim().toUpperCase();
+          const tag = String(row.NTAGN || "").trim().toUpperCase();
+          if(br === branch && tag){
+            manualInventoryRealtimeRestoreBarcode(normalizeBarcode(br + "-" + tag));
+          }else{
+            /* PostgreSQL may expose only primary-key fields on DELETE
+               unless REPLICA IDENTITY FULL is enabled. Reconcile from
+               the current audit/sold state so restore still works. */
+            manualInventoryRealtimeResync();
+          }
+        }
+      )
+      .subscribe((status)=>{
+        if(status === "SUBSCRIBED") {
+          manualInventoryRealtimeBranch = branch;
+          manualInventorySetStatus("🟢 Live audit sync connected.");
+        }else if(status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          console.warn("Manual Inventory Realtime status:", status);
+          manualInventorySetStatus("🟠 Live sync reconnecting...");
+        }
+      });
+  }catch(err){
+    console.warn("Manual Inventory realtime start failed:", err);
+    manualInventoryRealtimeChannel = null;
+    manualInventoryRealtimeSupabase = null;
+  }
+}
+
+function manualInventoryStopRealtime(){
+  try{
+    if(manualInventoryRealtimeSupabase && manualInventoryRealtimeChannel){
+      manualInventoryRealtimeSupabase.removeChannel(manualInventoryRealtimeChannel);
+    }
+  }catch(err){
+    console.warn("Manual Inventory realtime stop failed:", err);
+  }
+  manualInventoryRealtimeChannel = null;
+  manualInventoryRealtimeSupabase = null;
+  manualInventoryRealtimeBranch = "";
+}
+
 async function manualInventoryIsAuthorized(forceRefresh=false){
   try{
     const session = currentSession() || {};
@@ -7093,12 +7380,15 @@ async function openManualInventory(){
     const search = document.getElementById("manualSearchFilter");
     if(category) category.value = "";
     if(search) search.value = "";
-    manualInventoryLoad();
+    await manualInventoryLoad();
   }else{
     manualInventoryBuildCategoryFilter();
     manualInventoryApplyFilters();
     manualInventoryRenderRecent();
   }
+
+  /* Start live synchronization after the inventory is ready. */
+  manualInventoryStartRealtime();
 }
 
 function closeManualInventory(){
@@ -7108,6 +7398,9 @@ function closeManualInventory(){
   // Closing the window does NOT stop the background save queue.
   dialog.style.display = "none";
   dialog.setAttribute("aria-hidden","true");
+
+  /* Keep the realtime connection scoped to the open Manual Inventory. */
+  manualInventoryStopRealtime();
 }
 
 /* Keep access control synced after the existing login flow. */
