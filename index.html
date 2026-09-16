@@ -3860,90 +3860,9 @@ function normalizeBarcode(value) {
   return String(value || "").trim().replace(/\s+/g, "").toUpperCase();
 }
 
-/*
- * BARCODE COMPATIBILITY LAYER
- * The normal QR value is BR-TAG (example: GAI-94426).
- * Some existing stock rows, however, store the branch and tag together
- * in NTAGN (example: GAI94426). These helpers accept either form without
- * changing the value saved in the database.
- */
-function splitBarcodeParts(value, selectedBranch = BRANCH){
-  const clean = normalizeBarcode(value);
-  const branch = String(selectedBranch || "").trim().toUpperCase();
-
-  if(clean.includes("-")){
-    const parts = clean.split("-");
-    return {
-      br: String(parts.shift() || "").trim().toUpperCase(),
-      ntagn: parts.join("-").trim().toUpperCase()
-    };
-  }
-
-  if(branch && clean.startsWith(branch) && clean.length > branch.length){
-    return {
-      br: branch,
-      ntagn: clean.slice(branch.length).trim().toUpperCase()
-    };
-  }
-
-  for(const code of Object.keys(BRANCH_NAMES || {})){
-    if(clean.startsWith(code) && clean.length > code.length){
-      return {
-        br: code,
-        ntagn: clean.slice(code.length).trim().toUpperCase()
-      };
-    }
-  }
-
-  return {
-    br: branch,
-    ntagn: clean
-  };
-}
-
-function canonicalBarcode(value, selectedBranch = BRANCH){
-  const parts = splitBarcodeParts(value, selectedBranch);
-  if(!parts.br || !parts.ntagn) return normalizeBarcode(value);
-  return normalizeBarcode(parts.br + "-" + parts.ntagn);
-}
-
-function barcodeTagCandidates(br, ntagn){
-  const sourceBranch = String(br || "").trim().toUpperCase();
-  const rawTag = String(ntagn || "").trim().toUpperCase();
-  if(!rawTag) return [];
-
-  let tag = rawTag;
-  if(sourceBranch && tag.startsWith(sourceBranch) && tag.length > sourceBranch.length){
-    tag = tag.slice(sourceBranch.length).trim().toUpperCase();
-  }
-
-  /* Accept the plain tag plus every known BRANCH+TAG representation.
-     This allows TAN-94426 to find GAI94426/TAN94426/etc after transfer. */
-  const candidates = [tag, rawTag];
-  for(const code of Object.keys(BRANCH_NAMES || {})) candidates.push(code + tag);
-  return [...new Set(candidates.filter(Boolean))];
-}
-
 /* EXACT ORIGINAL DECODE FIX — DO NOT CHANGE */
 function decodeBarcode(code){
-  code = normalizeBarcode(code);
-
-  /*
-   * IMPORTANT:
-   * A combined value such as BAC12345 can look like hexadecimal.
-   * Detect BRANCH+TAG before the legacy hex decode so it is never
-   * incorrectly decoded.
-   */
-  const combinedParts = splitBarcodeParts(code, "");
-  if(
-    !code.includes("-") &&
-    combinedParts.br &&
-    combinedParts.ntagn &&
-    BRANCH_NAMES[combinedParts.br]
-  ){
-    return canonicalBarcode(code, combinedParts.br);
-  }
-
+  code = String(code || "").trim().toUpperCase();
   if(code.indexOf("-") > -1){ return normalizeBarcode(code); }
   if(code.length % 2 !== 0){ return normalizeBarcode(code); }
   let result = "";
@@ -3990,65 +3909,52 @@ function manilaNow(){
 }
 
 async function getStockByBarcodeDirect(barcode){
-  const parts = splitBarcodeParts(barcode, BRANCH);
-  if(!parts.br || !parts.ntagn) return null;
+  const parts = normalizeBarcode(barcode).split("-");
+  if(parts.length < 2) return null;
+  const br = parts[0], ntagn = parts.slice(1).join("-");
+  const stockTable = branchTable(BRANCH,"stocks");
 
-  const candidates = barcodeTagCandidates(parts.br, parts.ntagn);
-  const currentBranch = String(BRANCH || "").trim().toUpperCase();
-  if(!currentBranch) return null;
-  const table = branchTable(currentBranch,"stocks");
+  // ORIGINAL LOOKUP: BR + NTAGN
+  const rows = await sbRequest("/rest/v1/" + stockTable + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=*&limit=1");
+  if(Array.isArray(rows) && rows.length) return rows[0];
 
-  for(const tagCandidate of candidates){
-    const rows = await sbRequest(
-      "/rest/v1/" + table +
-      "?BR=eq." + encodeURIComponent(currentBranch) +
-      "&NTAGN=eq." + encodeURIComponent(tagCandidate) +
+  // ADDITIVE TRANSFER LOOKUP ONLY:
+  // If the QR belongs to another branch, search the CURRENT branch's
+  // NTAGN column using the decoded combined value, e.g. TAN94426.
+  const selectedBranch = String(BRANCH || "").trim().toUpperCase();
+  if(br !== selectedBranch && selectedBranch){
+    const combinedTag = normalizeBarcode(br + ntagn);
+    const transferredRows = await sbRequest(
+      "/rest/v1/" + stockTable +
+      "?NTAGN=eq." + encodeURIComponent(combinedTag) +
       "&select=*&limit=1"
     );
-    if(Array.isArray(rows) && rows.length) return rows[0];
+    if(Array.isArray(transferredRows) && transferredRows.length) return transferredRows[0];
   }
 
   return null;
 }
 
 async function isAlreadySoldDirect(barcode){
-  const parts = splitBarcodeParts(barcode, BRANCH);
-  if(!parts.br || !parts.ntagn) return null;
+  const parts = normalizeBarcode(barcode).split("-");
+  if(parts.length < 2) return null;
+  const br = parts[0], ntagn = parts.slice(1).join("-");
+  const soldTable = branchTable(BRANCH,"scanresults");
 
-  const candidates = barcodeTagCandidates(parts.br, parts.ntagn);
-  const currentBranch = String(BRANCH || "").trim().toUpperCase();
-  if(!currentBranch) return null;
-  const table = branchTable(currentBranch,"scanresults");
+  // ORIGINAL LOOKUP: BR + NTAGN
+  const rows = await sbRequest("/rest/v1/" + soldTable + "?BR=eq." + encodeURIComponent(br) + "&NTAGN=eq." + encodeURIComponent(ntagn) + "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1");
+  if(Array.isArray(rows) && rows.length) return rows[0];
 
-  for(const tagCandidate of candidates){
-    const rows = await sbRequest(
-      "/rest/v1/" + table +
-      "?BR=eq." + encodeURIComponent(currentBranch) +
-      "&NTAGN=eq." + encodeURIComponent(tagCandidate) +
+  // ADDITIVE TRANSFER LOOKUP ONLY: decoded TAN-94426 -> TAN94426
+  const selectedBranch = String(BRANCH || "").trim().toUpperCase();
+  if(br !== selectedBranch && selectedBranch){
+    const combinedTag = normalizeBarcode(br + ntagn);
+    const transferredRows = await sbRequest(
+      "/rest/v1/" + soldTable +
+      "?NTAGN=eq." + encodeURIComponent(combinedTag) +
       "&select=BR,NTAGN,DESCRIPTION,LENSTYPE&limit=1"
     );
-    if(Array.isArray(rows) && rows.length) return rows[0];
-  }
-
-  return null;
-}
-
-async function findByBranchAndTag(table, br, ntagn, select="BR,NTAGN"){
-  const branch = String(br || "").trim().toUpperCase();
-  const tag = String(ntagn || "").trim().toUpperCase();
-  if(!branch || !tag) return null;
-
-  const candidates = barcodeTagCandidates(branch, tag);
-
-  for(const tagCandidate of candidates){
-    const rows = await sbRequest(
-      "/rest/v1/" + table +
-      "?BR=eq." + encodeURIComponent(branch) +
-      "&NTAGN=eq." + encodeURIComponent(tagCandidate) +
-      "&select=" + select +
-      "&limit=1"
-    );
-    if(Array.isArray(rows) && rows.length) return rows[0];
+    if(Array.isArray(transferredRows) && transferredRows.length) return transferredRows[0];
   }
 
   return null;
@@ -4061,10 +3967,53 @@ async function directCheck(rawBarcode){
     const scannedBarcode = normalizeBarcode(rawBarcode);
     const barcode = decodeBarcode(scannedBarcode);
 
-    // The QR branch is the ORIGINAL/SOURCE branch. It may differ from the
-    // currently selected branch after transfer. Do not reject it here.
-    const parsed = splitBarcodeParts(barcode, BRANCH);
-    if(!parsed.ntagn) return {status:"INVALID BARCODE"};
+    // ==========================================
+    // BRANCH VALIDATION
+    // ==========================================
+
+    const parts = barcode.split("-");
+    const qrBranch = parts.length >= 2
+        ? String(parts[0]).trim().toUpperCase()
+        : "";
+
+    const selectedBranch = String(BRANCH || "").trim().toUpperCase();
+
+    if (
+        !qrBranch ||
+        !selectedBranch
+    ) {
+        return {
+            status: "WRONG BRANCH"
+        };
+    }
+
+    // ORIGINAL BEHAVIOR: same-branch QR continues through the normal path.
+    // ADDITIVE TRANSFER FALLBACK: when the decoded QR branch is different,
+    // try its combined BR+NTAGN value in the CURRENT branch's NTAGN column.
+    if(qrBranch !== selectedBranch){
+        const transferredSold = await isAlreadySoldDirect(barcode);
+        if(transferredSold){
+            return {
+                status: "DUPLICATE",
+                colJ: String(transferredSold.LENSTYPE || ""),
+                colO: String(transferredSold.DESCRIPTION || ""),
+                tag: String(transferredSold.NTAGN || "")
+            };
+        }
+
+        const transferredStock = await getStockByBarcodeDirect(barcode);
+        if(transferredStock){
+            return {
+                status: "FOUND",
+                row: stockRowArray(transferredStock),
+                colJ: String(transferredStock.LENSTYPE || ""),
+                colO: String(transferredStock.DESCRIPTION || ""),
+                tag: String(transferredStock.NTAGN || "")
+            };
+        }
+
+        return {status:"WRONG BRANCH"};
+    }
 
     // ==========================================
     // DUPLICATE CHECK
@@ -4106,9 +4055,7 @@ async function directSave(rawBarcode, siNo){
   const access = await requireSupabaseAccess();
   const barcode = decodeBarcode(normalizeBarcode(rawBarcode));
 
-  if(!splitBarcodeParts(barcode, BRANCH).ntagn){
-    return {status:"INVALID BARCODE"};
-  }
+  const sameBranchBarcode = validateBarcodeBranch(barcode, BRANCH);
 
   // Never create a second Sold record.
   const existingSold = await isAlreadySoldDirect(barcode);
@@ -4122,7 +4069,10 @@ async function directSave(rawBarcode, siNo){
   }
 
   const stock = await getStockByBarcodeDirect(barcode);
-  if(!stock) return {status:"NOT FOUND"};
+  if(!stock){
+    if(!sameBranchBarcode) return {status:"WRONG BRANCH"};
+    return {status:"NOT FOUND"};
+  }
 
   const row = stockRowArray(stock);
   while(row.length < 27) row.push("");
@@ -4172,27 +4122,27 @@ async function directSave(rawBarcode, siNo){
     }
   );
 
-  /* Use the actual BR + NTAGN stored in the matched stock row. */
-  const matchedBr = String(stock.BR || BRANCH || "").trim().toUpperCase();
-  const matchedNtagn = String(stock.NTAGN || "").trim().toUpperCase();
-  if(!matchedBr || !matchedNtagn) throw new Error("The stock record is missing BR or NTAGN.");
+  // Use the ACTUAL matched row values. For transferred items this preserves
+  // values such as BR=GAI and NTAGN=TAN94426 instead of rebuilding from QR.
+  const br = String(stock.BR || "").trim().toUpperCase();
+  const ntagn = String(stock.NTAGN || "").trim().toUpperCase();
 
   // Remove this tag from Stocks after successful Sold insert.
   await sbRequest(
     "/rest/v1/" + branchTable(BRANCH,"stocks") +
-    "?BR=eq." + encodeURIComponent(matchedBr) +
-    "&NTAGN=eq." + encodeURIComponent(matchedNtagn),
+    "?BR=eq." + encodeURIComponent(br) +
+    "&NTAGN=eq." + encodeURIComponent(ntagn),
     {
       method:"DELETE",
       headers:{Prefer:"return=minimal"}
     }
   );
 
-  // Remove the same stored tag from Audit if it exists.
+  // Remove the same tag from Audit if it exists.
   await sbRequest(
     "/rest/v1/" + branchTable(BRANCH,"audit") +
-    "?BR=eq." + encodeURIComponent(matchedBr) +
-    "&NTAGN=eq." + encodeURIComponent(matchedNtagn),
+    "?BR=eq." + encodeURIComponent(br) +
+    "&NTAGN=eq." + encodeURIComponent(ntagn),
     {
       method:"DELETE",
       headers:{Prefer:"return=minimal"}
@@ -4236,39 +4186,42 @@ async function directSearchSI(siNo){
 async function directCheckTag(tag){
   await requireSupabaseAccess();
 
-  const cleanInput = normalizeBarcode(tag);
-  if(!cleanInput) return {status:"NOT_FOUND"};
-
-  const barcode = canonicalBarcode(cleanInput, BRANCH);
-  const parts = splitBarcodeParts(barcode, BRANCH);
-  if(!parts.br || !parts.ntagn) return {status:"NOT_FOUND"};
-
+  const cleanTag = String(tag || "").trim().toUpperCase();
+  if(!cleanTag) return {status:"NOT_FOUND"};
 
   // Check Sold FIRST because a sold item is no longer in Stocks.
-  const sold = await isAlreadySoldDirect(barcode);
+  const soldBarcode = normalizeBarcode(BRANCH + "-" + cleanTag);
+  const sold = await isAlreadySoldDirect(soldBarcode);
 
   if(sold){
     return {
       status:"DUPLICATE",
-      barcode:canonicalBarcode(sold.BR + "-" + sold.NTAGN, BRANCH),
+      barcode:soldBarcode,
       colJ:String(sold.LENSTYPE || ""),
-      colM:String(sold.NTAGN || parts.ntagn),
+      colM:String(sold.NTAGN || cleanTag),
       colO:formatLens(sold.DESCRIPTION || "")
     };
   }
 
-  // If not Sold, check Stocks using both TAG and BRANCH+TAG NTAGN formats.
-  const stock = await getStockByBarcodeDirect(barcode);
-  if(!stock) return {status:"NOT_FOUND"};
+  // If not Sold, check Stocks.
+  const rows = await sbRequest(
+    "/rest/v1/" + branchTable(BRANCH,"stocks") +
+    "?BR=eq." + encodeURIComponent(BRANCH) +
+    "&NTAGN=eq." + encodeURIComponent(cleanTag) +
+    "&select=*&limit=1"
+  );
 
-  const stockBarcode = canonicalBarcode(stock.BR + "-" + stock.NTAGN, BRANCH);
+  if(!rows.length) return {status:"NOT_FOUND"};
+
+  const s = rows[0];
+  const barcode = normalizeBarcode(s.BR + "-" + s.NTAGN);
 
   return {
     status:"FOUND",
-    barcode:stockBarcode,
-    colJ:String(stock.LENSTYPE || ""),
-    colM:String(stock.NTAGN || ""),
-    colO:formatLens(stock.DESCRIPTION || "")
+    barcode,
+    colJ:String(s.LENSTYPE || ""),
+    colM:String(s.NTAGN || ""),
+    colO:formatLens(s.DESCRIPTION || "")
   };
 }
 
@@ -4276,16 +4229,23 @@ async function directCheckTag(tag){
 async function directSaveAudit(rawBarcode){
   const access=await requireSupabaseAccess();
   const barcode=decodeBarcode(normalizeBarcode(rawBarcode));
-  const parts=splitBarcodeParts(barcode, BRANCH);
-  if(!parts.br || !parts.ntagn) return {status:"INVALID BARCODE"};
-  const currentBranch=String(BRANCH || "").trim().toUpperCase();
-  if(!currentBranch) return {status:"WRONG BRANCH"};
-  const ntagn=parts.ntagn;
-  const auditTable=branchTable(currentBranch,"audit");
-  const existing=await findByBranchAndTag(auditTable,currentBranch,ntagn,'BR,NTAGN,%22DATE%20AND%20TIME%22');
-  if(existing) return {status:"ALREADY_AUDITED",tag:String(existing.NTAGN || ntagn),date:existing["DATE AND TIME"]};
+  const sameBranchBarcode=validateBarcodeBranch(barcode,BRANCH);
+  const auditTable=branchTable(BRANCH,"audit");
+
   const stock=await getStockByBarcodeDirect(barcode);
-  if(!stock) return {status:"NOT_FOUND"};
+  if(!stock){
+    if(!sameBranchBarcode) return {status:"WRONG BRANCH"};
+    return {status:"NOT_FOUND"};
+  }
+
+  // Use the actual current-branch row's BR + NTAGN. This is critical for
+  // transferred items whose NTAGN is stored as TAN94426 / CAS94426 / etc.
+  const br=String(stock.BR || "").trim().toUpperCase();
+  const ntagn=String(stock.NTAGN || "").trim().toUpperCase();
+  if(!br || !ntagn) return {status:"NOT_FOUND"};
+
+  const existing=await sbRequest("/rest/v1/"+auditTable+"?BR=eq."+encodeURIComponent(br)+"&NTAGN=eq."+encodeURIComponent(ntagn)+"&select=BR,NTAGN,%22DATE%20AND%20TIME%22&limit=1");
+  if(existing.length) return {status:"ALREADY_AUDITED",tag:ntagn,date:existing[0]["DATE AND TIME"]};
   const payload=[{SDATE:String(stock.SDATE||""),SUPPLIER:String(stock.SUPPLIER||""),DR:String(stock.DR||""),COST:String(stock.COST||""),ASG:String(stock.ASG||""),CB:String(stock.CB||""),FD:String(stock.FD||""),UNITS:String(stock.UNITS||""),POWER:String(stock.POWER||""),LENSTYPE:String(stock.LENSTYPE||""),PUNIT:String(stock.PUNIT||""),BR:String(stock.BR||""),NTAGN:String(stock.NTAGN||""),CATEGORY:String(stock.CATEGORY||""),DESCRIPTION:String(formatLens(stock.DESCRIPTION||"")),LENSCODE:String(stock.LENSCODE||""),SELLINGPRICE:String(stock.SELLINGPRICE||""),DELIVERYDATE:String(stock.DELIVERYDATE||""),ORNUMBER:String(stock.ORNUMBER||""),ORDATE:String(stock.ORDATE||""),REMARKS:String(stock.REMARKS||""),TAGPRICE:String(stock.TAGPRICE||""),QR:String(stock.QR||""),"SI NO.":"","DATE AND TIME":manilaNow(),"USER EMAIL":access.email,STATUS:"AUDITED"}];
   await sbRequest("/rest/v1/"+auditTable,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
   return {status:"RECORDED",colO:String(stock.DESCRIPTION||""),colJ:String(stock.LENSTYPE||""),tag:String(stock.NTAGN||"")};
@@ -7886,28 +7846,36 @@ async function findPullOutRequestByTag(){
 async function preparePullOutRequestByBarcode(rawBarcode){
   await requireSupabaseAccess();
 
-  /* Use the SAME barcode decoding path as the normal scanner. */
+  /* Use the SAME barcode decoding path as the normal scanner.
+     Existing normal scanner decode logic is intentionally reused. */
   const scannedBarcode = normalizeBarcode(rawBarcode);
   const decodedBarcode = decodeBarcode(scannedBarcode);
 
-  const parts = splitBarcodeParts(decodedBarcode, BRANCH);
-  if(!parts.br || !parts.ntagn) throw new Error("INVALID BARCODE");
+  const parts = decodedBarcode.split("-");
+  if(parts.length < 2) throw new Error("INVALID BARCODE");
 
-  const qrBranch = parts.br;
+  const qrBranch = String(parts[0] || "").trim().toUpperCase();
   const selectedBranch = String(BRANCH || "").trim().toUpperCase();
-  const tag = parts.ntagn;
+  const tag = parts.slice(1).join("-").trim();
 
-  if(!qrBranch || !selectedBranch || !tag){
-    throw new Error("INVALID BARCODE");
+  if(!qrBranch || !selectedBranch){
+    throw new Error("WRONG BRANCH");
   }
 
+  // For a transferred QR, the current branch may store the original branch
+  // together with the tag in NTAGN, e.g. TAN94426.
+  const pullOutLookupTag = qrBranch === selectedBranch
+    ? tag
+    : normalizeBarcode(qrBranch + tag);
+
   /* IMPORTANT: check Pull Out FIRST so an existing request is reported
-     instead of falling through to the Stocks NOT FOUND message.
-     Supports both NTAGN=94426 and NTAGN=GAI94426. */
-  const existingPullOut = await findByBranchAndTag(
-    "pull_out", selectedBranch, tag, "BR,NTAGN"
+     instead of falling through to the Stocks NOT FOUND message. */
+  const existingPullOut = await sbRequest(
+    "/rest/v1/pull_out?BR=eq." + encodeURIComponent(selectedBranch) +
+    "&NTAGN=eq." + encodeURIComponent(pullOutLookupTag) +
+    "&select=BR,NTAGN&limit=1"
   );
-  if(existingPullOut){
+  if(Array.isArray(existingPullOut) && existingPullOut.length){
     throw new Error("This item is already added to a Pull Out request.");
   }
 
@@ -7922,26 +7890,26 @@ async function preparePullOutRequestByBarcode(rawBarcode){
 
 async function preparePullOutRequestByTag(tag){
   await requireSupabaseAccess();
-  tag=normalizeBarcode(tag);
+  tag=String(tag||"").trim().toUpperCase();
   if(!tag) throw new Error("Tag number is required.");
 
   const branch=String(BRANCH||"").trim().toUpperCase();
-  const barcode=canonicalBarcode(tag, branch);
-  const parts=splitBarcodeParts(barcode, branch);
-  if(!parts.ntagn) throw new Error("Tag number is required.");
 
-  /* IMPORTANT: check Pull Out FIRST for both NTAGN formats. */
-  const existingPullOut=await findByBranchAndTag(
-    "pull_out", branch, parts.ntagn, "BR,NTAGN"
+  /* IMPORTANT: check Pull Out FIRST for the same BR + NTAGN. */
+  const existingPullOut = await sbRequest(
+    "/rest/v1/pull_out?BR=eq." + encodeURIComponent(branch) +
+    "&NTAGN=eq." + encodeURIComponent(tag) +
+    "&select=BR,NTAGN&limit=1"
   );
-  if(existingPullOut){
+  if(Array.isArray(existingPullOut) && existingPullOut.length){
     throw new Error("This item is already added to a Pull Out request.");
   }
 
+  const barcode=normalizeBarcode(branch+"-"+tag);
   const sold=await isAlreadySoldDirect(barcode);
   if(sold) throw new Error("This item is already SOLD and cannot be pulled out.");
   const stock=await getStockByBarcodeDirect(barcode);
-  if(!stock) throw new Error("Tag number " + parts.ntagn + " was not found in " + branch + " Stocks.");
+  if(!stock) throw new Error("Tag number " + tag + " was not found in " + branch + " Stocks.");
   await showPullOutRequestPreview(stock);
 }
 
@@ -7989,11 +7957,11 @@ async function confirmPullOutRequest(){
   try{
     await requireSupabaseAccess();
     const branch=String(stock.BR||BRANCH||"").trim().toUpperCase();
-    const tag=String(stock.NTAGN||"").trim().toUpperCase();
+    const tag=String(stock.NTAGN||"").trim();
     if(!branch||!tag) throw new Error("Missing branch or tag number.");
 
-    const existing=await findByBranchAndTag("pull_out",branch,tag,"BR,NTAGN");
-    if(existing) throw new Error(tag+" is already in Pull Out.");
+    const existing=await sbRequest("/rest/v1/pull_out?BR=eq."+encodeURIComponent(branch)+"&NTAGN=eq."+encodeURIComponent(tag)+"&select=BR,NTAGN&limit=1");
+    if(Array.isArray(existing)&&existing.length) throw new Error(tag+" is already in Pull Out.");
 
     const record={};
     const columns=["SDATE","SUPPLIER","DR","COST","ASG","CB","FD","UNITS","POWER","LENSTYPE","PUNIT","BR","NTAGN","CATEGORY","DESCRIPTION","LENSCODE","SELLINGPRICE","DELIVERYDATE","ORNUMBER","ORDATE","REMARKS","TAGPRICE","QR","SI NO.","DATE AND TIME","USER EMAIL","STATUS"];
@@ -8007,8 +7975,6 @@ async function confirmPullOutRequest(){
 
     await sbRequest("/rest/v1/pull_out",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify([record])});
 
-    /* Delete the exact NTAGN value that was actually found in Stocks.
-       This preserves compatibility with rows storing GAI94426. */
     const filter="?BR=eq."+encodeURIComponent(branch)+"&NTAGN=eq."+encodeURIComponent(tag);
     await Promise.all([
       sbRequest("/rest/v1/"+branchTable(branch,"stocks")+filter,{method:"DELETE",headers:{Prefer:"return=minimal"}}),
