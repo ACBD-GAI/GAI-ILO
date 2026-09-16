@@ -4232,6 +4232,20 @@ async function directSaveAudit(rawBarcode){
   const sameBranchBarcode=validateBarcodeBranch(barcode,BRANCH);
   const auditTable=branchTable(BRANCH,"audit");
 
+  // ADDITIVE RE-INVENTORY SOLD CHECK:
+  // Before looking in Stocks, also check Sold Out. This uses the existing
+  // transfer-aware isAlreadySoldDirect() path, so transferred values such as
+  // TAN94426 / CAS94426 / GAI94426 are recognized too.
+  const sold=await isAlreadySoldDirect(barcode);
+  if(sold){
+    return {
+      status:"ALREADY_SOLD",
+      tag:String(sold.NTAGN || ""),
+      colJ:String(sold.LENSTYPE || ""),
+      colO:String(sold.DESCRIPTION || "")
+    };
+  }
+
   const stock=await getStockByBarcodeDirect(barcode);
   if(!stock){
     if(!sameBranchBarcode) return {status:"WRONG BRANCH"};
@@ -5377,6 +5391,30 @@ async function processAuditQueue() {
 
                     </div>
                     `;
+
+                break;
+
+
+                case "ALREADY_SOLD":
+
+                    document.getElementById("result").innerHTML = `
+                    <div class="card red scan-animate">
+
+                    🛑 ALREADY SOLD
+
+                    <br><br>
+
+                    <b>${saveData.colO || ""}</b><br>
+
+                    ${saveData.colJ || ""}<br>
+
+                    🏷 Tag: <b>${saveData.tag || ""}</b>
+
+                    </div>
+                    `;
+
+                    // Do not increment the Re-Inventory counter.
+                    // Continue processing the next queued scan.
 
                 break;
 
