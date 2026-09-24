@@ -2402,6 +2402,33 @@ input:focus-visible{
 .ao-chat-attach-menu[hidden]{display:none !important}
 .ao-chat-attach-menu button{min-height:38px;padding:7px 10px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#374151;font-size:12px;cursor:pointer;box-shadow:none;white-space:nowrap}
 .ao-chat-attach-menu button:hover{background:#f3f4f6;transform:none}
+
+/* =========================================================
+   📷 CAMSCANNER-STYLE CHAT DOCUMENT CAMERA
+   Additive only — affects the Chat Capture path.
+   Upload / send / storage logic remains unchanged.
+========================================================= */
+.ao-doccam-overlay{position:fixed;inset:0;z-index:120000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(8,15,28,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ao-doccam-overlay.open{display:flex}
+.ao-doccam-card{width:min(680px,96vw);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;background:#0f172a;border:1px solid rgba(255,255,255,.14);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.45)}
+.ao-doccam-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;color:#fff;background:#111827}
+.ao-doccam-title{font-size:15px;font-weight:900}.ao-doccam-sub{margin-top:2px;font-size:10px;color:#cbd5e1}
+.ao-doccam-close{width:36px!important;min-width:36px!important;height:36px;min-height:36px!important;padding:0!important;border:1px solid rgba(255,255,255,.15)!important;border-radius:10px!important;background:rgba(255,255,255,.08)!important;color:#fff!important;font-size:18px!important;box-shadow:none!important}
+.ao-doccam-stage{position:relative;display:flex;align-items:center;justify-content:center;min-height:260px;background:#020617;overflow:hidden}
+.ao-doccam-video{display:block;width:100%;height:auto;max-height:68vh;object-fit:contain;background:#020617}
+.ao-doccam-guide{position:absolute;left:8%;right:8%;top:10%;bottom:10%;border:2px solid rgba(255,255,255,.82);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.10),0 0 24px rgba(56,189,248,.18);pointer-events:none}
+.ao-doccam-guide:before,.ao-doccam-guide:after{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none}
+.ao-doccam-guide:before{border-left:4px solid #38bdf8;border-right:4px solid #38bdf8;clip-path:inset(0 0 88% 0)}
+.ao-doccam-guide:after{border-top:4px solid #38bdf8;border-bottom:4px solid #38bdf8;clip-path:inset(0 88% 0 0)}
+.ao-doccam-hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:6px 10px;border-radius:999px;background:rgba(15,23,42,.72);color:#fff;font-size:10px;font-weight:700;white-space:nowrap;backdrop-filter:blur(8px)}
+.ao-doccam-preview{display:none;width:100%;height:auto;max-height:68vh;object-fit:contain;background:#020617}
+.ao-doccam-preview.show{display:block}.ao-doccam-video.hide{display:none}
+.ao-doccam-status{min-height:22px;padding:8px 14px 0;color:#cbd5e1;font-size:10px;text-align:center}
+.ao-doccam-actions{display:flex;gap:8px;padding:12px 14px;background:#111827}
+.ao-doccam-actions button{flex:1;min-height:44px;border-radius:12px;font-size:12px;font-weight:900}
+.ao-doccam-cancel{background:#334155!important;color:#fff!important}.ao-doccam-capture{background:linear-gradient(135deg,#38bdf8,#2563eb)!important;color:#fff!important;box-shadow:0 8px 22px rgba(37,99,235,.28)!important}
+.ao-doccam-use{background:linear-gradient(135deg,#34d399,#16a34a)!important;color:#fff!important;box-shadow:0 8px 22px rgba(34,197,94,.22)!important}
+@media(max-width:600px){.ao-doccam-overlay{padding:8px}.ao-doccam-card{width:100%;max-height:96vh;border-radius:18px}.ao-doccam-guide{left:5%;right:5%;top:7%;bottom:7%}.ao-doccam-actions{padding:10px}.ao-doccam-actions button{min-height:46px}}
 @media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}.ao-chat-emoji-picker{right:4px;bottom:58px;width:min(300px,calc(100vw - 28px));grid-template-columns:repeat(7,1fr)}}
 
 </style>
@@ -7632,6 +7659,28 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+<!-- CAMSCANNER-STYLE DOCUMENT CAMERA: additive chat feature only -->
+<div id="aoDocCamOverlay" class="ao-doccam-overlay" aria-hidden="true">
+  <div class="ao-doccam-card" role="dialog" aria-modal="true" aria-label="Document camera">
+    <div class="ao-doccam-head">
+      <div><div class="ao-doccam-title">📷 Scan Document</div><div class="ao-doccam-sub">Hold the document flat inside the frame</div></div>
+      <button id="aoDocCamClose" class="ao-doccam-close" type="button" aria-label="Close camera">✕</button>
+    </div>
+    <div class="ao-doccam-stage">
+      <video id="aoDocCamVideo" class="ao-doccam-video" autoplay playsinline muted></video>
+      <canvas id="aoDocCamPreview" class="ao-doccam-preview"></canvas>
+      <div id="aoDocCamGuide" class="ao-doccam-guide"></div>
+      <div id="aoDocCamHint" class="ao-doccam-hint">Keep all document edges inside the frame</div>
+    </div>
+    <div id="aoDocCamStatus" class="ao-doccam-status">Document enhancement removes broad shadows and gently sharpens text.</div>
+    <div class="ao-doccam-actions">
+      <button id="aoDocCamCancel" class="ao-doccam-cancel" type="button">Cancel</button>
+      <button id="aoDocCamCapture" class="ao-doccam-capture" type="button">● Capture</button>
+      <button id="aoDocCamUse" class="ao-doccam-use" type="button" hidden>✓ Use Photo</button>
+    </div>
+  </div>
+</div>
+
 <script id="aoChatEmojiScript">
 (function(){
   const emojis=["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😍","🥰","😘","😋","😛","😜","🤪","🤨","🤓","😎","🤩","🥳","😏","😞","😔","😟","😕","🙁","😣","😫","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","😱","😨","😰","🤗","🤔","🫡","🤭","🤫","😶","😐","😬","🙄","😮","😲","🥱","😴","🤢","🤮","🤧","😷","❤️","🧡","💛","💚","💙","💜","🖤","🤍","💯","🔥","👍","👎","👏","🙌","🙏","👌","✌️","🤝","💪","🎉","🎊","⭐","✨","💡","✅","❌","⚠️","❗","❓","💬","📌","🚀"];
@@ -7664,8 +7713,9 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       aoChatStatus("");
       if(attachMenu)attachMenu.hidden=true;
     }
+    window.__aoChatHandleImageFile=handleChatImageFile;
     attach?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=!attachMenu.hidden;});
-    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;captureInput?.click();});
+    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;aoOpenDocumentCamera();});
     attachMenu?.querySelector("[data-ao-chat-upload]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;imageInput?.click();});
     imageInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
     captureInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
@@ -7675,6 +7725,241 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
 
+
+
+/* =========================================================
+   📷 CAMSCANNER-STYLE CHAT DOCUMENT CAMERA
+   Capture path only. Existing upload/send/storage functions are preserved.
+========================================================= */
+let aoDocCamStream=null;
+let aoDocCamCapturedFile=null;
+let aoDocCamBusy=false;
+
+function aoDocCamSetStatus(text){
+  const el=document.getElementById("aoDocCamStatus");
+  if(el)el.textContent=text||"";
+}
+
+function aoDocCamStopStream(){
+  if(aoDocCamStream){
+    aoDocCamStream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});
+    aoDocCamStream=null;
+  }
+}
+
+function aoDocCamClose(){
+  aoDocCamStopStream();
+  aoDocCamBusy=false;
+  aoDocCamCapturedFile=null;
+  const overlay=document.getElementById("aoDocCamOverlay");
+  const video=document.getElementById("aoDocCamVideo");
+  const preview=document.getElementById("aoDocCamPreview");
+  const guide=document.getElementById("aoDocCamGuide");
+  const hint=document.getElementById("aoDocCamHint");
+  const useBtn=document.getElementById("aoDocCamUse");
+  const captureBtn=document.getElementById("aoDocCamCapture");
+  if(video){video.pause();video.srcObject=null;video.classList.remove("hide");}
+  if(preview){preview.classList.remove("show");preview.removeAttribute("width");preview.removeAttribute("height");preview.getContext?.("2d")?.clearRect(0,0,preview.width,preview.height);}
+  if(guide)guide.style.display="";
+  if(hint)hint.style.display="";
+  if(useBtn)useBtn.hidden=true;
+  if(captureBtn){captureBtn.hidden=false;captureBtn.disabled=false;captureBtn.textContent="● Capture";}
+  if(overlay){overlay.classList.remove("open");overlay.setAttribute("aria-hidden","true");}
+}
+
+function aoOpenDocumentCamera(){
+  const overlay=document.getElementById("aoDocCamOverlay");
+  const video=document.getElementById("aoDocCamVideo");
+  const captureInput=document.getElementById("aoChatCaptureInput");
+  if(!overlay||!video){captureInput?.click();return;}
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden","false");
+  aoDocCamSetStatus("Starting camera…");
+  if(!navigator.mediaDevices?.getUserMedia){
+    aoDocCamSetStatus("Camera preview is not available here. Opening the device camera instead…");
+    setTimeout(()=>{aoDocCamClose();captureInput?.click();},250);
+    return;
+  }
+  aoDocCamStartCamera().catch(err=>{
+    console.warn("Document camera unavailable:",err);
+    aoDocCamSetStatus("Camera permission was unavailable. Opening the normal camera instead…");
+    setTimeout(()=>{aoDocCamClose();captureInput?.click();},350);
+  });
+}
+
+async function aoDocCamStartCamera(){
+  const video=document.getElementById("aoDocCamVideo");
+  if(!video)throw new Error("Camera element not found.");
+  aoDocCamStopStream();
+  aoDocCamStream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},
+    audio:false
+  });
+  video.srcObject=aoDocCamStream;
+  await video.play();
+  aoDocCamSetStatus("Ready. Keep the page flat and avoid strong glare.");
+}
+
+function aoDocCamClamp(v){return v<0?0:(v>255?255:v);}
+
+async function aoEnhanceDocumentCanvas(sourceCanvas){
+  const sw=sourceCanvas.width,sh=sourceCanvas.height;
+  const maxDim=1800;
+  const scale=Math.min(1,maxDim/Math.max(sw,sh));
+  const w=Math.max(1,Math.round(sw*scale)),h=Math.max(1,Math.round(sh*scale));
+
+  const src=document.createElement("canvas");src.width=w;src.height=h;
+  const sctx=src.getContext("2d",{willReadFrequently:true,alpha:false});
+  sctx.drawImage(sourceCanvas,0,0,w,h);
+  const image=sctx.getImageData(0,0,w,h);
+  const data=image.data;
+
+  // Low-resolution background map removes only broad lighting/shadow gradients.
+  // Keeping this map low-res makes it smooth enough to avoid halos around letters.
+  const bw=Math.max(24,Math.round(w/20)),bh=Math.max(24,Math.round(h/20));
+  const bg=document.createElement("canvas");bg.width=bw;bg.height=bh;
+  const bctx=bg.getContext("2d",{willReadFrequently:true,alpha:false});
+  bctx.drawImage(src,0,0,bw,bh);
+  const bgData=bctx.getImageData(0,0,bw,bh).data;
+
+  const out=new Uint8ClampedArray(data.length);
+  const cellLum=new Float32Array(bw*bh);
+  for(let i=0,ci=0;i<bgData.length;i+=4,ci++){
+    cellLum[ci]=0.299*bgData[i]+0.587*bgData[i+1]+0.114*bgData[i+2];
+  }
+
+  // Small local smoothing of the background map.
+  const smooth=new Float32Array(cellLum.length);
+  for(let y=0;y<bh;y++){
+    for(let x=0;x<bw;x++){
+      let sum=0,count=0;
+      for(let dy=-1;dy<=1;dy++){
+        const yy=y+dy;if(yy<0||yy>=bh)continue;
+        for(let dx=-1;dx<=1;dx++){
+          const xx=x+dx;if(xx<0||xx>=bw)continue;
+          sum+=cellLum[yy*bw+xx];count++;
+        }
+      }
+      smooth[y*bw+x]=sum/count;
+    }
+  }
+
+  // Estimate page brightness. This avoids pushing already-white paper to pure white.
+  let bgSum=0;for(let i=0;i<smooth.length;i++)bgSum+=smooth[i];
+  const avgBg=bgSum/Math.max(1,smooth.length);
+  const targetBg=Math.min(238,Math.max(218,avgBg+8));
+
+  for(let y=0;y<h;y++){
+    const gy=(y+0.5)*bh/h-0.5;
+    const y0=Math.max(0,Math.floor(gy)),y1=Math.min(bh-1,y0+1),ty=Math.max(0,gy-y0);
+    for(let x=0;x<w;x++){
+      const gx=(x+0.5)*bw/w-0.5;
+      const x0=Math.max(0,Math.floor(gx)),x1=Math.min(bw-1,x0+1),tx=Math.max(0,gx-x0);
+      const b00=smooth[y0*bw+x0],b10=smooth[y0*bw+x1],b01=smooth[y1*bw+x0],b11=smooth[y1*bw+x1];
+      const bgv=(b00+(b10-b00)*tx)+((b01-b00)+(b11-b10-b01+b00)*tx)*ty;
+
+      const p=(y*w+x)*4;
+      const r=data[p],g=data[p+1],b=data[p+2];
+      const lum=0.299*r+0.587*g+0.114*b;
+      const denom=Math.max(55,bgv);
+      let corrected=lum*(targetBg/denom);
+      // Gentle compression keeps it document-bright without blowing highlights.
+      corrected=128+(corrected-128)*1.08;
+      corrected=aoDocCamClamp(corrected);
+
+      // Mostly neutral document rendering, but retain a little color so receipts/cards
+      // do not look completely monochrome.
+      const colorKeep=.20;
+      let nr=corrected+(r-lum)*colorKeep;
+      let ng=corrected+(g-lum)*colorKeep;
+      let nb=corrected+(b-lum)*colorKeep;
+
+      // Mild paper-white ceiling; pure white stays available for clean pages.
+      nr=aoDocCamClamp(nr);ng=aoDocCamClamp(ng);nb=aoDocCamClamp(nb);
+      out[p]=nr;out[p+1]=ng;out[p+2]=nb;out[p+3]=255;
+    }
+  }
+
+  const output=document.createElement("canvas");output.width=w;output.height=h;
+  const octx=output.getContext("2d",{willReadFrequently:true,alpha:false});
+  const outImage=new ImageData(out,w,h);octx.putImageData(outImage,0,0);
+
+  // One mild unsharp pass keeps small printed characters readable without a harsh halo.
+  const fin=octx.getImageData(0,0,w,h),fd=fin.data,sharpen=new Uint8ClampedArray(fd);
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      const p=(y*w+x)*4;
+      for(let c=0;c<3;c++){
+        const center=fd[p+c];
+        const avg=(fd[p-4+c]+fd[p+4+c]+fd[p-w*4+c]+fd[p+w*4+c])/4;
+        sharpen[p+c]=aoDocCamClamp(center+(center-avg)*0.42);
+      }
+      sharpen[p+3]=255;
+    }
+  }
+  octx.putImageData(new ImageData(sharpen,w,h),0,0);
+  return output;
+}
+
+async function aoDocCamCapture(){
+  if(aoDocCamBusy)return;
+  const video=document.getElementById("aoDocCamVideo"),preview=document.getElementById("aoDocCamPreview"),captureBtn=document.getElementById("aoDocCamCapture"),useBtn=document.getElementById("aoDocCamUse"),guide=document.getElementById("aoDocCamGuide"),hint=document.getElementById("aoDocCamHint");
+  if(!video||!preview)return;
+  if(video.videoWidth<2||video.videoHeight<2){aoDocCamSetStatus("Camera is still starting. Please try again.");return;}
+  aoDocCamBusy=true;
+  if(captureBtn){captureBtn.disabled=true;captureBtn.textContent="Processing…";}
+  aoDocCamSetStatus("Enhancing document: reducing shadows and sharpening text…");
+  try{
+    const canvas=document.createElement("canvas");
+    let w=video.videoWidth,h=video.videoHeight;
+    const max=2200,scale=Math.min(1,max/Math.max(w,h));
+    w=Math.max(1,Math.round(w*scale));h=Math.max(1,Math.round(h*scale));
+    canvas.width=w;canvas.height=h;
+    canvas.getContext("2d",{alpha:false}).drawImage(video,0,0,w,h);
+
+    const enhanced=await aoEnhanceDocumentCanvas(canvas);
+    preview.width=enhanced.width;preview.height=enhanced.height;
+    const pctx=preview.getContext("2d",{alpha:false});pctx.drawImage(enhanced,0,0);
+    preview.classList.add("show");video.classList.add("hide");
+    if(guide)guide.style.display="none";if(hint)hint.style.display="none";
+
+    const blob=await new Promise(resolve=>enhanced.toBlob(resolve,"image/jpeg",.88));
+    if(!blob)throw new Error("Unable to prepare the captured image.");
+    aoDocCamCapturedFile=new File([blob],"document-scan.jpg",{type:"image/jpeg",lastModified:Date.now()});
+    aoDocCamSetStatus("Document enhanced. Shadows reduced and text sharpened without strong brightness boost.");
+    if(captureBtn)captureBtn.hidden=true;
+    if(useBtn)useBtn.hidden=false;
+  }catch(err){
+    console.error("Document enhancement failed:",err);
+    aoDocCamSetStatus("Enhancement failed. You can retake the photo or use the normal camera.");
+    if(captureBtn){captureBtn.disabled=false;captureBtn.textContent="● Capture";}
+  }finally{
+    aoDocCamBusy=false;
+  }
+}
+
+function aoDocCamUsePhoto(){
+  const file=aoDocCamCapturedFile;
+  if(!file){aoDocCamSetStatus("No captured image is ready.");return;}
+  const handler=window.__aoChatHandleImageFile;
+  aoDocCamClose();
+  if(typeof handler==="function")handler(file);
+}
+
+(function aoInitDocumentCamera(){
+  function init(){
+    const close=document.getElementById("aoDocCamClose"),cancel=document.getElementById("aoDocCamCancel"),capture=document.getElementById("aoDocCamCapture"),use=document.getElementById("aoDocCamUse"),overlay=document.getElementById("aoDocCamOverlay");
+    if(!overlay||overlay.dataset.bound)return;
+    overlay.dataset.bound="1";
+    close?.addEventListener("click",aoDocCamClose);
+    cancel?.addEventListener("click",aoDocCamClose);
+    capture?.addEventListener("click",aoDocCamCapture);
+    use?.addEventListener("click",aoDocCamUsePhoto);
+    overlay.addEventListener("click",e=>{if(e.target===overlay)aoDocCamClose();});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("open"))aoDocCamClose();});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
 
 /* =========================================================
    NORMAL INVENTORY METHOD CHOOSER — ADDITIVE ONLY
