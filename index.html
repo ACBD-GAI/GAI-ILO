@@ -7902,261 +7902,27 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     }
 
     function aoChatNormalizeShadows(canvas,mode){
-      if(mode==='original')return;
-      const ctx=canvas.getContext('2d',{willReadFrequently:true});
-      if(!ctx)return;
-
-      /*
-         CAMSCANNER-STYLE DOCUMENT LIGHTING CORRECTION
-         -----------------------------------------------
-         The goal here is not to "brighten" the photo.  We estimate the
-         broad illumination field in log space, remove that field, then
-         rebuild a clean paper surface while preserving dark handwriting.
-
-         This is an imitation of the visible document-scan result seen in
-         the reference image, not CamScanner's proprietary source code.
-      */
-      const w=canvas.width,h=canvas.height;
-      const src=ctx.getImageData(0,0,w,h),d=src.data;
-
-      /* Low-resolution log illumination map. Fine text/lines disappear
-         during downsampling, while the phone shadow remains as a broad field. */
-      const mapMax=144;
-      const scale=Math.min(1,mapMax/Math.max(w,h));
-      const mw=Math.max(48,Math.round(w*scale));
-      const mh=Math.max(48,Math.round(h*scale));
-      const map=document.createElement('canvas');map.width=mw;map.height=mh;
-      const mctx=map.getContext('2d',{willReadFrequently:true});
-      mctx.imageSmoothingEnabled=true;
-      mctx.drawImage(canvas,0,0,mw,mh);
-      const md=mctx.getImageData(0,0,mw,mh).data;
-      const mp=mw*mh;
-      const logLum=new Float32Array(mp);
-      for(let i=0,p=0;p<mp;p++,i+=4){
-        const y=.299*md[i]+.587*md[i+1]+.114*md[i+2];
-        logLum[p]=Math.log(y+2);
-      }
-
-      function boxBlur(input,radius){
-        const ww=mw,hh=mh,stride=ww+1;
-        const integral=new Float32Array((hh+1)*stride);
-        for(let y=1;y<=hh;y++){
-          let row=0;
-          for(let x=1;x<=ww;x++){
-            row+=input[(y-1)*ww+x-1];
-            integral[y*stride+x]=integral[(y-1)*stride+x]+row;
-          }
-        }
-        const out=new Float32Array(ww*hh);
-        for(let y=0;y<hh;y++){
-          const y0=Math.max(0,y-radius),y1=Math.min(hh-1,y+radius);
-          for(let x=0;x<ww;x++){
-            const x0=Math.max(0,x-radius),x1=Math.min(ww-1,x+radius);
-            const A=integral[y0*stride+x0],B=integral[y0*stride+x1+1];
-            const C=integral[(y1+1)*stride+x0],E=integral[(y1+1)*stride+x1+1];
-            out[y*ww+x]=(E-B-C+A)/((x1-x0+1)*(y1-y0+1));
-          }
-        }
-        return out;
-      }
-
-      const broadRadius=Math.max(5,Math.round(Math.min(mw,mh)*.17));
-      let field=boxBlur(logLum,broadRadius);
-      field=boxBlur(field,Math.max(2,Math.round(broadRadius*.35)));
-
-      let fieldMin=Infinity,fieldMax=-Infinity,fieldSum=0;
-      for(let i=0;i<field.length;i++){fieldMin=Math.min(fieldMin,field[i]);fieldMax=Math.max(fieldMax,field[i]);fieldSum+=field[i];}
-      const fieldMean=fieldSum/Math.max(1,field.length);
-
-      /* Robust target: slightly brighter than the median illumination, but
-         still below the very brightest paper edge so highlights do not clip. */
-      const sorted=Array.from(field).sort((a,b)=>a-b);
-      const pick=p=>sorted[Math.max(0,Math.min(sorted.length-1,Math.round((sorted.length-1)*p)))];
-      const targetLog=Math.max(fieldMean,pick(.72));
-
-      function smoothstep(a,b,x){
-        const t=aoChatClamp((x-a)/Math.max(1e-6,b-a),0,1);
-        return t*t*(3-2*t);
-      }
-
-      function sampleMap(mapData,px,py){
-        const fx=aoChatClamp(px*(mw-1)/Math.max(1,w-1),0,mw-1);
-        const fy=aoChatClamp(py*(mh-1)/Math.max(1,h-1),0,mh-1);
-        const x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(mw-1,x0+1),y1=Math.min(mh-1,y0+1);
-        const tx=fx-x0,ty=fy-y0;
-        const a=mapData[y0*mw+x0],b=mapData[y0*mw+x1],c=mapData[y1*mw+x0],e=mapData[y1*mw+x1];
-        return a+(b-a)*tx+((c+(e-c)*tx)-(a+(b-a)*tx))*ty;
-      }
-
-      /*
-         First pass: remove the broad illumination/shadow field.
-         The correction is multiplicative in luminance (homomorphic style),
-         then blended according to local ink-vs-paper confidence so dark text
-         is not washed out.
-      */
-      for(let y=0;y<h;y++){
-        for(let x=0;x<w;x++){
-          const i=(y*w+x)*4;
-          const r=d[i],g=d[i+1],b=d[i+2];
-          const origY=.299*r+.587*g+.114*b;
-          const logY=Math.log(origY+2);
-          const bgLog=sampleMap(field,x,y);
-          const illuminationDelta=targetLog-bgLog;
-
-          /* If the pixel is much darker than its broad paper background, it is
-             likely printed/handwritten ink.  Keep more of that darkness. */
-          const inkDepth=Math.max(0,bgLog-logY);
-          const inkProtect=1-.78*smoothstep(.10,.50,inkDepth);
-
-          let corrected=Math.exp(logY+illuminationDelta)-2;
-          corrected=aoChatClamp(corrected,0,255);
-
-          /* Never darken; this stage is specifically for uneven illumination. */
-          const lifted=Math.max(0,corrected-origY)*inkProtect;
-          d[i]=aoChatClamp(r+lifted,0,255);
-          d[i+1]=aoChatClamp(g+lifted,0,255);
-          d[i+2]=aoChatClamp(b+lifted,0,255);
-        }
-      }
-
-      ctx.putImageData(src,0,0);
+      if(mode==='original')return;const ctx=canvas.getContext('2d',{willReadFrequently:true}),w=canvas.width,h=canvas.height,img=ctx.getImageData(0,0,w,h),d=img.data,pix=w*h,lum=new Uint8Array(pix),stride=w+1;
+      for(let i=0,p=0;p<pix;p++,i+=4)lum[p]=Math.max(0,Math.min(255,Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2])));
+      const integral=new Float64Array((h+1)*stride);for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=lum[(y-1)*w+x-1];integral[y*stride+x]=integral[(y-1)*stride+x]+row;}}
+      const radius=Math.max(18,Math.min(80,Math.round(Math.min(w,h)*.035))),target=mode==='bw'?244:(mode==='document'?238:232),strength=mode==='auto'?.78:1;
+      for(let y=0;y<h;y++){const y0=Math.max(0,y-radius),y1=Math.min(h-1,y+radius);for(let x=0;x<w;x++){const x0=Math.max(0,x-radius),x1=Math.min(w-1,x+radius),A=integral[y0*stride+x0],B=integral[y0*stride+x1+1],C=integral[(y1+1)*stride+x0],D=integral[(y1+1)*stride+x1+1],mean=(D-B-C+A)/((x1-x0+1)*(y1-y0+1)),i=(y*w+x)*4,yv=lum[y*w+x];
+          // Shadow removal is additive instead of proportional: it lifts the
+          // dark side of an unevenly lit sheet without washing the ink away.
+          const correction=aoChatClamp((target-mean)*strength,-35,120);
+          d[i]=aoChatClamp(d[i]+correction,0,255);d[i+1]=aoChatClamp(d[i+1]+correction,0,255);d[i+2]=aoChatClamp(d[i+2]+correction,0,255);
+        }}
+      ctx.putImageData(img,0,0);
     }
 
     function aoChatEnhanceCanvas(sourceCanvas,mode){
-      const ctx=sourceCanvas.getContext('2d',{willReadFrequently:true});
-      if(!ctx || mode==='original') return;
-
-      /* ==========================================================
-         CAMSCANNER-LIKE CLEAN B&W DOCUMENT MODE
-         Goal: white paper + black text.
-         The key operation is illumination normalization BEFORE
-         thresholding. A phone shadow darkens both the pixel and its
-         broad local background, so their ratio stays close to white.
-         ========================================================== */
-
-      const w=sourceCanvas.width,h=sourceCanvas.height;
-      const img=ctx.getImageData(0,0,w,h),d=img.data;
-
-      /* Build a compact grayscale image for broad illumination estimation.
-         Fine text disappears here, while phone/table shadows remain. */
-      const maxSide=220;
-      const scale=Math.min(1,maxSide/Math.max(w,h));
-      const sw=Math.max(48,Math.round(w*scale));
-      const sh=Math.max(48,Math.round(h*scale));
-      const small=document.createElement('canvas');
-      small.width=sw; small.height=sh;
-      const sctx=small.getContext('2d',{willReadFrequently:true});
-      sctx.drawImage(sourceCanvas,0,0,sw,sh);
-      const sd=sctx.getImageData(0,0,sw,sh).data;
-      const count=sw*sh;
-      const lum=new Float32Array(count);
-      for(let i=0,p=0;p<count;p++,i+=4){
-        lum[p]=.299*sd[i]+.587*sd[i+1]+.114*sd[i+2];
-      }
-
-      function boxBlur(input,radius){
-        const ww=sw,hh=sh,stride=ww+1;
-        const integral=new Float32Array((hh+1)*stride);
-        for(let y=1;y<=hh;y++){
-          let row=0;
-          for(let x=1;x<=ww;x++){
-            row += input[(y-1)*ww+x-1];
-            integral[y*stride+x]=integral[(y-1)*stride+x]+row;
-          }
-        }
-        const out=new Float32Array(ww*hh);
-        for(let y=0;y<hh;y++){
-          const y0=Math.max(0,y-radius),y1=Math.min(hh-1,y+radius);
-          for(let x=0;x<ww;x++){
-            const x0=Math.max(0,x-radius),x1=Math.min(ww-1,x+radius);
-            const A=integral[y0*stride+x0],
-                  B=integral[y0*stride+x1+1],
-                  C=integral[(y1+1)*stride+x0],
-                  E=integral[(y1+1)*stride+x1+1];
-            out[y*ww+x]=(E-B-C+A)/((x1-x0+1)*(y1-y0+1));
-          }
-        }
-        return out;
-      }
-
-      /* Large blur = paper illumination field. Two passes reduce the
-         influence of the phone edge while keeping the actual page content. */
-      const broadRadius=Math.max(6,Math.round(Math.min(sw,sh)*0.16));
-      let field=boxBlur(lum,broadRadius);
-      field=boxBlur(field,Math.max(3,Math.round(broadRadius*0.45)));
-
-      function sampleField(px,py){
-        const fx=aoChatClamp(px*(sw-1)/Math.max(1,w-1),0,sw-1);
-        const fy=aoChatClamp(py*(sh-1)/Math.max(1,h-1),0,sh-1);
-        const x0=Math.floor(fx),y0=Math.floor(fy);
-        const x1=Math.min(sw-1,x0+1),y1=Math.min(sh-1,y0+1);
-        const tx=fx-x0,ty=fy-y0;
-        const a=field[y0*sw+x0],b=field[y0*sw+x1],c=field[y1*sw+x0],e=field[y1*sw+x1];
-        return a+(b-a)*tx+((c+(e-c)*tx)-(a+(b-a)*tx))*ty;
-      }
-
-      /* First estimate normalized document brightness.
-         A shadow may be dark in the photo, but it also darkens the broad
-         background estimate. Dividing by that estimate removes the shadow. */
-      const normalized=new Uint8Array(w*h);
-      let sampleSum=0,sampleN=0;
-      const step=Math.max(1,Math.floor(Math.sqrt((w*h)/180000)));
-      for(let y=0;y<h;y+=step){
-        for(let x=0;x<w;x+=step){
-          const i=(y*w+x)*4;
-          const yv=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-          const bg=Math.max(30,sampleField(x,y));
-          const n=aoChatClamp((yv/bg)*255,0,255);
-          sampleSum+=n; sampleN++;
-        }
-      }
-
-      /* Threshold is intentionally high: after illumination normalization,
-         true paper sits near 255 while handwriting/print stays much lower. */
-      const meanNorm=sampleSum/Math.max(1,sampleN);
-      let threshold=218;
-      if(mode==='bw') threshold=224;
-      else if(mode==='document') threshold=216;
-      else if(meanNorm<190) threshold=210;
-
-      /* Produce a true two-tone document: 255 paper, 0 ink.
-         This is the step that removes the visible phone shadow instead of
-         merely brightening it. */
-      const binary=new Uint8Array(w*h);
-      for(let y=0,p=0;y<h;y++){
-        for(let x=0;x<w;x++,p++){
-          const i=p*4;
-          const yv=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-          const bg=Math.max(30,sampleField(x,y));
-          let n=aoChatClamp((yv/bg)*255,0,255);
-          /* Slight local dark-ink bias improves thin handwritten strokes. */
-          const inkBoost=Math.max(0,255-n);
-          n=aoChatClamp(n-inkBoost*0.08,0,255);
-          binary[p]=(n<threshold)?0:255;
-        }
-      }
-
-      /* Tiny 3x3 cleanup removes isolated sensor noise without noticeably
-         eating normal handwriting. */
-      const cleaned=new Uint8Array(binary);
-      for(let y=1;y<h-1;y++){
-        for(let x=1;x<w-1;x++){
-          const p=y*w+x;
-          let black=0;
-          for(let yy=-1;yy<=1;yy++){
-            for(let xx=-1;xx<=1;xx++){
-              if(binary[(y+yy)*w+(x+xx)]===0) black++;
-            }
-          }
-          if(binary[p]===0 && black<=1) cleaned[p]=255;
-        }
-      }
-
-      for(let p=0,i=0;p<cleaned.length;p++,i+=4){
-        const v=cleaned[p];
-        d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=255;
-      }
-      ctx.putImageData(img,0,0);
+      const ctx=sourceCanvas.getContext('2d',{willReadFrequently:true});if(!ctx||mode==='original')return;aoChatNormalizeShadows(sourceCanvas,mode);const w=sourceCanvas.width,h=sourceCanvas.height,img=ctx.getImageData(0,0,w,h),d=img.data;
+      let min=255,max=0;for(let i=0;i<d.length;i+=4){const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];min=Math.min(min,y);max=Math.max(max,y);}const span=Math.max(35,max-min),documentMode=mode==='document',bwMode=mode==='bw',contrast=documentMode?1.34:(bwMode?1.22:1.12),paper=documentMode||bwMode;
+      for(let i=0;i<d.length;i+=4){let r=d[i],g=d[i+1],b=d[i+2],y=.299*r+.587*g+.114*b,q=aoChatClamp((y-min)/span,0,1);q=aoChatClamp((q-.5)*contrast+.5,0,1);const target=q*255,delta=target-y;r=aoChatClamp(r+delta,0,255);g=aoChatClamp(g+delta,0,255);b=aoChatClamp(b+delta,0,255);if(paper){const yy=.299*r+.587*g+.114*b,sat=Math.max(r,g,b)-Math.min(r,g,b);if(yy>145){const wht=aoChatClamp((yy-145)/110,0,1);r+=(255-r)*wht*.52;g+=(255-g)*wht*.52;b+=(255-b)*wht*.52;}if(sat<65){const k=aoChatClamp((yy-125)/120,0,1)*.22;r+=(255-r)*k;g+=(255-g)*k;b+=(255-b)*k;}}if(bwMode){const yy=.299*r+.587*g+.114*b;r=g=b=yy>150?255:Math.max(0,yy*.25);}d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=255;}
+      ctx.putImageData(img,0,0);const src=ctx.getImageData(0,0,w,h),sd=src.data,out=ctx.createImageData(w,h),od=out.data,amount=bwMode?.46:(documentMode?.40:.20);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(x===0||y===0||x===w-1||y===h-1){od[i]=sd[i];od[i+1]=sd[i+1];od[i+2]=sd[i+2];od[i+3]=255;continue;}const L=(y*w+x-1)*4,R=(y*w+x+1)*4,U=((y-1)*w+x)*4,D=((y+1)*w+x)*4;for(let c=0;c<3;c++)od[i+c]=aoChatClamp(sd[i+c]+amount*(4*sd[i+c]-sd[L+c]-sd[R+c]-sd[U+c]-sd[D+c]),0,255);od[i+3]=255;}
+      ctx.putImageData(out,0,0);
+      if(bwMode){const base=ctx.getImageData(0,0,w,h),bd=base.data,lum=new Uint8Array(w*h);for(let i=0,p=0;p<lum.length;p++,i+=4)lum[p]=.299*bd[i]+.587*bd[i+1]+.114*bd[i+2];const stride=w+1,integral=new Uint32Array((h+1)*stride);for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=lum[(y-1)*w+x-1];integral[y*stride+x]=integral[(y-1)*stride+x]+row;}}const bw=ctx.createImageData(w,h),q=bw.data,rad=Math.max(8,Math.min(22,Math.round(Math.min(w,h)/120)));for(let y=0,p=0,i=0;y<h;y++)for(let x=0;x<w;x++,p++,i+=4){const x0=Math.max(0,x-rad),x1=Math.min(w-1,x+rad),y0=Math.max(0,y-rad),y1=Math.min(h-1,y+rad),A=integral[y0*stride+x0],B=integral[y0*stride+x1+1],C=integral[(y1+1)*stride+x0],E=integral[(y1+1)*stride+x1+1],mean=(E-B-C+A)/((x1-x0+1)*(y1-y0+1));q[i]=q[i+1]=q[i+2]=lum[p]>mean-7?255:0;q[i+3]=255;}ctx.putImageData(bw,0,0);}
     }
 
     function aoChatUpdateBorderOverlay(preview,canvas,points){
