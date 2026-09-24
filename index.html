@@ -2402,41 +2402,6 @@ input:focus-visible{
 .ao-chat-attach-menu[hidden]{display:none !important}
 .ao-chat-attach-menu button{min-height:38px;padding:7px 10px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#374151;font-size:12px;cursor:pointer;box-shadow:none;white-space:nowrap}
 .ao-chat-attach-menu button:hover{background:#f3f4f6;transform:none}
-
-/* =========================================================
-   📷 CAMSCANNER-STYLE CHAT DOCUMENT CAMERA
-   Additive only — affects the Chat Capture path.
-   Upload / send / storage logic remains unchanged.
-========================================================= */
-.ao-doccam-overlay{position:fixed;inset:0;z-index:120000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(8,15,28,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.ao-doccam-overlay.open{display:flex}
-.ao-doccam-card{width:min(680px,96vw);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;background:#0f172a;border:1px solid rgba(255,255,255,.14);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.45)}
-.ao-doccam-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;color:#fff;background:#111827}
-.ao-doccam-title{font-size:15px;font-weight:900}.ao-doccam-sub{margin-top:2px;font-size:10px;color:#cbd5e1}
-.ao-doccam-close{width:36px!important;min-width:36px!important;height:36px;min-height:36px!important;padding:0!important;border:1px solid rgba(255,255,255,.15)!important;border-radius:10px!important;background:rgba(255,255,255,.08)!important;color:#fff!important;font-size:18px!important;box-shadow:none!important}
-.ao-doccam-stage{position:relative;display:flex;align-items:center;justify-content:center;min-height:260px;background:#020617;overflow:hidden}
-.ao-doccam-video{display:block;width:100%;height:auto;max-height:68vh;object-fit:contain;background:#020617}
-.ao-doccam-guide{position:absolute;left:8%;right:8%;top:10%;bottom:10%;border:2px solid rgba(255,255,255,.82);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.10),0 0 24px rgba(56,189,248,.18);pointer-events:none}
-.ao-doccam-guide:before,.ao-doccam-guide:after{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none}
-.ao-doccam-guide:before{border-left:4px solid #38bdf8;border-right:4px solid #38bdf8;clip-path:inset(0 0 88% 0)}
-.ao-doccam-guide:after{border-top:4px solid #38bdf8;border-bottom:4px solid #38bdf8;clip-path:inset(0 88% 0 0)}
-.ao-doccam-hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:6px 10px;border-radius:999px;background:rgba(15,23,42,.72);color:#fff;font-size:10px;font-weight:700;white-space:nowrap;backdrop-filter:blur(8px)}
-.ao-doccam-preview{display:none;width:100%;height:auto;max-height:68vh;object-fit:contain;background:#020617}
-.ao-doccam-preview.show{display:block}.ao-doccam-video.hide{display:none}
-.ao-doccam-controls{padding:10px 14px 4px;background:#111827;border-top:1px solid rgba(255,255,255,.06)}
-.ao-doccam-adjust-title{color:#f8fafc;font-size:11px;font-weight:900;margin-bottom:8px}
-.ao-doccam-adjust-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
-.ao-doccam-adjust{display:block;padding:7px 9px;border:1px solid rgba(255,255,255,.08);border-radius:11px;background:rgba(255,255,255,.045);color:#e2e8f0}
-.ao-doccam-adjust span{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;margin-bottom:5px}
-.ao-doccam-adjust output{color:#93c5fd;font-weight:900;min-width:36px;text-align:right}
-.ao-doccam-adjust input{width:100%;height:22px;margin:0;padding:0;accent-color:#38bdf8;cursor:pointer}
-.ao-doccam-reset{width:auto!important;min-height:30px!important;margin-top:8px;padding:5px 10px!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:9px!important;background:#1e293b!important;color:#cbd5e1!important;font-size:10px!important;box-shadow:none!important}
-.ao-doccam-status{min-height:22px;padding:8px 14px 0;color:#cbd5e1;font-size:10px;text-align:center}
-.ao-doccam-actions{display:flex;gap:8px;padding:12px 14px;background:#111827}
-.ao-doccam-actions button{flex:1;min-height:44px;border-radius:12px;font-size:12px;font-weight:900}
-.ao-doccam-cancel{background:#334155!important;color:#fff!important}.ao-doccam-capture{background:linear-gradient(135deg,#38bdf8,#2563eb)!important;color:#fff!important;box-shadow:0 8px 22px rgba(37,99,235,.28)!important}
-.ao-doccam-use{background:linear-gradient(135deg,#34d399,#16a34a)!important;color:#fff!important;box-shadow:0 8px 22px rgba(34,197,94,.22)!important}
-@media(max-width:600px){.ao-doccam-overlay{padding:8px}.ao-doccam-card{width:100%;max-height:96vh;border-radius:18px}.ao-doccam-guide{left:5%;right:5%;top:7%;bottom:7%}.ao-doccam-adjust-grid{grid-template-columns:1fr}.ao-doccam-actions{padding:10px}.ao-doccam-actions button{min-height:46px}}
 @media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}.ao-chat-emoji-picker{right:4px;bottom:58px;width:min(300px,calc(100vw - 28px));grid-template-columns:repeat(7,1fr)}}
 
 </style>
@@ -7667,38 +7632,6 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
-<!-- CAMSCANNER-STYLE DOCUMENT CAMERA: additive chat feature only -->
-<div id="aoDocCamOverlay" class="ao-doccam-overlay" aria-hidden="true">
-  <div class="ao-doccam-card" role="dialog" aria-modal="true" aria-label="Document camera">
-    <div class="ao-doccam-head">
-      <div><div class="ao-doccam-title">📷 Scan Document</div><div class="ao-doccam-sub">Hold the document flat inside the frame</div></div>
-      <button id="aoDocCamClose" class="ao-doccam-close" type="button" aria-label="Close camera">✕</button>
-    </div>
-    <div class="ao-doccam-stage">
-      <video id="aoDocCamVideo" class="ao-doccam-video" autoplay playsinline muted></video>
-      <canvas id="aoDocCamPreview" class="ao-doccam-preview"></canvas>
-      <div id="aoDocCamGuide" class="ao-doccam-guide"></div>
-      <div id="aoDocCamHint" class="ao-doccam-hint">Keep all document edges inside the frame</div>
-    </div>
-    <div id="aoDocCamControls" class="ao-doccam-controls" hidden>
-      <div class="ao-doccam-adjust-title">🎚 Adjust photo before sending</div>
-      <div class="ao-doccam-adjust-grid">
-        <label class="ao-doccam-adjust"><span><b>Brightness</b><output id="aoDocCamBrightnessValue">0</output></span><input id="aoDocCamBrightness" type="range" min="-30" max="30" step="1" value="0"></label>
-        <label class="ao-doccam-adjust"><span><b>Contrast</b><output id="aoDocCamContrastValue">100%</output></span><input id="aoDocCamContrast" type="range" min="85" max="125" step="1" value="100"></label>
-        <label class="ao-doccam-adjust"><span><b>Shadow</b><output id="aoDocCamShadowValue">35%</output></span><input id="aoDocCamShadow" type="range" min="0" max="100" step="1" value="35"></label>
-        <label class="ao-doccam-adjust"><span><b>Sharpness</b><output id="aoDocCamSharpnessValue">25%</output></span><input id="aoDocCamSharpness" type="range" min="0" max="100" step="1" value="25"></label>
-      </div>
-      <button id="aoDocCamReset" class="ao-doccam-reset" type="button">↺ Reset</button>
-    </div>
-    <div id="aoDocCamStatus" class="ao-doccam-status">Capture first, then adjust the photo to your eyes.</div>
-    <div class="ao-doccam-actions">
-      <button id="aoDocCamCancel" class="ao-doccam-cancel" type="button">Cancel</button>
-      <button id="aoDocCamCapture" class="ao-doccam-capture" type="button">● Capture</button>
-      <button id="aoDocCamUse" class="ao-doccam-use" type="button" hidden>✓ Use Photo</button>
-    </div>
-  </div>
-</div>
-
 <script id="aoChatEmojiScript">
 (function(){
   const emojis=["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😍","🥰","😘","😋","😛","😜","🤪","🤨","🤓","😎","🤩","🥳","😏","😞","😔","😟","😕","🙁","😣","😫","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","😱","😨","😰","🤗","🤔","🫡","🤭","🤫","😶","😐","😬","🙄","😮","😲","🥱","😴","🤢","🤮","🤧","😷","❤️","🧡","💛","💚","💙","💜","🖤","🤍","💯","🔥","👍","👎","👏","🙌","🙏","👌","✌️","🤝","💪","🎉","🎊","⭐","✨","💡","✅","❌","⚠️","❗","❓","💬","📌","🚀"];
@@ -7731,9 +7664,8 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       aoChatStatus("");
       if(attachMenu)attachMenu.hidden=true;
     }
-    window.__aoChatHandleImageFile=handleChatImageFile;
     attach?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=!attachMenu.hidden;});
-    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;aoOpenDocumentCamera();});
+    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;captureInput?.click();});
     attachMenu?.querySelector("[data-ao-chat-upload]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;imageInput?.click();});
     imageInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
     captureInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
@@ -7744,286 +7676,359 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 })();
 
 
-
 /* =========================================================
-   📷 CAMSCANNER-STYLE CHAT DOCUMENT CAMERA
-   Capture path only. Existing upload/send/storage functions are preserved.
-   Adjustable quality controls: brightness, contrast, shadow, sharpness.
+   NORMAL INVENTORY METHOD CHOOSER — ADDITIVE ONLY
+   Existing toggleScan() and searchTagNumber() remain unchanged.
 ========================================================= */
-let aoDocCamStream=null;
-let aoDocCamCapturedCanvas=null;
-let aoDocCamCapturedFile=null;
-let aoDocCamBusy=false;
-let aoDocCamPreviewTimer=null;
-const AO_DOC_CAM_DEFAULTS={brightness:0,contrast:100,shadow:35,sharpness:25};
-
-function aoDocCamSetStatus(text){
-  const el=document.getElementById("aoDocCamStatus");
-  if(el)el.textContent=text||"";
-}
-
-function aoDocCamClamp(v){return v<0?0:(v>255?255:v);}
-
-function aoDocCamStopStream(){
-  if(aoDocCamStream){
-    aoDocCamStream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});
-    aoDocCamStream=null;
-  }
-}
-
-function aoDocCamGetSettings(){
-  const n=id=>Number(document.getElementById(id)?.value||0);
-  return {brightness:n("aoDocCamBrightness"),contrast:n("aoDocCamContrast"),shadow:n("aoDocCamShadow"),sharpness:n("aoDocCamSharpness")};
-}
-
-function aoDocCamSetSettings(v){
-  const s={...AO_DOC_CAM_DEFAULTS,...(v||{})};
-  const set=(id,val)=>{const e=document.getElementById(id);if(e)e.value=String(val);};
-  set("aoDocCamBrightness",s.brightness);set("aoDocCamContrast",s.contrast);set("aoDocCamShadow",s.shadow);set("aoDocCamSharpness",s.sharpness);
-  aoDocCamUpdateValueLabels();
-}
-
-function aoDocCamUpdateValueLabels(){
-  const s=aoDocCamGetSettings();
-  const b=document.getElementById("aoDocCamBrightnessValue"),c=document.getElementById("aoDocCamContrastValue"),sh=document.getElementById("aoDocCamShadowValue"),sp=document.getElementById("aoDocCamSharpnessValue");
-  if(b)b.textContent=(s.brightness>0?"+":"")+s.brightness;
-  if(c)c.textContent=s.contrast+"%";
-  if(sh)sh.textContent=s.shadow+"%";
-  if(sp)sp.textContent=s.sharpness+"%";
-}
-
-function aoDocCamClose(){
-  aoDocCamStopStream();
-  aoDocCamBusy=false;
-  aoDocCamCapturedCanvas=null;
-  aoDocCamCapturedFile=null;
-  if(aoDocCamPreviewTimer)cancelAnimationFrame(aoDocCamPreviewTimer);
-  aoDocCamPreviewTimer=null;
-  const overlay=document.getElementById("aoDocCamOverlay");
-  const video=document.getElementById("aoDocCamVideo");
-  const preview=document.getElementById("aoDocCamPreview");
-  const guide=document.getElementById("aoDocCamGuide");
-  const hint=document.getElementById("aoDocCamHint");
-  const controls=document.getElementById("aoDocCamControls");
-  const useBtn=document.getElementById("aoDocCamUse");
-  const captureBtn=document.getElementById("aoDocCamCapture");
-  if(video){video.pause();video.srcObject=null;video.classList.remove("hide");}
-  if(preview){preview.classList.remove("show");preview.removeAttribute("width");preview.removeAttribute("height");preview.getContext?.("2d")?.clearRect(0,0,preview.width,preview.height);}
-  if(guide)guide.style.display="";
-  if(hint)hint.style.display="";
-  if(controls)controls.hidden=true;
-  if(useBtn)useBtn.hidden=true;
-  if(captureBtn){captureBtn.hidden=false;captureBtn.disabled=false;captureBtn.textContent="● Capture";}
-  aoDocCamSetSettings(AO_DOC_CAM_DEFAULTS);
-  if(overlay){overlay.classList.remove("open");overlay.setAttribute("aria-hidden","true");}
-}
-
-function aoOpenDocumentCamera(){
-  const overlay=document.getElementById("aoDocCamOverlay");
-  const video=document.getElementById("aoDocCamVideo");
-  const captureInput=document.getElementById("aoChatCaptureInput");
-  if(!overlay||!video){captureInput?.click();return;}
-  overlay.classList.add("open");
-  overlay.setAttribute("aria-hidden","false");
-  aoDocCamSetSettings(AO_DOC_CAM_DEFAULTS);
-  aoDocCamSetStatus("Starting camera…");
-  if(!navigator.mediaDevices?.getUserMedia){
-    aoDocCamSetStatus("Camera preview is not available here. Opening the device camera instead…");
-    setTimeout(()=>{aoDocCamClose();captureInput?.click();},250);
+function openNormalInventoryChooser(){
+  if(typeof isScanning !== "undefined" && isScanning){
+    // Preserve the existing STOP SCANNING behavior when already scanning.
+    toggleScan();
     return;
   }
-  aoDocCamStartCamera().catch(err=>{
-    console.warn("Document camera unavailable:",err);
-    aoDocCamSetStatus("Camera permission was unavailable. Opening the normal camera instead…");
-    setTimeout(()=>{aoDocCamClose();captureInput?.click();},350);
-  });
-}
-
-async function aoDocCamStartCamera(){
-  const video=document.getElementById("aoDocCamVideo");
-  if(!video)throw new Error("Camera element not found.");
-  aoDocCamStopStream();
-  aoDocCamStream=await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:{ideal:"environment"},width:{ideal:2560,min:1280},height:{ideal:1440,min:720},frameRate:{ideal:30,max:30}},
-    audio:false
-  });
-  video.srcObject=aoDocCamStream;
-  await video.play();
-  aoDocCamSetStatus("Ready. Capture first, then use the sliders to make the document comfortable to read.");
-}
-
-function aoDocCamSourceCanvasForPreview(sourceCanvas){
-  const maxPreview=1800;
-  const scale=Math.min(1,maxPreview/Math.max(sourceCanvas.width,sourceCanvas.height));
-  const c=document.createElement("canvas");
-  c.width=Math.max(1,Math.round(sourceCanvas.width*scale));
-  c.height=Math.max(1,Math.round(sourceCanvas.height*scale));
-  const ctx=c.getContext("2d",{alpha:false});
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-  ctx.drawImage(sourceCanvas,0,0,c.width,c.height);
-  return c;
-}
-
-async function aoEnhanceDocumentCanvas(sourceCanvas,settings){
-  const sw=sourceCanvas.width,sh=sourceCanvas.height;
-  const maxDim=3600;
-  const scale=Math.min(1,maxDim/Math.max(sw,sh));
-  const w=Math.max(1,Math.round(sw*scale)),h=Math.max(1,Math.round(sh*scale));
-  const src=document.createElement("canvas");src.width=w;src.height=h;
-  const sctx=src.getContext("2d",{willReadFrequently:true,alpha:false});
-  sctx.imageSmoothingEnabled=true;sctx.imageSmoothingQuality="high";
-  sctx.drawImage(sourceCanvas,0,0,w,h);
-  const image=sctx.getImageData(0,0,w,h),data=image.data;
-  const out=new Uint8ClampedArray(data.length);
-
-  const shadowAmt=Math.max(0,Math.min(100,Number(settings.shadow)||0))/100;
-  const brightness=Number(settings.brightness)||0;
-  const contrast=Math.max(0.85,Math.min(1.25,(Number(settings.contrast)||100)/100));
-  const sharpAmt=Math.max(0,Math.min(100,Number(settings.sharpness)||0))/100;
-
-  /* Broad, smooth luminance map for gentle shadow lifting. */
-  const bw=Math.max(32,Math.round(w/30)),bh=Math.max(32,Math.round(h/30));
-  const bg=document.createElement("canvas");bg.width=bw;bg.height=bh;
-  const bctx=bg.getContext("2d",{willReadFrequently:true,alpha:false});
-  bctx.imageSmoothingEnabled=true;bctx.imageSmoothingQuality="high";bctx.drawImage(src,0,0,bw,bh);
-  const bgData=bctx.getImageData(0,0,bw,bh).data;
-  const cellLum=new Float32Array(bw*bh);
-  for(let i=0,j=0;i<bgData.length;i+=4,j++)cellLum[j]=0.299*bgData[i]+0.587*bgData[i+1]+0.114*bgData[i+2];
-  const smooth=new Float32Array(cellLum.length);
-  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
-    let sum=0,count=0;
-    for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=bh)continue;for(let dx=-1;dx<=1;dx++){const xx=x+dx;if(xx<0||xx>=bw)continue;sum+=cellLum[yy*bw+xx];count++;}}
-    smooth[y*bw+x]=sum/count;
+  if(typeof auditScanning !== "undefined" && auditScanning){
+    showProNotification("Stop Re-Inventory before using Inventory.","Re-Inventory Busy","⚠️");
+    return;
   }
-
-  for(let y=0;y<h;y++){
-    const gy=(y+0.5)*bh/h-0.5,y0=Math.max(0,Math.floor(gy)),y1=Math.min(bh-1,y0+1),ty=Math.max(0,gy-y0);
-    for(let x=0;x<w;x++){
-      const gx=(x+0.5)*bw/w-0.5,x0=Math.max(0,Math.floor(gx)),x1=Math.min(bw-1,x0+1),tx=Math.max(0,gx-x0);
-      const b00=smooth[y0*bw+x0],b10=smooth[y0*bw+x1],b01=smooth[y1*bw+x0],b11=smooth[y1*bw+x1];
-      const bgv=(b00+(b10-b00)*tx)+((b01-b00)+(b11-b10-b01+b00)*tx)*ty;
-      const p=(y*w+x)*4,r=data[p],g=data[p+1],b=data[p+2],lum=0.299*r+0.587*g+0.114*b;
-      const shadowDeficit=Math.max(0,205-bgv);
-      const shadowLift=Math.min(34,shadowDeficit*0.42*shadowAmt);
-      let corrected=lum+shadowLift+brightness*1.35;
-      corrected=128+(corrected-128)*contrast;
-      corrected=aoDocCamClamp(corrected);
-      const colorKeep=.76;
-      out[p]=aoDocCamClamp(corrected+(r-lum)*colorKeep);
-      out[p+1]=aoDocCamClamp(corrected+(g-lum)*colorKeep);
-      out[p+2]=aoDocCamClamp(corrected+(b-lum)*colorKeep);
-      out[p+3]=255;
-    }
-  }
-
-  const output=document.createElement("canvas");output.width=w;output.height=h;
-  const octx=output.getContext("2d",{willReadFrequently:true,alpha:false});
-  octx.putImageData(new ImageData(out,w,h),0,0);
-
-  if(sharpAmt>0){
-    const fin=octx.getImageData(0,0,w,h),fd=fin.data,sharpen=new Uint8ClampedArray(fd);
-    const amount=0.02+sharpAmt*0.24;
-    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
-      const p=(y*w+x)*4;
-      for(let c=0;c<3;c++){
-        const center=fd[p+c];
-        const avg=(fd[p-4+c]+fd[p+4+c]+fd[p-w*4+c]+fd[p+w*4+c])/4;
-        sharpen[p+c]=aoDocCamClamp(center+(center-avg)*amount);
-      }
-      sharpen[p+3]=255;
-    }
-    octx.putImageData(new ImageData(sharpen,w,h),0,0);
-  }
-  return output;
+  const modal=document.getElementById("normalInventoryChooser");
+  if(!modal) return;
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
 }
 
-async function aoDocCamRenderPreview(){
-  if(!aoDocCamCapturedCanvas)return;
-  const preview=document.getElementById("aoDocCamPreview");
-  if(!preview)return;
-  if(aoDocCamPreviewTimer)cancelAnimationFrame(aoDocCamPreviewTimer);
-  aoDocCamPreviewTimer=requestAnimationFrame(async()=>{
-    aoDocCamPreviewTimer=null;
-    try{
-      const source=aoDocCamSourceCanvasForPreview(aoDocCamCapturedCanvas);
-      const enhanced=await aoEnhanceDocumentCanvas(source,aoDocCamGetSettings());
-      preview.width=enhanced.width;preview.height=enhanced.height;
-      const ctx=preview.getContext("2d",{alpha:false});ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.drawImage(enhanced,0,0,preview.width,preview.height);
-    }catch(err){console.error("Document preview adjustment failed:",err);}
-  });
+function closeNormalInventoryChooser(){
+  const modal=document.getElementById("normalInventoryChooser");
+  if(modal){
+    modal.style.display="none";
+    modal.setAttribute("aria-hidden","true");
+  }
 }
 
-async function aoDocCamCapture(){
-  if(aoDocCamBusy)return;
-  const video=document.getElementById("aoDocCamVideo"),preview=document.getElementById("aoDocCamPreview"),captureBtn=document.getElementById("aoDocCamCapture"),useBtn=document.getElementById("aoDocCamUse"),guide=document.getElementById("aoDocCamGuide"),hint=document.getElementById("aoDocCamHint"),controls=document.getElementById("aoDocCamControls");
-  if(!video||!preview)return;
-  if(video.videoWidth<2||video.videoHeight<2){aoDocCamSetStatus("Camera is still starting. Please try again.");return;}
-  aoDocCamBusy=true;
-  if(captureBtn){captureBtn.disabled=true;captureBtn.textContent="Capturing…";}
+(function initNormalInventoryChooserBackdrop(){
+  const init=()=>{
+    const modal=document.getElementById("normalInventoryChooser");
+    if(!modal || modal.dataset.bound==="1") return;
+    modal.dataset.bound="1";
+    modal.addEventListener("click",event=>{
+      if(event.target===modal) closeNormalInventoryChooser();
+    });
+  };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
+  else init();
+})();
+
+async function startNormalInventoryScanChoice(){
+  closeNormalInventoryChooser();
+  await toggleScan();
+}
+
+function startNormalInventoryTagChoice(){
+  closeNormalInventoryChooser();
+  showTagDialog();
+}
+
+/* =========================================================
+   REQUEST FOR PULL OUT — ADDITIVE FEATURE ONLY
+   No existing scanner functions are replaced.
+========================================================= */
+let pullOutRequestScanner = null;
+let pullOutRequestBusy = false;
+let pullOutRequestPendingStock = null;
+
+function pullOutRequestEsc(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function pullOutRequestSetArea(area){
+  const chooser=document.getElementById("pullOutRequestChooser");
+  const scan=document.getElementById("pullOutRequestScanArea");
+  const tag=document.getElementById("pullOutRequestTagArea");
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(chooser) chooser.style.display=area==="chooser"?"grid":"none";
+  if(scan) scan.style.display=area==="scan"?"block":"none";
+  if(tag) tag.style.display=area==="tag"?"block":"none";
+  if(preview && area!=="preview") preview.style.display="none";
+}
+
+function openPullOutRequest(){
+  if(pullOutRequestBusy) return;
+  if(typeof stopNormalScanner === "function" && isScanning){
+    showProNotification("Stop the normal scanner before requesting a pull out.","Scanner Busy","⚠️");
+    return;
+  }
+  if(typeof auditScanning !== "undefined" && auditScanning){
+    showProNotification("Stop Re-Inventory before requesting a pull out.","Re-Inventory Busy","⚠️");
+    return;
+  }
+  const modal=document.getElementById("pullOutRequestDialog");
+  if(!modal) return;
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
+  pullOutRequestPendingStock=null;
+  const tagInput=document.getElementById("pullOutRequestTagInput");
+  if(tagInput) tagInput.value="";
+  pullOutRequestSetArea("chooser");
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+}
+
+async function closePullOutRequest(){
+  await stopPullOutRequestScanner();
+  const modal=document.getElementById("pullOutRequestDialog");
+  if(modal){
+    modal.style.display="none";
+    modal.setAttribute("aria-hidden","true");
+  }
+  pullOutRequestPendingStock=null;
+  pullOutRequestBusy=false;
+}
+
+async function returnPullOutRequestChooser(){
+  await stopPullOutRequestScanner();
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("chooser");
+}
+
+async function startPullOutRequestScan(){
+  const required = await requireSupabaseAccess();
+  if(!required) return;
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("scan");
+  const reader=document.getElementById("pullOutRequestReader");
+  if(!reader) return;
+  reader.innerHTML="";
+
   try{
-    const canvas=document.createElement("canvas");
-    const w=video.videoWidth,h=video.videoHeight;
-    canvas.width=w;canvas.height=h;
-    const cctx=canvas.getContext("2d",{alpha:false,desynchronized:true});
-    cctx.imageSmoothingEnabled=false;cctx.drawImage(video,0,0,w,h);
-    aoDocCamCapturedCanvas=canvas;
-    aoDocCamCapturedFile=null;
-    preview.classList.add("show");video.classList.add("hide");
-    if(guide)guide.style.display="none";if(hint)hint.style.display="none";
-    if(controls)controls.hidden=false;
-    if(captureBtn)captureBtn.hidden=true;
-    if(useBtn)useBtn.hidden=false;
-    aoDocCamSetStatus("Adjust the sliders. The preview updates before you send the photo.");
-    await aoDocCamRenderPreview();
-  }catch(err){
-    console.error("Document capture failed:",err);
-    aoDocCamSetStatus("Capture failed. Please try again.");
-    if(captureBtn){captureBtn.disabled=false;captureBtn.textContent="● Capture";}
-  }finally{aoDocCamBusy=false;}
-}
-
-async function aoDocCamUsePhoto(){
-  if(!aoDocCamCapturedCanvas){aoDocCamSetStatus("Please capture a photo first.");return;}
-  if(aoDocCamBusy)return;
-  aoDocCamBusy=true;
-  const useBtn=document.getElementById("aoDocCamUse"),cancelBtn=document.getElementById("aoDocCamCancel");
-  if(useBtn)useBtn.disabled=true;
-  if(cancelBtn)cancelBtn.disabled=true;
-  aoDocCamSetStatus("Preparing the final full-resolution photo…");
-  try{
-    const enhanced=await aoEnhanceDocumentCanvas(aoDocCamCapturedCanvas,aoDocCamGetSettings());
-    let blob=await new Promise(resolve=>enhanced.toBlob(resolve,"image/jpeg",.94));
-    if(blob && blob.size>7.8*1024*1024)blob=await new Promise(resolve=>enhanced.toBlob(resolve,"image/jpeg",.90));
-    if(!blob)throw new Error("Unable to prepare the captured image.");
-    aoDocCamCapturedFile=new File([blob],"document-scan.jpg",{type:"image/jpeg",lastModified:Date.now()});
-    const handler=window.__aoChatHandleImageFile;
-    if(typeof handler!=="function")throw new Error("Chat image handler is not ready.");
-    const file=aoDocCamCapturedFile;
-    aoDocCamClose();
-    handler(file);
-  }catch(err){
-    console.error("Final document processing failed:",err);
-    aoDocCamSetStatus("Could not prepare the photo. Please try again.");
-    if(useBtn)useBtn.disabled=false;
-    if(cancelBtn)cancelBtn.disabled=false;
-    aoDocCamBusy=false;
+    const cameras=await Html5Qrcode.getCameras();
+    if(!cameras.length) throw new Error("No camera detected.");
+    let cameraId=cameras[0].id;
+    for(const cam of cameras){
+      const label=String(cam.label||"").toLowerCase();
+      if(label.includes("back")||label.includes("rear")){cameraId=cam.id;break;}
+    }
+    pullOutRequestScanner=new Html5Qrcode("pullOutRequestReader");
+    await pullOutRequestScanner.start(
+      {deviceId:{exact:cameraId}},
+      {fps:20,qrbox:{width:280,height:280},aspectRatio:1.0,videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}},
+      async decodedText=>{
+        if(pullOutRequestBusy) return;
+        pullOutRequestBusy=true;
+        try{
+          await stopPullOutRequestScanner();
+          await preparePullOutRequestByBarcode(decodedText);
+        }catch(error){
+          console.error("Pull Out request scan failed:",error);
+          showPullOutRequestError(error?.message||error);
+        }finally{
+          pullOutRequestBusy=false;
+        }
+      },
+      ()=>{}
+    );
+  }catch(error){
+    console.error("Pull Out request camera failed:",error);
+    showPullOutRequestError(error?.message||error);
   }
 }
 
-function aoDocCamBind(){
-  const capture=document.getElementById("aoDocCamCapture"),use=document.getElementById("aoDocCamUse"),cancel=document.getElementById("aoDocCamCancel"),close=document.getElementById("aoDocCamClose"),reset=document.getElementById("aoDocCamReset");
-  ["aoDocCamBrightness","aoDocCamContrast","aoDocCamShadow","aoDocCamSharpness"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener("input",()=>{aoDocCamUpdateValueLabels();aoDocCamSetStatus("Adjusting preview…");aoDocCamRenderPreview();});
-  });
-  reset?.addEventListener("click",()=>{aoDocCamSetSettings(AO_DOC_CAM_DEFAULTS);aoDocCamSetStatus("Reset to comfortable document settings.");aoDocCamRenderPreview();});
-  capture?.addEventListener("click",aoDocCamCapture);
-  use?.addEventListener("click",aoDocCamUsePhoto);
-  cancel?.addEventListener("click",aoDocCamClose);
-  close?.addEventListener("click",aoDocCamClose);
-  aoDocCamUpdateValueLabels();
+async function cancelPullOutRequestScan(){
+  await stopPullOutRequestScanner();
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("chooser");
 }
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",aoDocCamBind);else aoDocCamBind;
+
+async function stopPullOutRequestScanner(){
+  if(!pullOutRequestScanner) return;
+  try{await pullOutRequestScanner.stop();}catch(e){}
+  try{await pullOutRequestScanner.clear();}catch(e){}
+  pullOutRequestScanner=null;
+}
+
+async function startPullOutRequestTag(){
+  await stopPullOutRequestScanner();
+  pullOutRequestPendingStock=null;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview){preview.innerHTML="";preview.style.display="none";}
+  pullOutRequestSetArea("tag");
+  const input=document.getElementById("pullOutRequestTagInput");
+  if(input){input.value="";setTimeout(()=>input.focus(),40);}
+}
+
+async function findPullOutRequestByTag(){
+  if(pullOutRequestBusy) return;
+  const input=document.getElementById("pullOutRequestTagInput");
+  const tag=String(input?.value||"").trim().toUpperCase();
+  if(!tag){showProNotification("Please enter a tag number to continue.","Tag Number Required","🏷️");return;}
+  pullOutRequestBusy=true;
+  try{
+    await preparePullOutRequestByTag(tag);
+  }catch(error){
+    console.error("Pull Out request tag search failed:",error);
+    showPullOutRequestError(error?.message||error);
+  }finally{
+    pullOutRequestBusy=false;
+  }
+}
+
+async function preparePullOutRequestByBarcode(rawBarcode){
+  await requireSupabaseAccess();
+
+  /* Use the SAME barcode decoding path as the normal scanner.
+     Existing normal scanner decode logic is intentionally reused. */
+  const scannedBarcode = normalizeBarcode(rawBarcode);
+  const decodedBarcode = decodeBarcode(scannedBarcode);
+
+  const parts = decodedBarcode.split("-");
+  if(parts.length < 2) throw new Error("INVALID BARCODE");
+
+  const qrBranch = String(parts[0] || "").trim().toUpperCase();
+  const selectedBranch = String(BRANCH || "").trim().toUpperCase();
+  const tag = parts.slice(1).join("-").trim();
+
+  if(!qrBranch || !selectedBranch){
+    throw new Error("WRONG BRANCH");
+  }
+
+  // For a transferred QR, the current branch may store the original branch
+  // together with the tag in NTAGN, e.g. TAN94426.
+  const pullOutLookupTag = qrBranch === selectedBranch
+    ? tag
+    : normalizeBarcode(qrBranch + tag);
+
+  /* IMPORTANT: check Pull Out FIRST so an existing request is reported
+     instead of falling through to the Stocks NOT FOUND message. */
+  const existingPullOut = await sbRequest(
+    "/rest/v1/pull_out?BR=eq." + encodeURIComponent(selectedBranch) +
+    "&NTAGN=eq." + encodeURIComponent(pullOutLookupTag) +
+    "&select=BR,NTAGN&limit=1"
+  );
+  if(Array.isArray(existingPullOut) && existingPullOut.length){
+    throw new Error("This item is already added to a Pull Out request.");
+  }
+
+  const checked=await directCheck(decodedBarcode);
+  if(checked.status==="DUPLICATE") throw new Error("This item is already SOLD and cannot be pulled out.");
+  if(checked.status!=="FOUND") throw new Error("Stock item was not found.");
+
+  const stock=await getStockByBarcodeDirect(decodedBarcode);
+  if(!stock) throw new Error("Stock item was not found.");
+  await showPullOutRequestPreview(stock);
+}
+
+async function preparePullOutRequestByTag(tag){
+  await requireSupabaseAccess();
+  tag=String(tag||"").trim().toUpperCase();
+  if(!tag) throw new Error("Tag number is required.");
+
+  const branch=String(BRANCH||"").trim().toUpperCase();
+
+  /* IMPORTANT: check Pull Out FIRST for the same BR + NTAGN. */
+  const existingPullOut = await sbRequest(
+    "/rest/v1/pull_out?BR=eq." + encodeURIComponent(branch) +
+    "&NTAGN=eq." + encodeURIComponent(tag) +
+    "&select=BR,NTAGN&limit=1"
+  );
+  if(Array.isArray(existingPullOut) && existingPullOut.length){
+    throw new Error("This item is already added to a Pull Out request.");
+  }
+
+  const barcode=normalizeBarcode(branch+"-"+tag);
+  const sold=await isAlreadySoldDirect(barcode);
+  if(sold) throw new Error("This item is already SOLD and cannot be pulled out.");
+  const stock=await getStockByBarcodeDirect(barcode);
+  if(!stock) throw new Error("Tag number " + tag + " was not found in " + branch + " Stocks.");
+  await showPullOutRequestPreview(stock);
+}
+
+async function showPullOutRequestPreview(stock){
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(!preview) return;
+  const branch=String(stock.BR||BRANCH||"").trim().toUpperCase();
+  const tag=String(stock.NTAGN||"").trim();
+  const lenstype=String(stock.LENSTYPE||"").trim();
+  const description=String(stock.DESCRIPTION||"").trim();
+  if(!branch||!tag) throw new Error("Stock item is missing BR or NTAGN.");
+  pullOutRequestPendingStock=stock;
+  pullOutRequestSetArea("preview");
+  preview.style.display="block";
+  preview.innerHTML=`
+    <div class="pullout-request-preview-card">
+      <div class="pullout-request-preview-title">CONFIRM PULL OUT REQUEST</div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">BRANCH</div><div class="pullout-request-preview-value">${pullOutRequestEsc(branch)}</div></div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">LENS TYPE</div><div class="pullout-request-preview-value">${pullOutRequestEsc(lenstype||"—")}</div></div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">DESCRIPTION</div><div class="pullout-request-preview-value">${pullOutRequestEsc(description||"—")}</div></div>
+      <div class="pullout-request-preview-row"><div class="pullout-request-preview-label">TAG NUMBER</div><div class="pullout-request-preview-value">${pullOutRequestEsc(tag)}</div></div>
+      <div class="pullout-request-status">The item will be added to Pull Out and removed from both Stocks and Audit.</div>
+      <div class="pullout-request-preview-actions">
+        <button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">CANCEL</button>
+        <button type="button" class="send-report-btn" onclick="confirmPullOutRequest()">CONFIRM</button>
+      </div>
+    </div>`;
+}
+
+function showPullOutRequestError(message){
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(!preview) return;
+  pullOutRequestSetArea("preview");
+  preview.style.display="block";
+  preview.innerHTML=`<div class="card red"><b>❌ ${pullOutRequestEsc(message)}</b><br><br><button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">BACK</button></div>`;
+}
+
+async function confirmPullOutRequest(){
+  if(pullOutRequestBusy) return;
+  const stock=pullOutRequestPendingStock;
+  if(!stock) return;
+  pullOutRequestBusy=true;
+  const preview=document.getElementById("pullOutRequestPreview");
+  if(preview) preview.innerHTML='<div class="card saving"><div class="spinner"></div><div class="saving-text">Saving pull out request...</div></div>';
+  try{
+    await requireSupabaseAccess();
+    const branch=String(stock.BR||BRANCH||"").trim().toUpperCase();
+    const tag=String(stock.NTAGN||"").trim();
+    if(!branch||!tag) throw new Error("Missing branch or tag number.");
+
+    const existing=await sbRequest("/rest/v1/pull_out?BR=eq."+encodeURIComponent(branch)+"&NTAGN=eq."+encodeURIComponent(tag)+"&select=BR,NTAGN&limit=1");
+    if(Array.isArray(existing)&&existing.length) throw new Error(tag+" is already in Pull Out.");
+
+    const record={};
+    const columns=["SDATE","SUPPLIER","DR","COST","ASG","CB","FD","UNITS","POWER","LENSTYPE","PUNIT","BR","NTAGN","CATEGORY","DESCRIPTION","LENSCODE","SELLINGPRICE","DELIVERYDATE","ORNUMBER","ORDATE","REMARKS","TAGPRICE","QR","SI NO.","DATE AND TIME","USER EMAIL","STATUS"];
+    columns.forEach(col=>{record[col]=stock[col]!==undefined&&stock[col]!==null?stock[col]:null;});
+    record.BR=branch;
+    record.NTAGN=tag;
+    record["SI NO."]=stock["SI NO."]!==undefined?stock["SI NO."]:"";
+    record["DATE AND TIME"]=manilaNow();
+    record["USER EMAIL"]=(currentSession().email||"");
+    record.STATUS="PULL OUT";
+
+    await sbRequest("/rest/v1/pull_out",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify([record])});
+
+    const filter="?BR=eq."+encodeURIComponent(branch)+"&NTAGN=eq."+encodeURIComponent(tag);
+    await Promise.all([
+      sbRequest("/rest/v1/"+branchTable(branch,"stocks")+filter,{method:"DELETE",headers:{Prefer:"return=minimal"}}),
+      sbRequest("/rest/v1/"+branchTable(branch,"audit")+filter,{method:"DELETE",headers:{Prefer:"return=minimal"}})
+    ]);
+
+    document.getElementById("result").innerHTML=`<div class="card green scan-animate">✅ PULL OUT REQUESTED<br><br><b>${pullOutRequestEsc(record.DESCRIPTION||"")}</b><br>${pullOutRequestEsc(record.LENSTYPE||"")}<br><small>🏷 Tag: <b>${pullOutRequestEsc(tag)}</b></small><br><small>Branch: <b>${pullOutRequestEsc(branch)}</b></small></div>`;
+    await closePullOutRequest();
+  }catch(error){
+    console.error("Confirm Pull Out failed:",error);
+    if(preview){preview.innerHTML=`<div class="card red"><b>❌ PULL OUT FAILED</b><br><br>${pullOutRequestEsc(error?.message||error)}<br><br><button type="button" class="cancel-report-btn" onclick="returnPullOutRequestChooser()">BACK</button></div>`;}
+  }finally{
+    pullOutRequestBusy=false;
+  }
+}
+
 </script>
 </body>
 </html>
