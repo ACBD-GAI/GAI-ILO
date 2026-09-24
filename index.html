@@ -7634,54 +7634,51 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 /* ================= CHAT PHOTO ENHANCER ================= */
 .ao-photo-enhancer-overlay{
   position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;
-  padding:16px;background:rgba(15,23,42,.58);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:12px;background:rgba(15,23,42,.68);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
 }
 .ao-photo-enhancer-overlay[hidden]{display:none!important}
 .ao-photo-enhancer-card{
-  width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto;
-  background:#fff;border:1px solid rgba(255,255,255,.7);border-radius:22px;
-  box-shadow:0 28px 80px rgba(0,0,0,.32);padding:16px;
+  width:min(760px,calc(100vw - 18px));max-height:calc(100vh - 20px);overflow:auto;
+  background:#fff;border:1px solid rgba(255,255,255,.75);border-radius:22px;
+  box-shadow:0 28px 80px rgba(0,0,0,.34);padding:14px;
 }
-.ao-photo-enhancer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ao-photo-enhancer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
 .ao-photo-enhancer-title{font-size:16px;font-weight:900;color:#111827}
 .ao-photo-enhancer-sub{font-size:11px;color:#6b7280;margin-top:2px}
 .ao-photo-enhancer-close{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;padding:0!important;border:0!important;border-radius:10px!important;background:#f3f4f6!important;color:#374151!important;box-shadow:none!important}
-.ao-photo-enhancer-preview{display:flex;justify-content:center;align-items:center;min-height:220px;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#eef2f7,#f8fafc);border:1px solid #e5e7eb}
-.ao-photo-enhancer-preview canvas{display:block;max-width:100%;max-height:52vh;width:auto;height:auto;object-fit:contain;background:#fff}
-.ao-photo-enhancer-modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:12px}
+.ao-photo-enhancer-preview{position:relative;display:flex;justify-content:center;align-items:center;min-height:250px;border-radius:16px;overflow:hidden;background:#0b1220;border:1px solid #dbe2ea;touch-action:none}
+.ao-photo-enhancer-preview canvas{display:block;max-width:100%;max-height:58vh;width:auto;height:auto;background:#111827}
+.ao-photo-enhancer-border-layer{position:absolute;inset:0;pointer-events:none}
+.ao-photo-enhancer-border-poly{position:absolute;inset:0;overflow:visible}
+.ao-photo-enhancer-border-line{fill:rgba(59,130,246,.12);stroke:#38bdf8;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px rgba(56,189,248,.85))}
+.ao-photo-enhancer-handle{display:none;position:absolute;width:22px;height:22px;border-radius:50%;margin:-11px 0 0 -11px;background:#fff;border:3px solid #2563eb;box-shadow:0 2px 10px rgba(0,0,0,.35),0 0 0 3px rgba(255,255,255,.62);pointer-events:auto;touch-action:none;cursor:grab}
+.ao-photo-enhancer-handle:active{cursor:grabbing;transform:scale(1.08)}
+.ao-photo-enhancer-adjusting .ao-photo-enhancer-border-layer{display:block}
+.ao-photo-enhancer-preview:not(.ao-photo-enhancer-adjusting) .ao-photo-enhancer-border-layer{display:none}
+.ao-photo-enhancer-tools{display:flex;align-items:center;gap:7px;margin-top:10px;min-height:28px}
+.ao-photo-enhancer-auto-note{font-size:10px;color:#64748b;font-weight:700}
+.ao-photo-enhancer-auto-status{position:absolute;top:10px;left:10px;padding:6px 9px;border-radius:999px;background:rgba(15,23,42,.80);color:#fff;font-size:9px;font-weight:900;letter-spacing:.5px;z-index:4;box-shadow:0 4px 14px rgba(0,0,0,.20)}
+.ao-photo-enhancer-auto-status.working{background:rgba(37,99,235,.88)}
+.ao-photo-enhancer-modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
 .ao-photo-enhancer-mode{min-height:42px!important;padding:8px 6px!important;border:1px solid #dbeafe!important;border-radius:11px!important;background:#fff!important;color:#334155!important;box-shadow:none!important;font-size:11px!important}
 .ao-photo-enhancer-mode.active{background:#eff6ff!important;color:#2563eb!important;border-color:#60a5fa!important;box-shadow:0 6px 16px rgba(37,99,235,.12)!important}
-.ao-photo-enhancer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.ao-photo-enhancer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .ao-photo-enhancer-cancel{background:#f1f5f9!important;color:#475569!important;border:1px solid #e2e8f0!important;box-shadow:none!important}
 .ao-photo-enhancer-use{background:linear-gradient(135deg,#60a5fa,#2563eb)!important;color:#fff!important}
-.ao-photo-enhancer-note{font-size:10px;color:#64748b;text-align:center;margin-top:8px}
-@media(max-width:600px){
-  .ao-photo-enhancer-card{padding:13px;border-radius:18px}
-  .ao-photo-enhancer-preview{min-height:180px}
-  .ao-photo-enhancer-modes{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
+.ao-photo-enhancer-note{font-size:10px;color:#64748b;text-align:center;margin-top:7px}
+@media(max-width:600px){.ao-photo-enhancer-card{padding:11px;border-radius:18px}.ao-photo-enhancer-preview{min-height:190px}.ao-photo-enhancer-preview canvas{max-height:48vh}.ao-photo-enhancer-modes{grid-template-columns:repeat(2,minmax(0,1fr))}.ao-photo-enhancer-auto-note{width:100%}}
 </style>
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 <div id="aoPhotoEnhancer" class="ao-photo-enhancer-overlay" hidden aria-hidden="true">
   <div class="ao-photo-enhancer-card" role="dialog" aria-modal="true" aria-labelledby="aoPhotoEnhancerTitle">
-    <div class="ao-photo-enhancer-head">
-      <div><div id="aoPhotoEnhancerTitle" class="ao-photo-enhancer-title">✨ Enhance Captured Photo</div><div class="ao-photo-enhancer-sub">CamScanner-style cleanup for clearer documents and tags</div></div>
-      <button id="aoPhotoEnhancerClose" class="ao-photo-enhancer-close" type="button" aria-label="Close">✕</button>
-    </div>
-    <div class="ao-photo-enhancer-preview"><canvas id="aoPhotoEnhancerCanvas"></canvas></div>
-    <div class="ao-photo-enhancer-modes">
-      <button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="original">Original</button>
-      <button type="button" class="ao-photo-enhancer-mode active" data-ao-enhance-mode="auto">✨ Auto Enhance</button>
-      <button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="document">📄 Document</button>
-      <button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="bw">◐ B&amp;W</button>
-    </div>
-    <div class="ao-photo-enhancer-actions">
-      <button id="aoPhotoEnhancerCancel" class="ao-photo-enhancer-cancel" type="button">Retake</button>
-      <button id="aoPhotoEnhancerUse" class="ao-photo-enhancer-use" type="button">Use Enhanced Photo</button>
-    </div>
-    <div class="ao-photo-enhancer-note">Enhancement is local on the device. The chat upload/storage flow remains unchanged.</div>
+    <div class="ao-photo-enhancer-head"><div><div id="aoPhotoEnhancerTitle" class="ao-photo-enhancer-title">📄 Scan &amp; Enhance Photo</div><div class="ao-photo-enhancer-sub">Automatic paper detection • perspective correction • shadow removal</div></div><button id="aoPhotoEnhancerClose" class="ao-photo-enhancer-close" type="button" aria-label="Close">✕</button></div>
+    <div id="aoPhotoEnhancerPreview" class="ao-photo-enhancer-preview"><canvas id="aoPhotoEnhancerCanvas"></canvas><div id="aoPhotoEnhancerBorderLayer" class="ao-photo-enhancer-border-layer" hidden><svg id="aoPhotoEnhancerBorderSvg" class="ao-photo-enhancer-border-poly" preserveAspectRatio="none"><polygon id="aoPhotoEnhancerBorderPoly" class="ao-photo-enhancer-border-line" points="0,0 100,0 100,100 0,100"></polygon></svg></div><div id="aoPhotoEnhancerAutoStatus" class="ao-photo-enhancer-auto-status">AUTO BORDER</div></div>
+    <div class="ao-photo-enhancer-tools"><span class="ao-photo-enhancer-auto-note">◎ Border is detected automatically. No manual cropping required.</span></div>
+    <div class="ao-photo-enhancer-modes"><button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="original">Original</button><button type="button" class="ao-photo-enhancer-mode active" data-ao-enhance-mode="auto">✨ Auto Scan</button><button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="document">📄 Document</button><button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="bw">◐ B&amp;W</button></div>
+    <div class="ao-photo-enhancer-actions"><button id="aoPhotoEnhancerCancel" class="ao-photo-enhancer-cancel" type="button">Retake</button><button id="aoPhotoEnhancerUse" class="ao-photo-enhancer-use" type="button">Use Scanned Photo</button></div>
+    <div class="ao-photo-enhancer-note">Border correction and shadow removal happen on-device. The existing chat upload/send/storage flow is unchanged.</div>
   </div>
 </div>
 
@@ -7718,219 +7715,490 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       if(attachMenu)attachMenu.hidden=true;
     }
 
-    function aoChatEnhanceCanvas(sourceCanvas,mode){
-      const canvas=sourceCanvas;
-      const ctx=canvas.getContext("2d",{willReadFrequently:true});
-      if(!ctx || mode==="original") return;
+    function aoChatClamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
-      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-      const d=img.data, w=canvas.width, h=canvas.height;
-      const pixels=w*h;
+    function aoChatSolveHomography(src,dst){
+      const A=[],B=[];
+      for(let i=0;i<4;i++){const x=src[i].x,y=src[i].y,u=dst[i].x,v=dst[i].y;A.push([x,y,1,0,0,0,-u*x,-u*y]);B.push(u);A.push([0,0,0,x,y,1,-v*x,-v*y]);B.push(v);}
+      for(let i=0;i<8;i++){let piv=i;for(let r=i+1;r<8;r++)if(Math.abs(A[r][i])>Math.abs(A[piv][i]))piv=r;if(Math.abs(A[piv][i])<1e-9)return null;[A[i],A[piv]]=[A[piv],A[i]];[B[i],B[piv]]=[B[piv],B[i]];const q=A[i][i];for(let c=i;c<8;c++)A[i][c]/=q;B[i]/=q;for(let r=0;r<8;r++)if(r!==i){const f=A[r][i];if(!f)continue;for(let c=i;c<8;c++)A[r][c]-=f*A[i][c];B[r]-=f*B[i];}}
+      return {h:[...B,1]};
+    }
 
-      // ---------------------------------------------------------
-      // CAMSCANNER-STYLE CORE:
-      // 1) Auto levels / tonal range expansion
-      // 2) Gray-world color correction
-      // 3) Paper/background whitening for document mode
-      // 4) Strong edge/text sharpening
-      // 5) Adaptive thresholding for true document B&W
-      // ---------------------------------------------------------
+    function aoChatWarpPerspective(sourceCanvas,corners,outCanvas){
+      const sw=sourceCanvas.width,sh=sourceCanvas.height,[tl,tr,br,bl]=corners;
+      const top=Math.hypot(tr.x-tl.x,tr.y-tl.y),bottom=Math.hypot(br.x-bl.x,br.y-bl.y),left=Math.hypot(bl.x-tl.x,bl.y-tl.y),right=Math.hypot(br.x-tr.x,br.y-tr.y);
+      const ow=Math.max(300,Math.min(1900,Math.round((top+bottom)/2))),oh=Math.max(300,Math.min(1900,Math.round((left+right)/2)));
+      const H=aoChatSolveHomography([{x:0,y:0},{x:ow-1,y:0},{x:ow-1,y:oh-1},{x:0,y:oh-1}],corners);if(!H)return false;
+      outCanvas.width=ow;outCanvas.height=oh;const data=sourceCanvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,sw,sh).data,ctx=outCanvas.getContext('2d',{willReadFrequently:true}),out=ctx.createImageData(ow,oh),od=out.data,h=H.h;
+      for(let y=0,idx=0;y<oh;y++)for(let x=0;x<ow;x++,idx+=4){const den=h[6]*x+h[7]*y+1,sx=(h[0]*x+h[1]*y+h[2])/den,sy=(h[3]*x+h[4]*y+h[5])/den;if(sx<0||sy<0||sx>=sw-1||sy>=sh-1){od[idx]=od[idx+1]=od[idx+2]=255;od[idx+3]=255;continue;}const x0=sx|0,y0=sy|0,fx=sx-x0,fy=sy-y0,i00=(y0*sw+x0)*4,i10=i00+4,i01=i00+sw*4,i11=i01+4;for(let c=0;c<3;c++)od[idx+c]=data[i00+c]*(1-fx)*(1-fy)+data[i10+c]*fx*(1-fy)+data[i01+c]*(1-fx)*fy+data[i11+c]*fx*fy;od[idx+3]=255;}
+      ctx.putImageData(out,0,0);return true;
+    }
 
-      // Luminance histogram for automatic black/white points.
-      const hist=new Uint32Array(256);
-      let sumR=0,sumG=0,sumB=0,sampleCount=0;
-      const sampleStep=Math.max(1,Math.floor(Math.sqrt(pixels/350000)));
-      for(let y=0;y<h;y+=sampleStep){
-        for(let x=0;x<w;x+=sampleStep){
-          const i=(y*w+x)*4;
-          const r=d[i],g=d[i+1],b=d[i+2];
-          const lum=Math.max(0,Math.min(255,Math.round(.299*r+.587*g+.114*b)));
-          hist[lum]++;
-          sumR+=r;sumG+=g;sumB+=b;sampleCount++;
+    function aoChatEstimateAutoCorners(canvas){
+      // Robust automatic document detection. It uses a downsampled edge map
+      // + Hough line voting, then scores candidate quadrilaterals by:
+      //   • four long border-like edges
+      //   • opposite-edge parallelism
+      //   • large, centered document area
+      //   • bright/low-saturation paper inside the candidate
+      // This avoids grabbing random shadows or text lines as the border.
+      const w=canvas.width,h=canvas.height;
+      const maxDim=320,sc=Math.min(1,maxDim/Math.max(w,h));
+      const sw=Math.max(80,Math.round(w*sc)),sh=Math.max(80,Math.round(h*sc));
+      const tmp=document.createElement('canvas');tmp.width=sw;tmp.height=sh;
+      const tctx=tmp.getContext('2d',{willReadFrequently:true});
+      tctx.drawImage(canvas,0,0,sw,sh);
+      const raw=tctx.getImageData(0,0,sw,sh).data;
+      const pix=sw*sh;
+      const lum=new Float32Array(pix);
+      const sat=new Float32Array(pix);
+      for(let i=0,p=0;p<pix;p++,i+=4){
+        const r=raw[i],g=raw[i+1],b=raw[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+        lum[p]=.299*r+.587*g+.114*b;sat[p]=mx-mn;
+      }
+
+      // Light 3x3 smoothing before Sobel to reduce text noise and tiny shadows.
+      const sm=new Float32Array(pix);
+      for(let y=1;y<sh-1;y++)for(let x=1;x<sw-1;x++){
+        const p=y*sw+x;
+        sm[p]=(lum[p-sw-1]+2*lum[p-sw]+lum[p-sw+1]+2*lum[p-1]+4*lum[p]+2*lum[p+1]+lum[p+sw-1]+2*lum[p+sw]+lum[p+sw+1])/16;
+      }
+      for(let x=0;x<sw;x++){sm[x]=lum[x];sm[(sh-1)*sw+x]=lum[(sh-1)*sw+x];}
+      for(let y=0;y<sh;y++){sm[y*sw]=lum[y*sw];sm[y*sw+sw-1]=lum[y*sw+sw-1];}
+
+      const gx=new Float32Array(pix),gy=new Float32Array(pix),mag=new Float32Array(pix);
+      let magSum=0,magCount=0;
+      for(let y=1;y<sh-1;y++)for(let x=1;x<sw-1;x++){
+        const p=y*sw+x;
+        const a=sm[p-sw-1],b=sm[p-sw],c=sm[p-sw+1],d=sm[p-1],e=sm[p+1],f=sm[p+sw-1],g=sm[p+sw],q=sm[p+sw+1];
+        const dx=-a+c-2*d+2*e-f+q,dy=-a-2*b-c+f+2*g+q,m=Math.hypot(dx,dy);
+        gx[p]=dx;gy[p]=dy;mag[p]=m;magSum+=m;magCount++;
+      }
+      const avgEdge=magSum/Math.max(1,magCount);
+      const edgeThreshold=Math.max(18,avgEdge*1.55);
+
+      // Hough accumulator: theta is the line normal angle, 0..178 degrees.
+      const thetaStep=2,thetaCount=90,diag=Math.hypot(sw,sh),rhoStep=2;
+      const rhoBins=Math.ceil((diag*2)/rhoStep)+3,rhoOffset=diag+rhoStep;
+      const acc=new Float32Array(thetaCount*rhoBins);
+      for(let y=2;y<sh-2;y++)for(let x=2;x<sw-2;x++){
+        const p=y*sw+x,m=mag[p];if(m<edgeThreshold)continue;
+        // Ignore tiny, highly saturated color edges unless they are very strong.
+        if(sat[p]>115 && m<edgeThreshold*1.8)continue;
+        const weight=Math.min(255,m);
+        for(let ti=0;ti<thetaCount;ti++){
+          const th=ti*thetaStep*Math.PI/180;
+          const rho=x*Math.cos(th)+y*Math.sin(th);
+          const rb=Math.round((rho+rhoOffset)/rhoStep);
+          if(rb>=0&&rb<rhoBins)acc[ti*rhoBins+rb]+=weight;
         }
       }
 
-      const total=Math.max(1,sampleCount);
-      let lowTarget=Math.max(1,Math.floor(total*.012));
-      let highTarget=Math.max(1,Math.floor(total*.988));
-      let acc=0,low=0,high=255;
-      for(let i=0;i<256;i++){acc+=hist[i];if(acc>=lowTarget){low=i;break;}}
-      acc=0;
-      for(let i=255;i>=0;i--){acc+=hist[i];if(acc>=total-highTarget){high=i;break;}}
-      if(high-low<35){low=Math.max(0,low-12);high=Math.min(255,high+12);}
-
-      const avgR=sumR/total,avgG=sumG/total,avgB=sumB/total;
-      const gray=(avgR+avgG+avgB)/3;
-      const wbR=Math.max(.88,Math.min(1.12,gray/Math.max(1,avgR)));
-      const wbG=Math.max(.92,Math.min(1.08,gray/Math.max(1,avgG)));
-      const wbB=Math.max(.88,Math.min(1.12,gray/Math.max(1,avgB)));
-
-      const documentMode=mode==="document";
-      const bwMode=mode==="bw";
-      const autoMode=mode==="auto";
-
-      const out=ctx.createImageData(w,h);
-      const od=out.data;
-      const span=Math.max(1,high-low);
-
-      // Tuned tonal curve. Document mode is deliberately obvious.
-      const contrast=documentMode?1.24:(autoMode?1.10:1.02);
-      const brightness=documentMode?7:(autoMode?2:0);
-      const saturation=documentMode?.22:(autoMode?1.06:1.0);
-
-      for(let i=0;i<d.length;i+=4){
-        let r=d[i]*wbR, g=d[i+1]*wbG, b=d[i+2]*wbB;
-        let lum=.299*r+.587*g+.114*b;
-
-        // Auto-level the whole dynamic range first.
-        let norm=(lum-low)/span;
-        norm=Math.max(0,Math.min(1,norm));
-        norm=(norm-.5)*contrast+.5;
-        norm=Math.max(0,Math.min(1,norm));
-        const target=norm*255+brightness;
-        const delta=target-lum;
-        r+=delta;g+=delta;b+=delta;
-
-        // Saturation / color retention.
-        const grayPx=.299*r+.587*g+.114*b;
-        r=grayPx+(r-grayPx)*saturation;
-        g=grayPx+(g-grayPx)*saturation;
-        b=grayPx+(b-grayPx)*saturation;
-
-        if(documentMode){
-          // Whiten light paper while keeping ink dark.
-          const sat=(Math.max(r,g,b)-Math.min(r,g,b));
-          const light=Math.max(r,g,b);
-          if(light>178){
-            const whiten=Math.min(1,(light-178)/77);
-            const paperBoost=(1-whiten)*1 + whiten*1.38;
-            r=255-(255-r)*paperBoost;
-            g=255-(255-g)*paperBoost;
-            b=255-(255-b)*paperBoost;
+      // Pull out strong, spatially separated Hough peaks.
+      const peaks=[];
+      const peakCount=28;
+      for(let n=0;n<peakCount;n++){
+        let best=-1,bt=-1,br=-1;
+        for(let ti=0;ti<thetaCount;ti++)for(let rb=0;rb<rhoBins;rb++){
+          const v=acc[ti*rhoBins+rb];if(v<=best)continue;
+          let ok=true;
+          for(const pk of peaks){
+            const dt=Math.min(Math.abs(ti-pk.ti),thetaCount-Math.abs(ti-pk.ti));
+            const dr=Math.abs(rb-pk.rb);
+            if(dt<=5&&dr<=7){ok=false;break;}
           }
-          // Remove faint color casts from paper/background.
-          if(sat<55 && grayPx>145){
-            const neutral=Math.max(0,Math.min(1,(grayPx-145)/110));
-            r+=(255-r)*neutral*.16;
-            g+=(255-g)*neutral*.16;
-            b+=(255-b)*neutral*.16;
-          }
+          if(ok){best=v;bt=ti;br=rb;}
         }
-
-        od[i]=Math.max(0,Math.min(255,r));
-        od[i+1]=Math.max(0,Math.min(255,g));
-        od[i+2]=Math.max(0,Math.min(255,b));
-        od[i+3]=255;
+        if(best<1)break;
+        peaks.push({ti:bt,rb:br,v:best,theta:bt*thetaStep*Math.PI/180,rho:br*rhoStep-rhoOffset});
       }
-      ctx.putImageData(out,0,0);
+      if(peaks.length<4)return aoChatFallbackAutoCorners(sw,sh,sc);
 
-      if(bwMode){
-        // True adaptive document B&W: local threshold instead of a simple
-        // grayscale conversion. This makes paper approach white and text ink
-        // approach black even with uneven lighting/shadows.
-        const base=ctx.getImageData(0,0,w,h);
-        const bd=base.data;
-        const lum=new Uint8Array(pixels);
-        for(let p=0,i=0;p<pixels;p++,i+=4){
-          lum[p]=Math.max(0,Math.min(255,Math.round(.299*bd[i]+.587*bd[i+1]+.114*bd[i+2])));
+      const maxPeak=Math.max(...peaks.map(p=>p.v));
+      const lines=peaks.map(p=>({theta:p.theta,rho:p.rho,v:p.v,norm:p.v/Math.max(1,maxPeak)}));
+      function angleSep(a,b){let d=Math.abs(a-b)%Math.PI;return Math.min(d,Math.PI-d);}
+      function lineIntersection(a,b){
+        const ca=Math.cos(a.theta),sa=Math.sin(a.theta),cb=Math.cos(b.theta),sb=Math.sin(b.theta),det=ca*sb-sa*cb;
+        if(Math.abs(det)<.08)return null;
+        return {x:(a.rho*sb-sa*b.rho)/det,y:(ca*b.rho-a.rho*cb)/det};
+      }
+      function area4(q){let a=0;for(let i=0;i<4;i++){const p=q[i],n=q[(i+1)%4];a+=p.x*n.y-p.y*n.x;}return Math.abs(a)/2;}
+      function convex(q){let s=0;for(let i=0;i<4;i++){const a=q[i],b=q[(i+1)%4],c=q[(i+2)%4],cr=(b.x-a.x)*(c.y-b.y)-(b.y-a.y)*(c.x-b.x);if(Math.abs(cr)<3)return false;if(!s)s=Math.sign(cr);else if(Math.sign(cr)!==s)return false;}return true;}
+      function inside(q,x,y){let wn=0;for(let i=0;i<4;i++){const a=q[i],b=q[(i+1)%4];if(((a.y<=y)&&(b.y>y))||((a.y>y)&&(b.y<=y))){const ix=a.x+(y-a.y)*(b.x-a.x)/(b.y-a.y);if(ix>x)wn+=(b.y>a.y)?1:-1;}}return wn!==0;}
+      function sortQuad(points){
+        const cx=points.reduce((s,p)=>s+p.x,0)/4,cy=points.reduce((s,p)=>s+p.y,0)/4;
+        points.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+        let idx=0,best=Infinity;for(let i=0;i<4;i++){const q=points[i],v=q.x+q.y;if(v<best){best=v;idx=i;}}
+        return [points[idx],points[(idx+1)%4],points[(idx+2)%4],points[(idx+3)%4]];
+      }
+      function paperScore(q){
+        // Bilinear sampling inside the quadrilateral. We expect document paper
+        // to be relatively bright and less saturated than the surroundings.
+        let insideLum=0,insideSat=0,n=0;
+        for(let j=1;j<=5;j++)for(let i=1;i<=5;i++){
+          const u=i/6,v=j/6;
+          const a=q[0],b=q[1],c=q[2],d=q[3];
+          const top={x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u};
+          const bot={x:d.x+(c.x-d.x)*u,y:d.y+(c.y-d.y)*u};
+          const x=Math.round(top.x+(bot.x-top.x)*v),y=Math.round(top.y+(bot.y-top.y)*v);
+          if(x<1||y<1||x>=sw-1||y>=sh-1)continue;const p=y*sw+x;insideLum+=lum[p];insideSat+=sat[p];n++;
         }
-        const stride=w+1;
-        const integral=new Uint32Array((h+1)*stride);
-        for(let y=1;y<=h;y++){
-          let rowSum=0;
-          const srcRow=(y-1)*w;
-          const dstRow=y*stride;
-          const prevRow=(y-1)*stride;
-          for(let x=1;x<=w;x++){
-            rowSum+=lum[srcRow+x-1];
-            integral[dstRow+x]=integral[prevRow+x]+rowSum;
-          }
+        if(!n)return 0;
+        const inLum=insideLum/n,inSat=insideSat/n;
+        // Sample four outside-midpoint areas just beyond each edge.
+        let outLum=0,outSat=0,on=0;
+        for(let i=0;i<4;i++){
+          const a=q[i],b=q[(i+1)%4],mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+          const cx=sw/2,cy=sh/2,dx=cx-mx,dy=cy-my,len=Math.hypot(dx,dy)||1;
+          const sx=mx-dx/len*8,sy=my-dy/len*8;
+          const x=Math.round(sx),y=Math.round(sy);if(x>=0&&y>=0&&x<sw&&y<sh){const p=y*sw+x;outLum+=lum[p];outSat+=sat[p];on++;}
         }
-        const bw=ctx.createImageData(w,h),bdst=bw.data;
-        const radius=Math.max(6,Math.min(12,Math.round(Math.min(w,h)/180)));
-        const sensitivity=9;
-        for(let y=0,p=0,i=0;y<h;y++){
-          const y0=Math.max(0,y-radius), y1=Math.min(h-1,y+radius);
-          for(let x=0;x<w;x++,p++,i+=4){
-            const x0=Math.max(0,x-radius), x1=Math.min(w-1,x+radius);
-            const A=integral[y0*stride+x0], B=integral[y0*stride+(x1+1)];
-            const C=integral[(y1+1)*stride+x0], D=integral[(y1+1)*stride+(x1+1)];
-            const count=(x1-x0+1)*(y1-y0+1);
-            const localMean=(D-B-C+A)/count;
-            const v=lum[p];
-            const isWhite=v > localMean-sensitivity;
-            const q=isWhite?255:0;
-            bdst[i]=q;bdst[i+1]=q;bdst[i+2]=q;bdst[i+3]=255;
-          }
-        }
-        ctx.putImageData(bw,0,0);
+        const oLum=on?outLum/on:128,oSat=on?outSat/on:80;
+        const bright=Math.max(0,Math.min(1,(inLum-125)/110));
+        const neutral=Math.max(0,Math.min(1,1-inSat/95));
+        const separation=Math.max(0,Math.min(1,(inLum-oLum+8)/70));
+        const colorSeparation=Math.max(0,Math.min(1,(oSat-inSat+10)/80));
+        return .38*bright+.18*neutral+.28*separation+.16*colorSeparation;
       }
 
-      // Strong but controlled unsharp mask. Much more visible than the old
-      // micro-sharpening, while retaining faces/products instead of looking
-      // like an over-processed filter.
-      const sharp=ctx.getImageData(0,0,w,h),sd=sharp.data;
-      const sh=ctx.createImageData(w,h),hd=sh.data;
-      const amount=bwMode?.38:(documentMode?.34:.24);
+      let best=null;
+      for(let i=0;i<lines.length;i++)for(let j=i+1;j<lines.length;j++){
+        if(angleSep(lines[i].theta,lines[j].theta)>0.10)continue;
+        if(Math.abs(lines[i].rho-lines[j].rho)<Math.min(sw,sh)*.10)continue;
+        for(let k=0;k<lines.length;k++)for(let l=k+1;l<lines.length;l++){
+          if(k===i||k===j||l===i||l===j)continue;
+          if(angleSep(lines[k].theta,lines[l].theta)>0.10)continue;
+          const cross=angleSep(lines[i].theta,lines[k].theta);
+          if(cross<0.72||cross>2.42)continue;
+          if(Math.abs(lines[k].rho-lines[l].rho)<Math.min(sw,sh)*.10)continue;
+          const p1=lineIntersection(lines[i],lines[k]),p2=lineIntersection(lines[i],lines[l]),p3=lineIntersection(lines[j],lines[l]),p4=lineIntersection(lines[j],lines[k]);
+          if(!p1||!p2||!p3||!p4)continue;
+          const q=sortQuad([p1,p2,p3,p4]);
+          if(q.some(p=>p.x<-sw*.04||p.x>sw*1.04||p.y<-sh*.04||p.y>sh*1.04))continue;
+          if(!convex(q))continue;
+          const area=area4(q),areaRatio=area/(sw*sh);if(areaRatio<.22||areaRatio>.93)continue;
+          const cx=q.reduce((s,p)=>s+p.x,0)/4,cy=q.reduce((s,p)=>s+p.y,0)/4;
+          if(!inside(q,sw/2,sh/2))continue;
+          const short=Math.min(Math.hypot(q[1].x-q[0].x,q[1].y-q[0].y),Math.hypot(q[2].x-q[1].x,q[2].y-q[1].y));
+          if(short<Math.min(sw,sh)*.22)continue;
+          const ps=paperScore(q);
+          const parallel=1-(angleSep(lines[i].theta,lines[j].theta)+angleSep(lines[k].theta,lines[l].theta))/.22;
+          const areaPref=1-Math.abs(areaRatio-.68)/.68;
+          const centered=1-Math.min(1,Math.hypot(cx-sw/2,cy-sh/2)/(Math.hypot(sw,sh)*.5));
+          const edgeScore=(lines[i].norm+lines[j].norm+lines[k].norm+lines[l].norm)/4;
+          const score=.30*edgeScore+.24*Math.max(0,ps)+.20*Math.max(0,areaPref)+.14*Math.max(0,centered)+.12*Math.max(0,parallel);
+          if(!best||score>best.score)best={q,score,ps};
+        }
+      }
+      if(!best||best.score<.43)return aoChatFallbackAutoCorners(sw,sh,sc);
+      return best.q.map(p=>({x:aoChatClamp(p.x/sc,0,w-1),y:aoChatClamp(p.y/sc,0,h-1)}));
+    }
+
+    function aoChatFallbackAutoCorners(sw,sh,sc){
+      // Conservative fallback: keep almost the entire frame instead of
+      // aggressively cropping something that was not confidently detected.
+      const mx=sw*.025,my=sh*.025;
+      return [{x:mx/sc,y:my/sc},{x:(sw-1-mx)/sc,y:my/sc},{x:(sw-1-mx)/sc,y:(sh-1-my)/sc},{x:mx/sc,y:(sh-1-my)/sc}];
+    }
+
+    function aoChatNormalizeShadows(canvas,mode){
+      if(mode==='original')return;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      if(!ctx)return;
+
+      /*
+         CAMSCANNER-STYLE DOCUMENT LIGHTING CORRECTION
+         -----------------------------------------------
+         The goal here is not to "brighten" the photo.  We estimate the
+         broad illumination field in log space, remove that field, then
+         rebuild a clean paper surface while preserving dark handwriting.
+
+         This is an imitation of the visible document-scan result seen in
+         the reference image, not CamScanner's proprietary source code.
+      */
+      const w=canvas.width,h=canvas.height;
+      const src=ctx.getImageData(0,0,w,h),d=src.data;
+
+      /* Low-resolution log illumination map. Fine text/lines disappear
+         during downsampling, while the phone shadow remains as a broad field. */
+      const mapMax=144;
+      const scale=Math.min(1,mapMax/Math.max(w,h));
+      const mw=Math.max(48,Math.round(w*scale));
+      const mh=Math.max(48,Math.round(h*scale));
+      const map=document.createElement('canvas');map.width=mw;map.height=mh;
+      const mctx=map.getContext('2d',{willReadFrequently:true});
+      mctx.imageSmoothingEnabled=true;
+      mctx.drawImage(canvas,0,0,mw,mh);
+      const md=mctx.getImageData(0,0,mw,mh).data;
+      const mp=mw*mh;
+      const logLum=new Float32Array(mp);
+      for(let i=0,p=0;p<mp;p++,i+=4){
+        const y=.299*md[i]+.587*md[i+1]+.114*md[i+2];
+        logLum[p]=Math.log(y+2);
+      }
+
+      function boxBlur(input,radius){
+        const ww=mw,hh=mh,stride=ww+1;
+        const integral=new Float32Array((hh+1)*stride);
+        for(let y=1;y<=hh;y++){
+          let row=0;
+          for(let x=1;x<=ww;x++){
+            row+=input[(y-1)*ww+x-1];
+            integral[y*stride+x]=integral[(y-1)*stride+x]+row;
+          }
+        }
+        const out=new Float32Array(ww*hh);
+        for(let y=0;y<hh;y++){
+          const y0=Math.max(0,y-radius),y1=Math.min(hh-1,y+radius);
+          for(let x=0;x<ww;x++){
+            const x0=Math.max(0,x-radius),x1=Math.min(ww-1,x+radius);
+            const A=integral[y0*stride+x0],B=integral[y0*stride+x1+1];
+            const C=integral[(y1+1)*stride+x0],E=integral[(y1+1)*stride+x1+1];
+            out[y*ww+x]=(E-B-C+A)/((x1-x0+1)*(y1-y0+1));
+          }
+        }
+        return out;
+      }
+
+      const broadRadius=Math.max(5,Math.round(Math.min(mw,mh)*.17));
+      let field=boxBlur(logLum,broadRadius);
+      field=boxBlur(field,Math.max(2,Math.round(broadRadius*.35)));
+
+      let fieldMin=Infinity,fieldMax=-Infinity,fieldSum=0;
+      for(let i=0;i<field.length;i++){fieldMin=Math.min(fieldMin,field[i]);fieldMax=Math.max(fieldMax,field[i]);fieldSum+=field[i];}
+      const fieldMean=fieldSum/Math.max(1,field.length);
+
+      /* Robust target: slightly brighter than the median illumination, but
+         still below the very brightest paper edge so highlights do not clip. */
+      const sorted=Array.from(field).sort((a,b)=>a-b);
+      const pick=p=>sorted[Math.max(0,Math.min(sorted.length-1,Math.round((sorted.length-1)*p)))];
+      const targetLog=Math.max(fieldMean,pick(.72));
+
+      function smoothstep(a,b,x){
+        const t=aoChatClamp((x-a)/Math.max(1e-6,b-a),0,1);
+        return t*t*(3-2*t);
+      }
+
+      function sampleMap(mapData,px,py){
+        const fx=aoChatClamp(px*(mw-1)/Math.max(1,w-1),0,mw-1);
+        const fy=aoChatClamp(py*(mh-1)/Math.max(1,h-1),0,mh-1);
+        const x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(mw-1,x0+1),y1=Math.min(mh-1,y0+1);
+        const tx=fx-x0,ty=fy-y0;
+        const a=mapData[y0*mw+x0],b=mapData[y0*mw+x1],c=mapData[y1*mw+x0],e=mapData[y1*mw+x1];
+        return a+(b-a)*tx+((c+(e-c)*tx)-(a+(b-a)*tx))*ty;
+      }
+
+      /*
+         First pass: remove the broad illumination/shadow field.
+         The correction is multiplicative in luminance (homomorphic style),
+         then blended according to local ink-vs-paper confidence so dark text
+         is not washed out.
+      */
       for(let y=0;y<h;y++){
         for(let x=0;x<w;x++){
           const i=(y*w+x)*4;
-          if(x===0||y===0||x===w-1||y===h-1){
-            hd[i]=sd[i];hd[i+1]=sd[i+1];hd[i+2]=sd[i+2];hd[i+3]=255;continue;
-          }
-          const l=(y*w+x-1)*4,r=(y*w+x+1)*4,u=((y-1)*w+x)*4,dn=((y+1)*w+x)*4;
-          for(let c=0;c<3;c++){
-            const edge=4*sd[i+c]-sd[l+c]-sd[r+c]-sd[u+c]-sd[dn+c];
-            hd[i+c]=Math.max(0,Math.min(255,sd[i+c]+amount*edge));
-          }
-          hd[i+3]=255;
+          const r=d[i],g=d[i+1],b=d[i+2];
+          const origY=.299*r+.587*g+.114*b;
+          const logY=Math.log(origY+2);
+          const bgLog=sampleMap(field,x,y);
+          const illuminationDelta=targetLog-bgLog;
+
+          /* If the pixel is much darker than its broad paper background, it is
+             likely printed/handwritten ink.  Keep more of that darkness. */
+          const inkDepth=Math.max(0,bgLog-logY);
+          const inkProtect=1-.78*smoothstep(.10,.50,inkDepth);
+
+          let corrected=Math.exp(logY+illuminationDelta)-2;
+          corrected=aoChatClamp(corrected,0,255);
+
+          /* Never darken; this stage is specifically for uneven illumination. */
+          const lifted=Math.max(0,corrected-origY)*inkProtect;
+          d[i]=aoChatClamp(r+lifted,0,255);
+          d[i+1]=aoChatClamp(g+lifted,0,255);
+          d[i+2]=aoChatClamp(b+lifted,0,255);
         }
       }
-      ctx.putImageData(sh,0,0);
+
+      ctx.putImageData(src,0,0);
     }
+
+    function aoChatEnhanceCanvas(sourceCanvas,mode){
+      const ctx=sourceCanvas.getContext('2d',{willReadFrequently:true});
+      if(!ctx || mode==='original') return;
+
+      /* ==========================================================
+         CAMSCANNER-LIKE CLEAN B&W DOCUMENT MODE
+         Goal: white paper + black text.
+         The key operation is illumination normalization BEFORE
+         thresholding. A phone shadow darkens both the pixel and its
+         broad local background, so their ratio stays close to white.
+         ========================================================== */
+
+      const w=sourceCanvas.width,h=sourceCanvas.height;
+      const img=ctx.getImageData(0,0,w,h),d=img.data;
+
+      /* Build a compact grayscale image for broad illumination estimation.
+         Fine text disappears here, while phone/table shadows remain. */
+      const maxSide=220;
+      const scale=Math.min(1,maxSide/Math.max(w,h));
+      const sw=Math.max(48,Math.round(w*scale));
+      const sh=Math.max(48,Math.round(h*scale));
+      const small=document.createElement('canvas');
+      small.width=sw; small.height=sh;
+      const sctx=small.getContext('2d',{willReadFrequently:true});
+      sctx.drawImage(sourceCanvas,0,0,sw,sh);
+      const sd=sctx.getImageData(0,0,sw,sh).data;
+      const count=sw*sh;
+      const lum=new Float32Array(count);
+      for(let i=0,p=0;p<count;p++,i+=4){
+        lum[p]=.299*sd[i]+.587*sd[i+1]+.114*sd[i+2];
+      }
+
+      function boxBlur(input,radius){
+        const ww=sw,hh=sh,stride=ww+1;
+        const integral=new Float32Array((hh+1)*stride);
+        for(let y=1;y<=hh;y++){
+          let row=0;
+          for(let x=1;x<=ww;x++){
+            row += input[(y-1)*ww+x-1];
+            integral[y*stride+x]=integral[(y-1)*stride+x]+row;
+          }
+        }
+        const out=new Float32Array(ww*hh);
+        for(let y=0;y<hh;y++){
+          const y0=Math.max(0,y-radius),y1=Math.min(hh-1,y+radius);
+          for(let x=0;x<ww;x++){
+            const x0=Math.max(0,x-radius),x1=Math.min(ww-1,x+radius);
+            const A=integral[y0*stride+x0],
+                  B=integral[y0*stride+x1+1],
+                  C=integral[(y1+1)*stride+x0],
+                  E=integral[(y1+1)*stride+x1+1];
+            out[y*ww+x]=(E-B-C+A)/((x1-x0+1)*(y1-y0+1));
+          }
+        }
+        return out;
+      }
+
+      /* Large blur = paper illumination field. Two passes reduce the
+         influence of the phone edge while keeping the actual page content. */
+      const broadRadius=Math.max(6,Math.round(Math.min(sw,sh)*0.16));
+      let field=boxBlur(lum,broadRadius);
+      field=boxBlur(field,Math.max(3,Math.round(broadRadius*0.45)));
+
+      function sampleField(px,py){
+        const fx=aoChatClamp(px*(sw-1)/Math.max(1,w-1),0,sw-1);
+        const fy=aoChatClamp(py*(sh-1)/Math.max(1,h-1),0,sh-1);
+        const x0=Math.floor(fx),y0=Math.floor(fy);
+        const x1=Math.min(sw-1,x0+1),y1=Math.min(sh-1,y0+1);
+        const tx=fx-x0,ty=fy-y0;
+        const a=field[y0*sw+x0],b=field[y0*sw+x1],c=field[y1*sw+x0],e=field[y1*sw+x1];
+        return a+(b-a)*tx+((c+(e-c)*tx)-(a+(b-a)*tx))*ty;
+      }
+
+      /* First estimate normalized document brightness.
+         A shadow may be dark in the photo, but it also darkens the broad
+         background estimate. Dividing by that estimate removes the shadow. */
+      const normalized=new Uint8Array(w*h);
+      let sampleSum=0,sampleN=0;
+      const step=Math.max(1,Math.floor(Math.sqrt((w*h)/180000)));
+      for(let y=0;y<h;y+=step){
+        for(let x=0;x<w;x+=step){
+          const i=(y*w+x)*4;
+          const yv=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+          const bg=Math.max(30,sampleField(x,y));
+          const n=aoChatClamp((yv/bg)*255,0,255);
+          sampleSum+=n; sampleN++;
+        }
+      }
+
+      /* Threshold is intentionally high: after illumination normalization,
+         true paper sits near 255 while handwriting/print stays much lower. */
+      const meanNorm=sampleSum/Math.max(1,sampleN);
+      let threshold=218;
+      if(mode==='bw') threshold=224;
+      else if(mode==='document') threshold=216;
+      else if(meanNorm<190) threshold=210;
+
+      /* Produce a true two-tone document: 255 paper, 0 ink.
+         This is the step that removes the visible phone shadow instead of
+         merely brightening it. */
+      const binary=new Uint8Array(w*h);
+      for(let y=0,p=0;y<h;y++){
+        for(let x=0;x<w;x++,p++){
+          const i=p*4;
+          const yv=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+          const bg=Math.max(30,sampleField(x,y));
+          let n=aoChatClamp((yv/bg)*255,0,255);
+          /* Slight local dark-ink bias improves thin handwritten strokes. */
+          const inkBoost=Math.max(0,255-n);
+          n=aoChatClamp(n-inkBoost*0.08,0,255);
+          binary[p]=(n<threshold)?0:255;
+        }
+      }
+
+      /* Tiny 3x3 cleanup removes isolated sensor noise without noticeably
+         eating normal handwriting. */
+      const cleaned=new Uint8Array(binary);
+      for(let y=1;y<h-1;y++){
+        for(let x=1;x<w-1;x++){
+          const p=y*w+x;
+          let black=0;
+          for(let yy=-1;yy<=1;yy++){
+            for(let xx=-1;xx<=1;xx++){
+              if(binary[(y+yy)*w+(x+xx)]===0) black++;
+            }
+          }
+          if(binary[p]===0 && black<=1) cleaned[p]=255;
+        }
+      }
+
+      for(let p=0,i=0;p<cleaned.length;p++,i+=4){
+        const v=cleaned[p];
+        d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=255;
+      }
+      ctx.putImageData(img,0,0);
+    }
+
+    function aoChatUpdateBorderOverlay(preview,canvas,points){
+      const layer=document.getElementById('aoPhotoEnhancerBorderLayer'),svg=document.getElementById('aoPhotoEnhancerBorderSvg'),poly=document.getElementById('aoPhotoEnhancerBorderPoly');if(!layer||!svg||!poly)return;const rect=canvas.getBoundingClientRect(),pr=preview.getBoundingClientRect(),sx=rect.width/canvas.width,sy=rect.height/canvas.height,ox=rect.left-pr.left,oy=rect.top-pr.top,pts=points.map(p=>({x:ox+p.x*sx,y:oy+p.y*sy}));svg.setAttribute('viewBox',`0 0 ${Math.max(1,pr.width)} ${Math.max(1,pr.height)}`);poly.setAttribute('points',pts.map(p=>`${p.x},${p.y}`).join(' '));[...layer.querySelectorAll('.ao-photo-enhancer-handle')].forEach((h,i)=>{h.style.left=pts[i].x+'px';h.style.top=pts[i].y+'px';});
+    }
+
+    function aoChatRefreshEnhancerResult(state){aoChatWarpPerspective(state.sourceCanvas,state.corners,state.canvas);if(state.mode!=='original')aoChatEnhanceCanvas(state.canvas,state.mode);}
 
     async function aoChatOpenPhotoEnhancer(file){
       return new Promise(async resolve=>{
-        const overlay=document.getElementById("aoPhotoEnhancer");
-        const canvas=document.getElementById("aoPhotoEnhancerCanvas");
-        const modeButtons=[...document.querySelectorAll("[data-ao-enhance-mode]")];
-        const useBtn=document.getElementById("aoPhotoEnhancerUse");
-        const cancelBtn=document.getElementById("aoPhotoEnhancerCancel");
-        const closeBtn=document.getElementById("aoPhotoEnhancerClose");
-        if(!overlay||!canvas||!useBtn||!cancelBtn){resolve(null);return;}
-        let settled=false,activeMode="auto",bitmap=null;
-        const finish=value=>{if(settled)return;settled=true;try{bitmap?.close?.();}catch(e){}overlay.hidden=true;overlay.setAttribute("aria-hidden","true");resolve(value);};
+        const overlay=document.getElementById('aoPhotoEnhancer'),preview=document.getElementById('aoPhotoEnhancerPreview'),canvas=document.getElementById('aoPhotoEnhancerCanvas'),source=document.createElement('canvas'),layer=document.getElementById('aoPhotoEnhancerBorderLayer'),poly=document.getElementById('aoPhotoEnhancerBorderPoly'),status=document.getElementById('aoPhotoEnhancerAutoStatus'),modeButtons=[...document.querySelectorAll('[data-ao-enhance-mode]')],useBtn=document.getElementById('aoPhotoEnhancerUse'),cancelBtn=document.getElementById('aoPhotoEnhancerCancel'),closeBtn=document.getElementById('aoPhotoEnhancerClose');
+        if(!overlay||!preview||!canvas||!useBtn||!cancelBtn)return resolve(null);
+        let settled=false,bitmap=null,activeMode='auto';
+        const finish=value=>{if(settled)return;settled=true;try{bitmap?.close?.()}catch(e){}overlay.hidden=true;overlay.setAttribute('aria-hidden','true');resolve(value);};
         try{
           bitmap=await createImageBitmap(file);
-          const max=1800,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
-          canvas.width=Math.max(1,Math.round(bitmap.width*scale));
-          canvas.height=Math.max(1,Math.round(bitmap.height*scale));
-          const ctx=canvas.getContext("2d",{alpha:false});
-          ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
-          const original=ctx.getImageData(0,0,canvas.width,canvas.height);
-          function render(mode){
-            ctx.putImageData(original,0,0);
-            aoChatEnhanceCanvas(canvas,mode);
-            modeButtons.forEach(b=>b.classList.toggle("active",b.dataset.aoEnhanceMode===mode));
+          const max=1900,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+          source.width=Math.max(1,Math.round(bitmap.width*scale));source.height=Math.max(1,Math.round(bitmap.height*scale));
+          const sctx=source.getContext('2d',{alpha:false});sctx.fillStyle='#fff';sctx.fillRect(0,0,source.width,source.height);sctx.drawImage(bitmap,0,0,source.width,source.height);
+          status.textContent='DETECTING BORDER…';status.classList.add('working');
+          const state={sourceCanvas:source,canvas,mode:'auto',corners:aoChatEstimateAutoCorners(source)};
+          function render(){
+            aoChatWarpPerspective(state.sourceCanvas,state.corners,state.canvas);
+            if(state.mode!=='original')aoChatEnhanceCanvas(state.canvas,state.mode);
           }
-          modeButtons.forEach(b=>b.onclick=()=>{activeMode=b.dataset.aoEnhanceMode||"auto";render(activeMode);});
-          const cancel=()=>finish(null);
-          const retake=()=>{finish(null);setTimeout(()=>{try{if(captureInput)captureInput.value="";captureInput?.click();}catch(e){}},80);};
-          cancelBtn.onclick=retake;
-          closeBtn.onclick=cancel;
-          useBtn.onclick=()=>{
-            canvas.toBlob(blob=>{
-              if(!blob){finish(null);return;}
-              finish(new File([blob],"chat-photo-enhanced.jpg",{type:"image/jpeg",lastModified:Date.now()}));
-            },"image/jpeg",.92);
-          };
-          overlay.hidden=false;
-          overlay.setAttribute("aria-hidden","false");
-          render("auto");
-        }catch(err){
-          console.warn("Chat photo enhancer failed:",err);
-          finish(null);
-        }
+          function chooseMode(m){activeMode=m||'auto';state.mode=activeMode;modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.aoEnhanceMode===activeMode));render();}
+          function showAutoBorder(){
+            if(layer&&poly){
+              const rect=canvas.getBoundingClientRect(),pr=preview.getBoundingClientRect(),pts=state.corners.map(p=>({x:p.x*rect.width/source.width+rect.left-pr.left,y:p.y*rect.height/source.height+rect.top-pr.top}));
+              poly.setAttribute('points',pts.map(p=>`${p.x},${p.y}`).join(' '));
+              const svg=document.getElementById('aoPhotoEnhancerBorderSvg');if(svg)svg.setAttribute('viewBox',`0 0 ${Math.max(1,pr.width)} ${Math.max(1,pr.height)}`);
+              layer.hidden=false;
+              setTimeout(()=>{if(layer)layer.hidden=true;},900);
+            }
+          }
+          overlay.hidden=false;overlay.setAttribute('aria-hidden','false');
+          canvas.width=source.width;canvas.height=source.height;canvas.getContext('2d').drawImage(source,0,0);
+          setTimeout(()=>{status.classList.remove('working');status.textContent='AUTO BORDER • READY';chooseMode('auto');},30);
+          modeButtons.forEach(b=>b.onclick=()=>chooseMode(b.dataset.aoEnhanceMode));
+          cancelBtn.onclick=closeBtn.onclick=()=>finish(null);
+          useBtn.onclick=()=>{canvas.toBlob(blob=>{if(!blob)return finish(null);finish(new File([blob],'chat-photo-scanned.jpg',{type:'image/jpeg',lastModified:Date.now()}));},'image/jpeg',.94);};
+        }catch(err){console.warn('Chat photo scanner failed:',err);finish(null);}
       });
     }
 
