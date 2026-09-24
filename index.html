@@ -7651,15 +7651,14 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 .ao-photo-enhancer-border-layer{position:absolute;inset:0;pointer-events:none}
 .ao-photo-enhancer-border-poly{position:absolute;inset:0;overflow:visible}
 .ao-photo-enhancer-border-line{fill:rgba(59,130,246,.12);stroke:#38bdf8;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px rgba(56,189,248,.85))}
-.ao-photo-enhancer-handle{position:absolute;width:22px;height:22px;border-radius:50%;margin:-11px 0 0 -11px;background:#fff;border:3px solid #2563eb;box-shadow:0 2px 10px rgba(0,0,0,.35),0 0 0 3px rgba(255,255,255,.62);pointer-events:auto;touch-action:none;cursor:grab}
+.ao-photo-enhancer-handle{display:none;position:absolute;width:22px;height:22px;border-radius:50%;margin:-11px 0 0 -11px;background:#fff;border:3px solid #2563eb;box-shadow:0 2px 10px rgba(0,0,0,.35),0 0 0 3px rgba(255,255,255,.62);pointer-events:auto;touch-action:none;cursor:grab}
 .ao-photo-enhancer-handle:active{cursor:grabbing;transform:scale(1.08)}
 .ao-photo-enhancer-adjusting .ao-photo-enhancer-border-layer{display:block}
 .ao-photo-enhancer-preview:not(.ao-photo-enhancer-adjusting) .ao-photo-enhancer-border-layer{display:none}
-.ao-photo-enhancer-tools{display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap}
-.ao-photo-enhancer-tool{min-height:39px!important;padding:8px 12px!important;border:1px solid #dbe3ec!important;border-radius:11px!important;background:#f8fafc!important;color:#334155!important;box-shadow:none!important;font-size:11px!important}
-.ao-photo-enhancer-tool.primary{background:#eff6ff!important;color:#1d4ed8!important;border-color:#93c5fd!important}
-.ao-photo-enhancer-tool.active{background:#1d4ed8!important;color:#fff!important;border-color:#1d4ed8!important}
-.ao-photo-enhancer-hint{margin-left:auto;font-size:10px;color:#64748b}
+.ao-photo-enhancer-tools{display:flex;align-items:center;gap:7px;margin-top:10px;min-height:28px}
+.ao-photo-enhancer-auto-note{font-size:10px;color:#64748b;font-weight:700}
+.ao-photo-enhancer-auto-status{position:absolute;top:10px;left:10px;padding:6px 9px;border-radius:999px;background:rgba(15,23,42,.80);color:#fff;font-size:9px;font-weight:900;letter-spacing:.5px;z-index:4;box-shadow:0 4px 14px rgba(0,0,0,.20)}
+.ao-photo-enhancer-auto-status.working{background:rgba(37,99,235,.88)}
 .ao-photo-enhancer-modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
 .ao-photo-enhancer-mode{min-height:42px!important;padding:8px 6px!important;border:1px solid #dbeafe!important;border-radius:11px!important;background:#fff!important;color:#334155!important;box-shadow:none!important;font-size:11px!important}
 .ao-photo-enhancer-mode.active{background:#eff6ff!important;color:#2563eb!important;border-color:#60a5fa!important;box-shadow:0 6px 16px rgba(37,99,235,.12)!important}
@@ -7667,16 +7666,16 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 .ao-photo-enhancer-cancel{background:#f1f5f9!important;color:#475569!important;border:1px solid #e2e8f0!important;box-shadow:none!important}
 .ao-photo-enhancer-use{background:linear-gradient(135deg,#60a5fa,#2563eb)!important;color:#fff!important}
 .ao-photo-enhancer-note{font-size:10px;color:#64748b;text-align:center;margin-top:7px}
-@media(max-width:600px){.ao-photo-enhancer-card{padding:11px;border-radius:18px}.ao-photo-enhancer-preview{min-height:190px}.ao-photo-enhancer-preview canvas{max-height:48vh}.ao-photo-enhancer-modes{grid-template-columns:repeat(2,minmax(0,1fr))}.ao-photo-enhancer-hint{width:100%;margin-left:0}}
+@media(max-width:600px){.ao-photo-enhancer-card{padding:11px;border-radius:18px}.ao-photo-enhancer-preview{min-height:190px}.ao-photo-enhancer-preview canvas{max-height:48vh}.ao-photo-enhancer-modes{grid-template-columns:repeat(2,minmax(0,1fr))}.ao-photo-enhancer-auto-note{width:100%}}
 </style>
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 <div id="aoPhotoEnhancer" class="ao-photo-enhancer-overlay" hidden aria-hidden="true">
   <div class="ao-photo-enhancer-card" role="dialog" aria-modal="true" aria-labelledby="aoPhotoEnhancerTitle">
-    <div class="ao-photo-enhancer-head"><div><div id="aoPhotoEnhancerTitle" class="ao-photo-enhancer-title">📄 Scan &amp; Enhance Photo</div><div class="ao-photo-enhancer-sub">Detect the paper, fix perspective, remove shadows, then enhance the document</div></div><button id="aoPhotoEnhancerClose" class="ao-photo-enhancer-close" type="button" aria-label="Close">✕</button></div>
-    <div id="aoPhotoEnhancerPreview" class="ao-photo-enhancer-preview"><canvas id="aoPhotoEnhancerCanvas"></canvas><div id="aoPhotoEnhancerBorderLayer" class="ao-photo-enhancer-border-layer" hidden><svg id="aoPhotoEnhancerBorderSvg" class="ao-photo-enhancer-border-poly" preserveAspectRatio="none"><polygon id="aoPhotoEnhancerBorderPoly" class="ao-photo-enhancer-border-line" points="0,0 100,0 100,100 0,100"></polygon></svg><div class="ao-photo-enhancer-handle" data-ao-corner="0"></div><div class="ao-photo-enhancer-handle" data-ao-corner="1"></div><div class="ao-photo-enhancer-handle" data-ao-corner="2"></div><div class="ao-photo-enhancer-handle" data-ao-corner="3"></div></div></div>
-    <div class="ao-photo-enhancer-tools"><button id="aoPhotoEnhancerBorder" type="button" class="ao-photo-enhancer-tool primary">✂ Adjust Border</button><button id="aoPhotoEnhancerAutoBorder" type="button" class="ao-photo-enhancer-tool">◎ Auto Detect</button><button id="aoPhotoEnhancerFullPhoto" type="button" class="ao-photo-enhancer-tool">▣ Full Photo</button><span class="ao-photo-enhancer-hint">Drag the 4 blue corners onto the paper edges.</span></div>
+    <div class="ao-photo-enhancer-head"><div><div id="aoPhotoEnhancerTitle" class="ao-photo-enhancer-title">📄 Scan &amp; Enhance Photo</div><div class="ao-photo-enhancer-sub">Automatic paper detection • perspective correction • shadow removal</div></div><button id="aoPhotoEnhancerClose" class="ao-photo-enhancer-close" type="button" aria-label="Close">✕</button></div>
+    <div id="aoPhotoEnhancerPreview" class="ao-photo-enhancer-preview"><canvas id="aoPhotoEnhancerCanvas"></canvas><div id="aoPhotoEnhancerBorderLayer" class="ao-photo-enhancer-border-layer" hidden><svg id="aoPhotoEnhancerBorderSvg" class="ao-photo-enhancer-border-poly" preserveAspectRatio="none"><polygon id="aoPhotoEnhancerBorderPoly" class="ao-photo-enhancer-border-line" points="0,0 100,0 100,100 0,100"></polygon></svg></div><div id="aoPhotoEnhancerAutoStatus" class="ao-photo-enhancer-auto-status">AUTO BORDER</div></div>
+    <div class="ao-photo-enhancer-tools"><span class="ao-photo-enhancer-auto-note">◎ Border is detected automatically. No manual cropping required.</span></div>
     <div class="ao-photo-enhancer-modes"><button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="original">Original</button><button type="button" class="ao-photo-enhancer-mode active" data-ao-enhance-mode="auto">✨ Auto Scan</button><button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="document">📄 Document</button><button type="button" class="ao-photo-enhancer-mode" data-ao-enhance-mode="bw">◐ B&amp;W</button></div>
     <div class="ao-photo-enhancer-actions"><button id="aoPhotoEnhancerCancel" class="ao-photo-enhancer-cancel" type="button">Retake</button><button id="aoPhotoEnhancerUse" class="ao-photo-enhancer-use" type="button">Use Scanned Photo</button></div>
     <div class="ao-photo-enhancer-note">Border correction and shadow removal happen on-device. The existing chat upload/send/storage flow is unchanged.</div>
@@ -7736,11 +7735,170 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     }
 
     function aoChatEstimateAutoCorners(canvas){
-      const w=canvas.width,h=canvas.height,small=260,sc=Math.min(1,small/Math.max(w,h)),sw=Math.max(32,Math.round(w*sc)),sh=Math.max(32,Math.round(h*sc)),tmp=document.createElement('canvas');tmp.width=sw;tmp.height=sh;tmp.getContext('2d').drawImage(canvas,0,0,sw,sh);const d=tmp.getContext('2d',{willReadFrequently:true}).getImageData(0,0,sw,sh).data,lum=new Float32Array(sw*sh);
-      for(let i=0,p=0;p<lum.length;p++,i+=4)lum[p]=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-      const gx=new Float32Array(sw*sh),gy=new Float32Array(sw*sh);for(let y=1;y<sh-1;y++)for(let x=1;x<sw-1;x++){const p=y*sw+x;gx[p]=Math.abs(lum[p+1]-lum[p-1]);gy[p]=Math.abs(lum[p+sw]-lum[p-sw]);}
-      const mx=Math.round(sw*.04),my=Math.round(sh*.04);function bestV(start,end){let best=-1,pos=start;for(let x=start;x<end;x++){let s=0,n=0;for(let y=my;y<sh-my;y+=2){s+=gx[y*sw+x];n++;}if(s/n>best){best=s/n;pos=x;}}return pos;}function bestH(start,end){let best=-1,pos=start;for(let y=start;y<end;y++){let s=0,n=0;for(let x=mx;x<sw-mx;x+=2){s+=gy[y*sw+x];n++;}if(s/n>best){best=s/n;pos=y;}}return pos;}
-      let left=bestV(mx,Math.floor(sw*.45)),right=bestV(Math.floor(sw*.55),sw-mx),top=bestH(my,Math.floor(sh*.45)),bottom=bestH(Math.floor(sh*.55),sh-my);if(right-left<sw*.35||bottom-top<sh*.35){left=sw*.04;right=sw*.96;top=sh*.04;bottom=sh*.96;}return [{x:left/sc,y:top/sc},{x:right/sc,y:top/sc},{x:right/sc,y:bottom/sc},{x:left/sc,y:bottom/sc}];
+      // Robust automatic document detection. It uses a downsampled edge map
+      // + Hough line voting, then scores candidate quadrilaterals by:
+      //   • four long border-like edges
+      //   • opposite-edge parallelism
+      //   • large, centered document area
+      //   • bright/low-saturation paper inside the candidate
+      // This avoids grabbing random shadows or text lines as the border.
+      const w=canvas.width,h=canvas.height;
+      const maxDim=320,sc=Math.min(1,maxDim/Math.max(w,h));
+      const sw=Math.max(80,Math.round(w*sc)),sh=Math.max(80,Math.round(h*sc));
+      const tmp=document.createElement('canvas');tmp.width=sw;tmp.height=sh;
+      const tctx=tmp.getContext('2d',{willReadFrequently:true});
+      tctx.drawImage(canvas,0,0,sw,sh);
+      const raw=tctx.getImageData(0,0,sw,sh).data;
+      const pix=sw*sh;
+      const lum=new Float32Array(pix);
+      const sat=new Float32Array(pix);
+      for(let i=0,p=0;p<pix;p++,i+=4){
+        const r=raw[i],g=raw[i+1],b=raw[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+        lum[p]=.299*r+.587*g+.114*b;sat[p]=mx-mn;
+      }
+
+      // Light 3x3 smoothing before Sobel to reduce text noise and tiny shadows.
+      const sm=new Float32Array(pix);
+      for(let y=1;y<sh-1;y++)for(let x=1;x<sw-1;x++){
+        const p=y*sw+x;
+        sm[p]=(lum[p-sw-1]+2*lum[p-sw]+lum[p-sw+1]+2*lum[p-1]+4*lum[p]+2*lum[p+1]+lum[p+sw-1]+2*lum[p+sw]+lum[p+sw+1])/16;
+      }
+      for(let x=0;x<sw;x++){sm[x]=lum[x];sm[(sh-1)*sw+x]=lum[(sh-1)*sw+x];}
+      for(let y=0;y<sh;y++){sm[y*sw]=lum[y*sw];sm[y*sw+sw-1]=lum[y*sw+sw-1];}
+
+      const gx=new Float32Array(pix),gy=new Float32Array(pix),mag=new Float32Array(pix);
+      let magSum=0,magCount=0;
+      for(let y=1;y<sh-1;y++)for(let x=1;x<sw-1;x++){
+        const p=y*sw+x;
+        const a=sm[p-sw-1],b=sm[p-sw],c=sm[p-sw+1],d=sm[p-1],e=sm[p+1],f=sm[p+sw-1],g=sm[p+sw],q=sm[p+sw+1];
+        const dx=-a+c-2*d+2*e-f+q,dy=-a-2*b-c+f+2*g+q,m=Math.hypot(dx,dy);
+        gx[p]=dx;gy[p]=dy;mag[p]=m;magSum+=m;magCount++;
+      }
+      const avgEdge=magSum/Math.max(1,magCount);
+      const edgeThreshold=Math.max(18,avgEdge*1.55);
+
+      // Hough accumulator: theta is the line normal angle, 0..178 degrees.
+      const thetaStep=2,thetaCount=90,diag=Math.hypot(sw,sh),rhoStep=2;
+      const rhoBins=Math.ceil((diag*2)/rhoStep)+3,rhoOffset=diag+rhoStep;
+      const acc=new Float32Array(thetaCount*rhoBins);
+      for(let y=2;y<sh-2;y++)for(let x=2;x<sw-2;x++){
+        const p=y*sw+x,m=mag[p];if(m<edgeThreshold)continue;
+        // Ignore tiny, highly saturated color edges unless they are very strong.
+        if(sat[p]>115 && m<edgeThreshold*1.8)continue;
+        const weight=Math.min(255,m);
+        for(let ti=0;ti<thetaCount;ti++){
+          const th=ti*thetaStep*Math.PI/180;
+          const rho=x*Math.cos(th)+y*Math.sin(th);
+          const rb=Math.round((rho+rhoOffset)/rhoStep);
+          if(rb>=0&&rb<rhoBins)acc[ti*rhoBins+rb]+=weight;
+        }
+      }
+
+      // Pull out strong, spatially separated Hough peaks.
+      const peaks=[];
+      const peakCount=28;
+      for(let n=0;n<peakCount;n++){
+        let best=-1,bt=-1,br=-1;
+        for(let ti=0;ti<thetaCount;ti++)for(let rb=0;rb<rhoBins;rb++){
+          const v=acc[ti*rhoBins+rb];if(v<=best)continue;
+          let ok=true;
+          for(const pk of peaks){
+            const dt=Math.min(Math.abs(ti-pk.ti),thetaCount-Math.abs(ti-pk.ti));
+            const dr=Math.abs(rb-pk.rb);
+            if(dt<=5&&dr<=7){ok=false;break;}
+          }
+          if(ok){best=v;bt=ti;br=rb;}
+        }
+        if(best<1)break;
+        peaks.push({ti:bt,rb:br,v:best,theta:bt*thetaStep*Math.PI/180,rho:br*rhoStep-rhoOffset});
+      }
+      if(peaks.length<4)return aoChatFallbackAutoCorners(sw,sh,sc);
+
+      const maxPeak=Math.max(...peaks.map(p=>p.v));
+      const lines=peaks.map(p=>({theta:p.theta,rho:p.rho,v:p.v,norm:p.v/Math.max(1,maxPeak)}));
+      function angleSep(a,b){let d=Math.abs(a-b)%Math.PI;return Math.min(d,Math.PI-d);}
+      function lineIntersection(a,b){
+        const ca=Math.cos(a.theta),sa=Math.sin(a.theta),cb=Math.cos(b.theta),sb=Math.sin(b.theta),det=ca*sb-sa*cb;
+        if(Math.abs(det)<.08)return null;
+        return {x:(a.rho*sb-sa*b.rho)/det,y:(ca*b.rho-a.rho*cb)/det};
+      }
+      function area4(q){let a=0;for(let i=0;i<4;i++){const p=q[i],n=q[(i+1)%4];a+=p.x*n.y-p.y*n.x;}return Math.abs(a)/2;}
+      function convex(q){let s=0;for(let i=0;i<4;i++){const a=q[i],b=q[(i+1)%4],c=q[(i+2)%4],cr=(b.x-a.x)*(c.y-b.y)-(b.y-a.y)*(c.x-b.x);if(Math.abs(cr)<3)return false;if(!s)s=Math.sign(cr);else if(Math.sign(cr)!==s)return false;}return true;}
+      function inside(q,x,y){let wn=0;for(let i=0;i<4;i++){const a=q[i],b=q[(i+1)%4];if(((a.y<=y)&&(b.y>y))||((a.y>y)&&(b.y<=y))){const ix=a.x+(y-a.y)*(b.x-a.x)/(b.y-a.y);if(ix>x)wn+=(b.y>a.y)?1:-1;}}return wn!==0;}
+      function sortQuad(points){
+        const cx=points.reduce((s,p)=>s+p.x,0)/4,cy=points.reduce((s,p)=>s+p.y,0)/4;
+        points.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+        let idx=0,best=Infinity;for(let i=0;i<4;i++){const q=points[i],v=q.x+q.y;if(v<best){best=v;idx=i;}}
+        return [points[idx],points[(idx+1)%4],points[(idx+2)%4],points[(idx+3)%4]];
+      }
+      function paperScore(q){
+        // Bilinear sampling inside the quadrilateral. We expect document paper
+        // to be relatively bright and less saturated than the surroundings.
+        let insideLum=0,insideSat=0,n=0;
+        for(let j=1;j<=5;j++)for(let i=1;i<=5;i++){
+          const u=i/6,v=j/6;
+          const a=q[0],b=q[1],c=q[2],d=q[3];
+          const top={x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u};
+          const bot={x:d.x+(c.x-d.x)*u,y:d.y+(c.y-d.y)*u};
+          const x=Math.round(top.x+(bot.x-top.x)*v),y=Math.round(top.y+(bot.y-top.y)*v);
+          if(x<1||y<1||x>=sw-1||y>=sh-1)continue;const p=y*sw+x;insideLum+=lum[p];insideSat+=sat[p];n++;
+        }
+        if(!n)return 0;
+        const inLum=insideLum/n,inSat=insideSat/n;
+        // Sample four outside-midpoint areas just beyond each edge.
+        let outLum=0,outSat=0,on=0;
+        for(let i=0;i<4;i++){
+          const a=q[i],b=q[(i+1)%4],mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+          const cx=sw/2,cy=sh/2,dx=cx-mx,dy=cy-my,len=Math.hypot(dx,dy)||1;
+          const sx=mx-dx/len*8,sy=my-dy/len*8;
+          const x=Math.round(sx),y=Math.round(sy);if(x>=0&&y>=0&&x<sw&&y<sh){const p=y*sw+x;outLum+=lum[p];outSat+=sat[p];on++;}
+        }
+        const oLum=on?outLum/on:128,oSat=on?outSat/on:80;
+        const bright=Math.max(0,Math.min(1,(inLum-125)/110));
+        const neutral=Math.max(0,Math.min(1,1-inSat/95));
+        const separation=Math.max(0,Math.min(1,(inLum-oLum+8)/70));
+        const colorSeparation=Math.max(0,Math.min(1,(oSat-inSat+10)/80));
+        return .38*bright+.18*neutral+.28*separation+.16*colorSeparation;
+      }
+
+      let best=null;
+      for(let i=0;i<lines.length;i++)for(let j=i+1;j<lines.length;j++){
+        if(angleSep(lines[i].theta,lines[j].theta)>0.10)continue;
+        if(Math.abs(lines[i].rho-lines[j].rho)<Math.min(sw,sh)*.10)continue;
+        for(let k=0;k<lines.length;k++)for(let l=k+1;l<lines.length;l++){
+          if(k===i||k===j||l===i||l===j)continue;
+          if(angleSep(lines[k].theta,lines[l].theta)>0.10)continue;
+          const cross=angleSep(lines[i].theta,lines[k].theta);
+          if(cross<0.72||cross>2.42)continue;
+          if(Math.abs(lines[k].rho-lines[l].rho)<Math.min(sw,sh)*.10)continue;
+          const p1=lineIntersection(lines[i],lines[k]),p2=lineIntersection(lines[i],lines[l]),p3=lineIntersection(lines[j],lines[l]),p4=lineIntersection(lines[j],lines[k]);
+          if(!p1||!p2||!p3||!p4)continue;
+          const q=sortQuad([p1,p2,p3,p4]);
+          if(q.some(p=>p.x<-sw*.04||p.x>sw*1.04||p.y<-sh*.04||p.y>sh*1.04))continue;
+          if(!convex(q))continue;
+          const area=area4(q),areaRatio=area/(sw*sh);if(areaRatio<.22||areaRatio>.93)continue;
+          const cx=q.reduce((s,p)=>s+p.x,0)/4,cy=q.reduce((s,p)=>s+p.y,0)/4;
+          if(!inside(q,sw/2,sh/2))continue;
+          const short=Math.min(Math.hypot(q[1].x-q[0].x,q[1].y-q[0].y),Math.hypot(q[2].x-q[1].x,q[2].y-q[1].y));
+          if(short<Math.min(sw,sh)*.22)continue;
+          const ps=paperScore(q);
+          const parallel=1-(angleSep(lines[i].theta,lines[j].theta)+angleSep(lines[k].theta,lines[l].theta))/.22;
+          const areaPref=1-Math.abs(areaRatio-.68)/.68;
+          const centered=1-Math.min(1,Math.hypot(cx-sw/2,cy-sh/2)/(Math.hypot(sw,sh)*.5));
+          const edgeScore=(lines[i].norm+lines[j].norm+lines[k].norm+lines[l].norm)/4;
+          const score=.30*edgeScore+.24*Math.max(0,ps)+.20*Math.max(0,areaPref)+.14*Math.max(0,centered)+.12*Math.max(0,parallel);
+          if(!best||score>best.score)best={q,score,ps};
+        }
+      }
+      if(!best||best.score<.43)return aoChatFallbackAutoCorners(sw,sh,sc);
+      return best.q.map(p=>({x:aoChatClamp(p.x/sc,0,w-1),y:aoChatClamp(p.y/sc,0,h-1)}));
+    }
+
+    function aoChatFallbackAutoCorners(sw,sh,sc){
+      // Conservative fallback: keep almost the entire frame instead of
+      // aggressively cropping something that was not confidently detected.
+      const mx=sw*.025,my=sh*.025;
+      return [{x:mx/sc,y:my/sc},{x:(sw-1-mx)/sc,y:my/sc},{x:(sw-1-mx)/sc,y:(sh-1-my)/sc},{x:mx/sc,y:(sh-1-my)/sc}];
     }
 
     function aoChatNormalizeShadows(canvas,mode){
@@ -7775,19 +7933,37 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 
     async function aoChatOpenPhotoEnhancer(file){
       return new Promise(async resolve=>{
-        const overlay=document.getElementById('aoPhotoEnhancer'),preview=document.getElementById('aoPhotoEnhancerPreview'),canvas=document.getElementById('aoPhotoEnhancerCanvas'),source=document.createElement('canvas'),borderBtn=document.getElementById('aoPhotoEnhancerBorder'),autoBtn=document.getElementById('aoPhotoEnhancerAutoBorder'),fullBtn=document.getElementById('aoPhotoEnhancerFullPhoto'),layer=document.getElementById('aoPhotoEnhancerBorderLayer'),handles=[...document.querySelectorAll('.ao-photo-enhancer-handle')],modeButtons=[...document.querySelectorAll('[data-ao-enhance-mode]')],useBtn=document.getElementById('aoPhotoEnhancerUse'),cancelBtn=document.getElementById('aoPhotoEnhancerCancel'),closeBtn=document.getElementById('aoPhotoEnhancerClose');
-        if(!overlay||!preview||!canvas||!useBtn||!cancelBtn)return resolve(null);let settled=false,bitmap=null,dragIndex=-1,activeMode='auto',adjusting=true;
+        const overlay=document.getElementById('aoPhotoEnhancer'),preview=document.getElementById('aoPhotoEnhancerPreview'),canvas=document.getElementById('aoPhotoEnhancerCanvas'),source=document.createElement('canvas'),layer=document.getElementById('aoPhotoEnhancerBorderLayer'),poly=document.getElementById('aoPhotoEnhancerBorderPoly'),status=document.getElementById('aoPhotoEnhancerAutoStatus'),modeButtons=[...document.querySelectorAll('[data-ao-enhance-mode]')],useBtn=document.getElementById('aoPhotoEnhancerUse'),cancelBtn=document.getElementById('aoPhotoEnhancerCancel'),closeBtn=document.getElementById('aoPhotoEnhancerClose');
+        if(!overlay||!preview||!canvas||!useBtn||!cancelBtn)return resolve(null);
+        let settled=false,bitmap=null,activeMode='auto';
         const finish=value=>{if(settled)return;settled=true;try{bitmap?.close?.()}catch(e){}overlay.hidden=true;overlay.setAttribute('aria-hidden','true');resolve(value);};
         try{
-          bitmap=await createImageBitmap(file);const max=1900,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));source.width=Math.max(1,Math.round(bitmap.width*scale));source.height=Math.max(1,Math.round(bitmap.height*scale));const sctx=source.getContext('2d',{alpha:false});sctx.drawImage(bitmap,0,0,source.width,source.height);
-          const state={preview,sourceCanvas:source,canvas,mode:'auto',corners:aoChatEstimateAutoCorners(source)};
-          const setAdjusting=v=>{adjusting=v;preview.classList.toggle('ao-photo-enhancer-adjusting',v);layer.hidden=!v;borderBtn.classList.toggle('active',v);if(v){canvas.width=source.width;canvas.height=source.height;canvas.getContext('2d').drawImage(source,0,0);requestAnimationFrame(()=>aoChatUpdateBorderOverlay(preview,canvas,state.corners));}else{aoChatRefreshEnhancerResult(state);}};
-          const chooseMode=m=>{activeMode=m||'auto';state.mode=activeMode;modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.aoEnhanceMode===activeMode));setAdjusting(false);};
-          const updateCorner=(idx,x,y)=>{state.corners[idx]={x:aoChatClamp(x,0,source.width-1),y:aoChatClamp(y,0,source.height-1)};canvas.width=source.width;canvas.height=source.height;canvas.getContext('2d').drawImage(source,0,0);requestAnimationFrame(()=>aoChatUpdateBorderOverlay(preview,canvas,state.corners));};
-          const pointerToSource=e=>{const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*source.width/r.width,y:(e.clientY-r.top)*source.height/r.height};};
-          handles.forEach((h,i)=>{h.onpointerdown=e=>{if(!adjusting)return;e.preventDefault();dragIndex=i;h.setPointerCapture?.(e.pointerId);};h.onpointermove=e=>{if(dragIndex!==i)return;e.preventDefault();const p=pointerToSource(e);updateCorner(i,p.x,p.y);};h.onpointerup=e=>{if(dragIndex===i){dragIndex=-1;try{h.releasePointerCapture?.(e.pointerId)}catch(_){}setAdjusting(true);}};});
-          borderBtn.onclick=()=>setAdjusting(!adjusting);autoBtn.onclick=()=>{state.corners=aoChatEstimateAutoCorners(source);setAdjusting(true);};fullBtn.onclick=()=>{state.corners=[{x:0,y:0},{x:source.width-1,y:0},{x:source.width-1,y:source.height-1},{x:0,y:source.height-1}];setAdjusting(true);};modeButtons.forEach(b=>b.onclick=()=>chooseMode(b.dataset.aoEnhanceMode));cancelBtn.onclick=closeBtn.onclick=()=>finish(null);useBtn.onclick=()=>{setAdjusting(false);setTimeout(()=>canvas.toBlob(blob=>{if(!blob)return finish(null);finish(new File([blob],'chat-photo-scanned.jpg',{type:'image/jpeg',lastModified:Date.now()}));},'image/jpeg',.94),0);};
-          overlay.hidden=false;overlay.setAttribute('aria-hidden','false');chooseMode('auto');setAdjusting(true);requestAnimationFrame(()=>aoChatUpdateBorderOverlay(preview,canvas,state.corners));
+          bitmap=await createImageBitmap(file);
+          const max=1900,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+          source.width=Math.max(1,Math.round(bitmap.width*scale));source.height=Math.max(1,Math.round(bitmap.height*scale));
+          const sctx=source.getContext('2d',{alpha:false});sctx.fillStyle='#fff';sctx.fillRect(0,0,source.width,source.height);sctx.drawImage(bitmap,0,0,source.width,source.height);
+          status.textContent='DETECTING BORDER…';status.classList.add('working');
+          const state={sourceCanvas:source,canvas,mode:'auto',corners:aoChatEstimateAutoCorners(source)};
+          function render(){
+            aoChatWarpPerspective(state.sourceCanvas,state.corners,state.canvas);
+            if(state.mode!=='original')aoChatEnhanceCanvas(state.canvas,state.mode);
+          }
+          function chooseMode(m){activeMode=m||'auto';state.mode=activeMode;modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.aoEnhanceMode===activeMode));render();}
+          function showAutoBorder(){
+            if(layer&&poly){
+              const rect=canvas.getBoundingClientRect(),pr=preview.getBoundingClientRect(),pts=state.corners.map(p=>({x:p.x*rect.width/source.width+rect.left-pr.left,y:p.y*rect.height/source.height+rect.top-pr.top}));
+              poly.setAttribute('points',pts.map(p=>`${p.x},${p.y}`).join(' '));
+              const svg=document.getElementById('aoPhotoEnhancerBorderSvg');if(svg)svg.setAttribute('viewBox',`0 0 ${Math.max(1,pr.width)} ${Math.max(1,pr.height)}`);
+              layer.hidden=false;
+              setTimeout(()=>{if(layer)layer.hidden=true;},900);
+            }
+          }
+          overlay.hidden=false;overlay.setAttribute('aria-hidden','false');
+          canvas.width=source.width;canvas.height=source.height;canvas.getContext('2d').drawImage(source,0,0);
+          setTimeout(()=>{status.classList.remove('working');status.textContent='AUTO BORDER • READY';chooseMode('auto');},30);
+          modeButtons.forEach(b=>b.onclick=()=>chooseMode(b.dataset.aoEnhanceMode));
+          cancelBtn.onclick=closeBtn.onclick=()=>finish(null);
+          useBtn.onclick=()=>{canvas.toBlob(blob=>{if(!blob)return finish(null);finish(new File([blob],'chat-photo-scanned.jpg',{type:'image/jpeg',lastModified:Date.now()}));},'image/jpeg',.94);};
         }catch(err){console.warn('Chat photo scanner failed:',err);finish(null);}
       });
     }
