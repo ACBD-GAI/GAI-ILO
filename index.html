@@ -7792,7 +7792,7 @@ async function aoDocCamStartCamera(){
   if(!video)throw new Error("Camera element not found.");
   aoDocCamStopStream();
   aoDocCamStream=await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},
+    video:{facingMode:{ideal:"environment"},width:{ideal:2560,min:1280},height:{ideal:1440,min:720},frameRate:{ideal:30,max:30}},
     audio:false
   });
   video.srcObject=aoDocCamStream;
@@ -7804,31 +7804,35 @@ function aoDocCamClamp(v){return v<0?0:(v>255?255:v);}
 
 async function aoEnhanceDocumentCanvas(sourceCanvas){
   const sw=sourceCanvas.width,sh=sourceCanvas.height;
-  const maxDim=1800;
+  // Preserve substantially more of the camera's native detail. Only very large
+  // phone frames are scaled down to keep browser memory usage reasonable.
+  const maxDim=3200;
   const scale=Math.min(1,maxDim/Math.max(sw,sh));
   const w=Math.max(1,Math.round(sw*scale)),h=Math.max(1,Math.round(sh*scale));
 
   const src=document.createElement("canvas");src.width=w;src.height=h;
   const sctx=src.getContext("2d",{willReadFrequently:true,alpha:false});
+  sctx.imageSmoothingEnabled=true;
+  sctx.imageSmoothingQuality="high";
   sctx.drawImage(sourceCanvas,0,0,w,h);
   const image=sctx.getImageData(0,0,w,h);
   const data=image.data;
 
-  // Low-resolution background map removes only broad lighting/shadow gradients.
-  // Keeping this map low-res makes it smooth enough to avoid halos around letters.
-  const bw=Math.max(24,Math.round(w/20)),bh=Math.max(24,Math.round(h/20));
+  // Very gentle low-frequency shadow estimate. This removes broad shadows
+  // without flattening the actual document text or small details.
+  const bw=Math.max(32,Math.round(w/28)),bh=Math.max(32,Math.round(h/28));
   const bg=document.createElement("canvas");bg.width=bw;bg.height=bh;
   const bctx=bg.getContext("2d",{willReadFrequently:true,alpha:false});
+  bctx.imageSmoothingEnabled=true;
+  bctx.imageSmoothingQuality="high";
   bctx.drawImage(src,0,0,bw,bh);
   const bgData=bctx.getImageData(0,0,bw,bh).data;
 
-  const out=new Uint8ClampedArray(data.length);
   const cellLum=new Float32Array(bw*bh);
   for(let i=0,ci=0;i<bgData.length;i+=4,ci++){
     cellLum[ci]=0.299*bgData[i]+0.587*bgData[i+1]+0.114*bgData[i+2];
   }
 
-  // Small local smoothing of the background map.
   const smooth=new Float32Array(cellLum.length);
   for(let y=0;y<bh;y++){
     for(let x=0;x<bw;x++){
@@ -7844,10 +7848,10 @@ async function aoEnhanceDocumentCanvas(sourceCanvas){
     }
   }
 
-  // Estimate page brightness. This avoids pushing already-white paper to pure white.
   let bgSum=0;for(let i=0;i<smooth.length;i++)bgSum+=smooth[i];
   const avgBg=bgSum/Math.max(1,smooth.length);
-  const targetBg=Math.min(238,Math.max(218,avgBg+8));
+  // Natural target: only correct a little, never force the page toward pure white.
+  const targetBg=Math.min(242,Math.max(190,avgBg+3));
 
   for(let y=0;y<h;y++){
     const gy=(y+0.5)*bh/h-0.5;
@@ -7861,30 +7865,30 @@ async function aoEnhanceDocumentCanvas(sourceCanvas){
       const p=(y*w+x)*4;
       const r=data[p],g=data[p+1],b=data[p+2];
       const lum=0.299*r+0.587*g+0.114*b;
-      const denom=Math.max(55,bgv);
-      let corrected=lum*(targetBg/denom);
-      // Gentle compression keeps it document-bright without blowing highlights.
-      corrected=128+(corrected-128)*1.08;
+
+      // Correct only part of the broad shadow. Preserve highlights and color.
+      const shadow=Math.max(0,Math.min(1,(bgv-targetBg)/115));
+      const lift=(targetBg-bgv)*0.13*shadow;
+      let corrected=lum+lift;
+      // Tiny natural contrast increase; no aggressive document whitening.
+      corrected=128+(corrected-128)*1.025;
       corrected=aoDocCamClamp(corrected);
 
-      // Mostly neutral document rendering, but retain a little color so receipts/cards
-      // do not look completely monochrome.
-      const colorKeep=.20;
-      let nr=corrected+(r-lum)*colorKeep;
-      let ng=corrected+(g-lum)*colorKeep;
-      let nb=corrected+(b-lum)*colorKeep;
+      const colorKeep=.62;
+      const nr=aoDocCamClamp(corrected+(r-lum)*colorKeep);
+      const ng=aoDocCamClamp(corrected+(g-lum)*colorKeep);
+      const nb=aoDocCamClamp(corrected+(b-lum)*colorKeep);
 
-      // Mild paper-white ceiling; pure white stays available for clean pages.
-      nr=aoDocCamClamp(nr);ng=aoDocCamClamp(ng);nb=aoDocCamClamp(nb);
       out[p]=nr;out[p+1]=ng;out[p+2]=nb;out[p+3]=255;
     }
   }
 
   const output=document.createElement("canvas");output.width=w;output.height=h;
   const octx=output.getContext("2d",{willReadFrequently:true,alpha:false});
-  const outImage=new ImageData(out,w,h);octx.putImageData(outImage,0,0);
+  octx.putImageData(new ImageData(out,w,h),0,0);
 
-  // One mild unsharp pass keeps small printed characters readable without a harsh halo.
+  // Very light unsharp mask. The previous 0.42 value could create harsh halos
+  // around letters; 0.12 keeps text readable while retaining natural edges.
   const fin=octx.getImageData(0,0,w,h),fd=fin.data,sharpen=new Uint8ClampedArray(fd);
   for(let y=1;y<h-1;y++){
     for(let x=1;x<w-1;x++){
@@ -7892,7 +7896,7 @@ async function aoEnhanceDocumentCanvas(sourceCanvas){
       for(let c=0;c<3;c++){
         const center=fd[p+c];
         const avg=(fd[p-4+c]+fd[p+4+c]+fd[p-w*4+c]+fd[p+w*4+c])/4;
-        sharpen[p+c]=aoDocCamClamp(center+(center-avg)*0.42);
+        sharpen[p+c]=aoDocCamClamp(center+(center-avg)*0.12);
       }
       sharpen[p+3]=255;
     }
@@ -7911,11 +7915,11 @@ async function aoDocCamCapture(){
   aoDocCamSetStatus("Enhancing document: reducing shadows and sharpening text…");
   try{
     const canvas=document.createElement("canvas");
-    let w=video.videoWidth,h=video.videoHeight;
-    const max=2200,scale=Math.min(1,max/Math.max(w,h));
-    w=Math.max(1,Math.round(w*scale));h=Math.max(1,Math.round(h*scale));
+    const w=video.videoWidth,h=video.videoHeight;
     canvas.width=w;canvas.height=h;
-    canvas.getContext("2d",{alpha:false}).drawImage(video,0,0,w,h);
+    const cctx=canvas.getContext("2d",{alpha:false,desynchronized:true});
+    cctx.imageSmoothingEnabled=false;
+    cctx.drawImage(video,0,0,w,h);
 
     const enhanced=await aoEnhanceDocumentCanvas(canvas);
     preview.width=enhanced.width;preview.height=enhanced.height;
@@ -7923,7 +7927,13 @@ async function aoDocCamCapture(){
     preview.classList.add("show");video.classList.add("hide");
     if(guide)guide.style.display="none";if(hint)hint.style.display="none";
 
-    const blob=await new Promise(resolve=>enhanced.toBlob(resolve,"image/jpeg",.88));
+    // High-quality JPEG. If the resulting file is above the existing chat
+    // attachment limit, retry once at a slightly lower quality instead of
+    // reducing the image dimensions.
+    let blob=await new Promise(resolve=>enhanced.toBlob(resolve,"image/jpeg",.94));
+    if(blob && blob.size>7.8*1024*1024){
+      blob=await new Promise(resolve=>enhanced.toBlob(resolve,"image/jpeg",.90));
+    }
     if(!blob)throw new Error("Unable to prepare the captured image.");
     aoDocCamCapturedFile=new File([blob],"document-scan.jpg",{type:"image/jpeg",lastModified:Date.now()});
     aoDocCamSetStatus("Document enhanced. Shadows reduced and text sharpened without strong brightness boost.");
