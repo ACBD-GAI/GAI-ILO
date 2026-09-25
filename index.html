@@ -7681,11 +7681,27 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 
+<style>
+/* MANUAL DOCUMENT CROP — additive only. Original camera frame/layout is untouched. */
+.ao-chat-scan-action-row{display:flex;gap:8px;width:100%}
+.ao-chat-scan-action-row button{flex:1;min-width:0}
+.ao-chat-scan-crop-overlay{position:absolute;inset:0;z-index:25;pointer-events:auto;touch-action:none}
+.ao-chat-scan-crop-box{position:absolute;box-sizing:border-box;border:2px solid #22c55e;background:rgba(34,197,94,.08);box-shadow:0 0 0 9999px rgba(2,6,23,.38);cursor:move;touch-action:none}
+.ao-chat-scan-crop-grid{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,transparent 32.9%,rgba(255,255,255,.55) 33%,transparent 33.1%,transparent 66.2%,rgba(255,255,255,.55) 66.3%,transparent 66.4%),linear-gradient(to bottom,transparent 32.9%,rgba(255,255,255,.55) 33%,transparent 33.1%,transparent 66.2%,rgba(255,255,255,.55) 66.3%,transparent 66.4%)}
+.ao-chat-scan-crop-handle{position:absolute;width:22px;height:22px;border:4px solid #fff;background:#22c55e;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,.28);touch-action:none}
+.ao-chat-scan-crop-handle.nw{left:-11px;top:-11px;cursor:nwse-resize}.ao-chat-scan-crop-handle.ne{right:-11px;top:-11px;cursor:nesw-resize}.ao-chat-scan-crop-handle.sw{left:-11px;bottom:-11px;cursor:nesw-resize}.ao-chat-scan-crop-handle.se{right:-11px;bottom:-11px;cursor:nwse-resize}
+@media(max-width:600px){.ao-chat-scan-action-row{gap:6px}.ao-chat-scan-crop-handle{width:26px;height:26px;border-width:4px}.ao-chat-scan-crop-handle.nw{left:-13px;top:-13px}.ao-chat-scan-crop-handle.ne{right:-13px;top:-13px}.ao-chat-scan-crop-handle.sw{left:-13px;bottom:-13px}.ao-chat-scan-crop-handle.se{right:-13px;bottom:-13px}}
+</style>
+
 <script id="aoChatDocumentScannerScript">
 (function(){
   let cameraStream=null,scanSource=null,previewTimer=null,mode="camera";
   let cameraZoom=1, scanZoom=1, pinchStartDistance=0, pinchStartZoom=1, rotationQuarterTurns=0;
   let panX=0, panY=0, previewBase=null, previewBaseKey="", previewFrame=null;
+  let cropMode=false;
+  let cropRect={x:.05,y:.05,w:.90,h:.90};
+  let cropDrag=null;
+  let cropBackup={zoom:1,panX:0,panY:0};
   const previewPointers=new Map();
   let dragStartX=0, dragStartY=0, dragStartPanX=0, dragStartPanY=0;
   let previewPinchStartDistance=0, previewPinchStartZoom=1, previewPinchStartPanX=0, previewPinchStartPanY=0;
@@ -7701,12 +7717,12 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       b:$("aoChatScanBrightness"),c:$("aoChatScanContrast"),k:$("aoChatScanClarity"),
       bv:$("aoChatScanBrightnessValue"),cv:$("aoChatScanContrastValue"),kv:$("aoChatScanClarityValue"),
       enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),bw:$("aoChatScanBlackWhite"),badge:$("aoChatScanAutoBadge"),
-      rotate:$("aoChatScanRotate"),zoomBadge:$("aoChatScanZoomBadge")
+      rotate:$("aoChatScanRotate"),zoomBadge:$("aoChatScanZoomBadge"),crop:$("aoChatScanCrop"),cropApply:$("aoChatScanCropApply"),cropCancel:$("aoChatScanCropCancel"),cropOverlay:$("aoChatScanCropOverlay"),cropActions:$("aoChatScanCropActions"),adjustMainActions:$("aoChatScanAdjustMainActions")
     };
   }
   function status(t){const e=els().status;if(e)e.textContent=t||"";}
   function stopCamera(){if(cameraStream){try{cameraStream.getTracks().forEach(t=>t.stop())}catch(e){}cameraStream=null}const v=els().video;if(v)v.srcObject=null}
-  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);if(previewFrame)cancelAnimationFrame(previewFrame);previewTimer=null;previewFrame=null;scanSource=null;previewBase=null;previewBaseKey="";cameraZoom=1;scanZoom=1;panX=0;panY=0;pinchStartDistance=0;pinchStartZoom=1;previewPointers.clear();previewPinchStartDistance=0;rotationQuarterTurns=0;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
+  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);if(previewFrame)cancelAnimationFrame(previewFrame);previewTimer=null;previewFrame=null;scanSource=null;previewBase=null;previewBaseKey="";cameraZoom=1;scanZoom=1;panX=0;panY=0;pinchStartDistance=0;pinchStartZoom=1;previewPointers.clear();previewPinchStartDistance=0;rotationQuarterTurns=0;cropMode=false;cropDrag=null;const e=els();if(e.cropOverlay)e.cropOverlay.style.display="none";if(e.cropActions)e.cropActions.style.display="none";if(e.adjustMainActions)e.adjustMainActions.style.display="flex";if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
   function setMode(m){mode=m;const e=els();if(e.camera)e.camera.style.display=m==="camera"?"":"none";if(e.adjust)e.adjust.classList.toggle("active",m==="adjust");if(e.cameraActions)e.cameraActions.style.display=m==="camera"?"flex":"none";if(e.adjustActions)e.adjustActions.style.display=m==="adjust"?"flex":"none"}
 
   function updateCameraZoomUI(){
@@ -8134,6 +8150,118 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     p.width=out.width;p.height=out.height;const px=p.getContext("2d",{alpha:false});px.imageSmoothingEnabled=true;px.imageSmoothingQuality="high";px.filter=cssFilter();px.drawImage(out,0,0);px.filter="none";p.style.filter="none";updateLabels();
   }
 
+  function getCropImageRect(){
+    const e=els(),wrap=e.preview?.parentElement;
+    if(!wrap||!scanSource)return null;
+    const r=wrap.getBoundingClientRect();
+    const scale=Math.min(r.width/scanSource.width,r.height/scanSource.height);
+    const w=scanSource.width*scale,h=scanSource.height*scale;
+    return {left:(r.width-w)/2,top:(r.height-h)/2,width:w,height:h};
+  }
+
+  function renderCropOverlay(){
+    const e=els();
+    if(!e.cropOverlay||!cropMode)return;
+    const ir=getCropImageRect();
+    const box=e.cropOverlay.querySelector(".ao-chat-scan-crop-box");
+    if(!ir||!box)return;
+    box.style.left=(ir.left+cropRect.x*ir.width)+"px";
+    box.style.top=(ir.top+cropRect.y*ir.height)+"px";
+    box.style.width=(cropRect.w*ir.width)+"px";
+    box.style.height=(cropRect.h*ir.height)+"px";
+  }
+
+  function setCropUI(active){
+    const e=els();
+    cropMode=active;
+    if(e.cropOverlay)e.cropOverlay.style.display=active?"block":"none";
+    if(e.adjustMainActions)e.adjustMainActions.style.display=active?"none":"flex";
+    if(e.cropActions)e.cropActions.style.display=active?"flex":"none";
+    if(active)requestAnimationFrame(renderCropOverlay);
+  }
+
+  function enterCropMode(){
+    if(!scanSource)return;
+    cropBackup={zoom:scanZoom,panX,panY};
+    scanZoom=1;panX=0;panY=0;
+    cropRect={x:.05,y:.05,w:.90,h:.90};
+    setCropUI(true);
+    queuePreview();
+    status("Crop mode: drag the crop box or any corner, then press Apply Crop.");
+  }
+
+  function cancelCropMode(){
+    cropDrag=null;
+    scanZoom=cropBackup.zoom||1;panX=cropBackup.panX||0;panY=cropBackup.panY||0;
+    setCropUI(false);
+    queuePreview();
+    status("Crop cancelled.");
+  }
+
+  function applyCropMode(){
+    if(!scanSource)return;
+    const sx=Math.max(0,Math.round(cropRect.x*scanSource.width));
+    const sy=Math.max(0,Math.round(cropRect.y*scanSource.height));
+    const sw=Math.max(2,Math.min(scanSource.width-sx,Math.round(cropRect.w*scanSource.width)));
+    const sh=Math.max(2,Math.min(scanSource.height-sy,Math.round(cropRect.h*scanSource.height)));
+    const scale=Math.min(1,4000/Math.max(sw,sh));
+    const c=document.createElement("canvas");
+    c.width=Math.max(1,Math.round(sw*scale));
+    c.height=Math.max(1,Math.round(sh*scale));
+    const x=c.getContext("2d",{alpha:false});
+    x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+    x.drawImage(scanSource,sx,sy,sw,sh,0,0,c.width,c.height);
+    scanSource=c;
+    previewBase=null;previewBaseKey="";
+    scanZoom=1;panX=0;panY=0;cropDrag=null;
+    setCropUI(false);
+    const e=els();if(e.badge)e.badge.textContent="MANUAL CROP";
+    queuePreview();
+    status("Crop applied. Two-finger zoom is still available.");
+  }
+
+  function cropPointerDown(ev){
+    if(!cropMode)return;
+    const box=ev.target.closest?.(".ao-chat-scan-crop-box");
+    if(!box)return;
+    ev.preventDefault();
+    cropDrag={handle:ev.target.dataset?.handle||"move",startX:ev.clientX,startY:ev.clientY,startRect:{...cropRect}};
+    try{box.setPointerCapture?.(ev.pointerId)}catch(_e){}
+  }
+
+  function cropPointerMove(ev){
+    if(!cropMode||!cropDrag)return;
+    const ir=getCropImageRect();
+    if(!ir)return;
+    ev.preventDefault();
+    const dx=(ev.clientX-cropDrag.startX)/Math.max(1,ir.width);
+    const dy=(ev.clientY-cropDrag.startY)/Math.max(1,ir.height);
+    const st=cropDrag.startRect,min=.05;
+    let x=st.x,y=st.y,w=st.w,h=st.h;
+    if(cropDrag.handle==="move"){
+      x=clamp(st.x+dx,0,1-st.w);y=clamp(st.y+dy,0,1-st.h);
+    }else{
+      if(cropDrag.handle.includes("w")){const nx=clamp(st.x+dx,0,st.x+st.w-min);x=nx;w=st.w-(nx-st.x)}
+      if(cropDrag.handle.includes("e")){w=clamp(st.w+dx,min,1-st.x)}
+      if(cropDrag.handle.includes("n")){const ny=clamp(st.y+dy,0,st.y+st.h-min);y=ny;h=st.h-(ny-st.y)}
+      if(cropDrag.handle.includes("s")){h=clamp(st.h+dy,min,1-st.y)}
+    }
+    cropRect={x,y,w,h};renderCropOverlay();
+  }
+
+  function cropPointerUp(){cropDrag=null;}
+
+  function initCropTool(){
+    const e=els();
+    if(!e.cropOverlay||e.cropOverlay.dataset.bound==="1")return;
+    e.cropOverlay.dataset.bound="1";
+    e.cropOverlay.addEventListener("pointerdown",cropPointerDown,{passive:false});
+    e.cropOverlay.addEventListener("pointermove",cropPointerMove,{passive:false});
+    e.cropOverlay.addEventListener("pointerup",cropPointerUp,{passive:false});
+    e.cropOverlay.addEventListener("pointercancel",cropPointerUp,{passive:false});
+    window.addEventListener("resize",()=>{if(cropMode)renderCropOverlay()});
+  }
+
   function updateLabels(){
     const e=els(),v=settings();
     if(e.zv)e.zv.textContent=v.zoom.toFixed(1)+"×";
@@ -8187,9 +8315,9 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       <div class="ao-chat-scan-body">
         <div id="aoChatScanCamera" class="ao-chat-scan-camera-wrap"><video id="aoChatScanVideo" class="ao-chat-scan-video" autoplay muted playsinline></video><div id="aoChatScanZoomBadge" class="ao-chat-scan-zoom-badge">1.0×</div><div class="ao-chat-scan-frame"></div><div class="ao-chat-scan-corner tl"></div><div class="ao-chat-scan-corner tr"></div><div class="ao-chat-scan-corner bl"></div><div class="ao-chat-scan-corner br"></div><div class="ao-chat-scan-hint">Fit the whole document inside the green frame</div></div>
         <div id="aoChatScanAdjust" class="ao-chat-scan-adjust">
-          <div class="ao-chat-scan-preview-wrap"><canvas id="aoChatScanPreview" class="ao-chat-scan-preview"></canvas><div id="aoChatScanAutoBadge" class="ao-chat-scan-auto-badge">AUTO BORDER</div></div>
+          <div class="ao-chat-scan-preview-wrap"><canvas id="aoChatScanPreview" class="ao-chat-scan-preview"></canvas><div id="aoChatScanAutoBadge" class="ao-chat-scan-auto-badge">AUTO BORDER</div><div id="aoChatScanCropOverlay" class="ao-chat-scan-crop-overlay" style="display:none"><div class="ao-chat-scan-crop-box"><div class="ao-chat-scan-crop-grid"></div><span class="ao-chat-scan-crop-handle nw" data-handle="nw"></span><span class="ao-chat-scan-crop-handle ne" data-handle="ne"></span><span class="ao-chat-scan-crop-handle sw" data-handle="sw"></span><span class="ao-chat-scan-crop-handle se" data-handle="se"></span></div></div></div>
           <div class="ao-chat-scan-controls">
-            <div class="ao-chat-scan-control"><label><span>Zoom</span><span id="aoChatScanZoomValue" class="ao-chat-scan-range-value">1.0×</span></label><input id="aoChatScanZoom" type="range" min="1" max="3" step="0.1" value="1"></div>
+            
             <div class="ao-chat-scan-control"><label><span>Brightness</span><span id="aoChatScanBrightnessValue" class="ao-chat-scan-range-value">+3</span></label><input id="aoChatScanBrightness" type="range" min="90" max="115" value="103"></div>
             <div class="ao-chat-scan-control"><label><span>Contrast</span><span id="aoChatScanContrastValue" class="ao-chat-scan-range-value">108%</span></label><input id="aoChatScanContrast" type="range" min="90" max="135" value="108"></div>
             <div class="ao-chat-scan-control"><label><span>Clarity</span><span id="aoChatScanClarityValue" class="ao-chat-scan-range-value">6</span></label><input id="aoChatScanClarity" type="range" min="0" max="20" value="6"></div>
@@ -8199,7 +8327,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       </div>
       <div id="aoChatScanStatus" class="ao-chat-scan-status">Starting camera…</div>
       <div id="aoChatScanCameraActions" class="ao-chat-scan-camera-actions"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanUploadFallback">🖼️ Upload Instead</button><button type="button" class="ao-chat-scan-capture" id="aoChatScanCapture" disabled>📷 Capture</button></div>
-      <div id="aoChatScanAdjustActions" class="ao-chat-scan-actions" style="display:none"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanRetake">↻ Retake</button><button type="button" class="ao-chat-scan-rotate" id="aoChatScanRotate">⟳ Rotate</button><button type="button" class="ao-chat-scan-primary" id="aoChatScanUse">✓ Use Scan</button></div>
+      <div id="aoChatScanAdjustActions" class="ao-chat-scan-actions" style="display:none"><div id="aoChatScanAdjustMainActions" class="ao-chat-scan-action-row"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanRetake">↻ Retake</button><button type="button" class="ao-chat-scan-rotate" id="aoChatScanRotate">⟳ Rotate</button><button type="button" class="ao-chat-scan-secondary" id="aoChatScanCrop">✂ Crop</button><button type="button" class="ao-chat-scan-primary" id="aoChatScanUse">✓ Use Scan</button></div><div id="aoChatScanCropActions" class="ao-chat-scan-action-row" style="display:none"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanCropCancel">Cancel</button><button type="button" class="ao-chat-scan-primary" id="aoChatScanCropApply">✓ Apply Crop</button></div></div>
     </div>`;
     document.body.appendChild(m);
 
@@ -8209,9 +8337,13 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     $("aoChatScanRetake").addEventListener("click",retake);
     $("aoChatScanRotate").addEventListener("click",rotateScan);
     $("aoChatScanUse").addEventListener("click",useScan);
+    $("aoChatScanCrop").addEventListener("click",enterCropMode);
+    $("aoChatScanCropCancel").addEventListener("click",cancelCropMode);
+    $("aoChatScanCropApply").addEventListener("click",applyCropMode);
     initPinchZoom();
     initPreviewPanZoom();
-    [$("aoChatScanZoom"),$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
+    initCropTool();
+    [$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
     $("aoChatScanAutoEnhance")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";queuePreview()});
     $("aoChatScanRemoveShadow")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";queuePreview()});
     $("aoChatScanBlackWhite")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";updateLabels();queuePreview()});
