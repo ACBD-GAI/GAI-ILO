@@ -7683,7 +7683,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 <script id="aoChatDocumentScannerScript">
 (function(){
   let cameraStream=null,scanSource=null,previewTimer=null,mode="camera";
-  let cameraZoom=1, pinchStartDistance=0, pinchStartZoom=1, rotationQuarterTurns=0;
+  let cameraZoom=1, scanZoom=1, pinchStartDistance=0, pinchStartZoom=1, rotationQuarterTurns=0;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const $=id=>document.getElementById(id);
 
@@ -7692,15 +7692,16 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       modal:$("aoChatScanModal"),video:$("aoChatScanVideo"),camera:$("aoChatScanCamera"),
       adjust:$("aoChatScanAdjust"),preview:$("aoChatScanPreview"),status:$("aoChatScanStatus"),
       capture:$("aoChatScanCapture"),cameraActions:$("aoChatScanCameraActions"),adjustActions:$("aoChatScanAdjustActions"),
+      zoom:$("aoChatScanZoom"),zv:$("aoChatScanZoomValue"),
       b:$("aoChatScanBrightness"),c:$("aoChatScanContrast"),k:$("aoChatScanClarity"),
       bv:$("aoChatScanBrightnessValue"),cv:$("aoChatScanContrastValue"),kv:$("aoChatScanClarityValue"),
-      enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),badge:$("aoChatScanAutoBadge"),
+      enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),bw:$("aoChatScanBlackWhite"),badge:$("aoChatScanAutoBadge"),
       rotate:$("aoChatScanRotate"),zoomBadge:$("aoChatScanZoomBadge")
     };
   }
   function status(t){const e=els().status;if(e)e.textContent=t||"";}
   function stopCamera(){if(cameraStream){try{cameraStream.getTracks().forEach(t=>t.stop())}catch(e){}cameraStream=null}const v=els().video;if(v)v.srcObject=null}
-  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);previewTimer=null;scanSource=null;cameraZoom=1;pinchStartDistance=0;pinchStartZoom=1;rotationQuarterTurns=0;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
+  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);previewTimer=null;scanSource=null;cameraZoom=1;scanZoom=1;pinchStartDistance=0;pinchStartZoom=1;rotationQuarterTurns=0;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
   function setMode(m){mode=m;const e=els();if(e.camera)e.camera.style.display=m==="camera"?"":"none";if(e.adjust)e.adjust.classList.toggle("active",m==="adjust");if(e.cameraActions)e.cameraActions.style.display=m==="camera"?"flex":"none";if(e.adjustActions)e.adjustActions.style.display=m==="adjust"?"flex":"none"}
 
   function updateCameraZoomUI(){
@@ -7714,6 +7715,14 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   function setCameraZoom(next){
     cameraZoom=clamp(Number(next)||1,1,3);
     updateCameraZoomUI();
+  }
+
+  function setScanZoom(next){
+    scanZoom=clamp(Number(next)||1,1,3);
+    const e=els();
+    if(e.zoom)e.zoom.value=String(scanZoom);
+    if(e.zv)e.zv.textContent=scanZoom.toFixed(1)+"×";
+    queuePreview();
   }
 
   function pinchDistance(a,b){
@@ -7867,11 +7876,13 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 
   function settings(){
     const e=els();return {
+      zoom:Number(e.zoom?.value||1),
       brightness:Number(e.b?.value||103),
       contrast:Number(e.c?.value||108),
       clarity:Number(e.k?.value||6),
       enhance:e.enhance?.checked!==false,
-      removeShadow:e.shadow?.checked!==false
+      removeShadow:e.shadow?.checked!==false,
+      blackWhite:e.bw?.checked===true
     }
   }
   function applyShadowRemoval(sourceCanvas, targetCanvas, strength=0.78){
@@ -7895,17 +7906,50 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     }
     dst.putImageData(di,0,0);
   }
+  function applyBlackWhite(targetCanvas){
+    const ctx=targetCanvas.getContext("2d",{willReadFrequently:true});
+    if(!ctx)return;
+    const img=ctx.getImageData(0,0,targetCanvas.width,targetCanvas.height);
+    const d=img.data;
+    let min=255,max=0;
+    const step=Math.max(1,Math.floor((d.length/4)/12000));
+    for(let i=0;i<d.length;i+=4*step){
+      const y=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+      if(y<min)min=y;if(y>max)max=y;
+    }
+    min=Math.max(0,Math.min(110,min));
+    max=Math.min(255,Math.max(175,max));
+    const range=Math.max(40,max-min);
+    for(let i=0;i<d.length;i+=4){
+      const y=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+      let n=(y-min)/range;
+      n=clamp((n-.035)*1.08,0,1);
+      n=Math.pow(n,.88);
+      const v=Math.round(n*255);
+      d[i]=v;d[i+1]=v;d[i+2]=v;
+    }
+    ctx.putImageData(img,0,0);
+  }
+
   function renderProcessed(targetW=900){
     if(!scanSource)return null;
-    const v=settings(),s=Math.min(1,targetW/Math.max(scanSource.width,scanSource.height));
-    const out=document.createElement("canvas");out.width=Math.max(1,Math.round(scanSource.width*s));out.height=Math.max(1,Math.round(scanSource.height*s));
-    const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(scanSource,0,0,out.width,out.height);
-    if(v.removeShadow&&v.enhance)applyShadowRemoval(out,out,.78);
+    const v=settings(),zoom=clamp(v.zoom||1,1,3);
+    const sourceW=scanSource.width,sourceH=scanSource.height;
+    const cropW=sourceW/zoom,cropH=sourceH/zoom;
+    const sx=(sourceW-cropW)/2,sy=(sourceH-cropH)/2;
+    const s=Math.min(1,targetW/Math.max(cropW,cropH));
+    const out=document.createElement("canvas");out.width=Math.max(1,Math.round(cropW*s));out.height=Math.max(1,Math.round(cropH*s));
+    const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+    x.drawImage(scanSource,sx,sy,cropW,cropH,0,0,out.width,out.height);
+    if(v.removeShadow&&v.enhance)applyShadowRemoval(out,out,v.blackWhite?.9:.78);
+    if(v.blackWhite)applyBlackWhite(out);
     return out;
   }
   function updateLabels(){
-    const e=els(),v=settings();if(e.bv)e.bv.textContent=(v.brightness>=100?"+":"")+(v.brightness-100);
-    if(e.cv)e.cv.textContent=v.contrast+"%";if(e.kv)e.kv.textContent=v.clarity
+    const e=els(),v=settings();
+    if(e.zv)e.zv.textContent=v.zoom.toFixed(1)+"×";
+    if(e.bv)e.bv.textContent=(v.brightness>=100?"+":"")+(v.brightness-100);
+    if(e.cv)e.cv.textContent=v.contrast+"%";if(e.kv)e.kv.textContent=v.clarity;
   }
   function cssFilter(){
     const v=settings(),bright=(v.enhance?v.brightness:v.brightness)/100,contrast=(v.contrast+v.clarity)/100;
@@ -7922,8 +7966,8 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     try{
       const src=captureCanvas(),b=e.border?.checked!==false?detectBounds(src):{left:src.width*.07,top:src.height*.07,right:src.width*.93,bottom:src.height*.93,confidence:"guided"};
       scanSource=crop(src,b);setMode("adjust");stopCamera();e.badge.textContent=b.confidence==="high"?"AUTO BORDER":"GUIDED BORDER";
-      e.b.value="103";e.c.value="108";e.k.value="6";e.enhance.checked=true;e.border.checked=true;updateLabels();queuePreview();
-      status("Review the scan. Adjust brightness, contrast, or clarity before sending.")
+      scanZoom=1;e.zoom.value="1";e.b.value="103";e.c.value="108";e.k.value="6";e.enhance.checked=true;e.shadow.checked=true;e.border.checked=true;e.bw.checked=false;updateLabels();queuePreview();
+      status("Review the scan. Use Zoom, brightness, contrast, clarity, or B&W before sending.")
     }catch(err){console.error("Document capture failed:",err);status(err?.message||"Could not capture.");e.capture.disabled=false}
   }
 
@@ -7944,7 +7988,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     }catch(err){console.error("Document scan finalize failed:",err);status(err?.message||"Could not prepare the scan.")}
   }
 
-  async function retake(){scanSource=null;rotationQuarterTurns=0;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
+  async function retake(){scanSource=null;scanZoom=1;rotationQuarterTurns=0;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
 
   function build(){
     if($("aoChatScanModal"))return;
@@ -7956,11 +8000,12 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
         <div id="aoChatScanAdjust" class="ao-chat-scan-adjust">
           <div class="ao-chat-scan-preview-wrap"><canvas id="aoChatScanPreview" class="ao-chat-scan-preview"></canvas><div id="aoChatScanAutoBadge" class="ao-chat-scan-auto-badge">AUTO BORDER</div></div>
           <div class="ao-chat-scan-controls">
+            <div class="ao-chat-scan-control"><label><span>Zoom</span><span id="aoChatScanZoomValue" class="ao-chat-scan-range-value">1.0×</span></label><input id="aoChatScanZoom" type="range" min="1" max="3" step="0.1" value="1"></div>
             <div class="ao-chat-scan-control"><label><span>Brightness</span><span id="aoChatScanBrightnessValue" class="ao-chat-scan-range-value">+3</span></label><input id="aoChatScanBrightness" type="range" min="90" max="115" value="103"></div>
             <div class="ao-chat-scan-control"><label><span>Contrast</span><span id="aoChatScanContrastValue" class="ao-chat-scan-range-value">108%</span></label><input id="aoChatScanContrast" type="range" min="90" max="135" value="108"></div>
             <div class="ao-chat-scan-control"><label><span>Clarity</span><span id="aoChatScanClarityValue" class="ao-chat-scan-range-value">6</span></label><input id="aoChatScanClarity" type="range" min="0" max="20" value="6"></div>
           </div>
-          <div class="ao-chat-scan-checks"><label class="ao-chat-scan-check"><input id="aoChatScanAutoEnhance" type="checkbox" checked> Gentle document enhancement</label><label class="ao-chat-scan-check"><input id="aoChatScanRemoveShadow" type="checkbox" checked> Remove phone shadows</label><label class="ao-chat-scan-check"><input id="aoChatScanAutoBorder" type="checkbox" checked> Auto border</label></div>
+          <div class="ao-chat-scan-checks"><label class="ao-chat-scan-check"><input id="aoChatScanAutoEnhance" type="checkbox" checked> Gentle document enhancement</label><label class="ao-chat-scan-check"><input id="aoChatScanRemoveShadow" type="checkbox" checked> Remove phone shadows</label><label class="ao-chat-scan-check"><input id="aoChatScanAutoBorder" type="checkbox" checked> Auto border</label><label class="ao-chat-scan-check"><input id="aoChatScanBlackWhite" type="checkbox"> Black &amp; White</label></div>
         </div>
       </div>
       <div id="aoChatScanStatus" class="ao-chat-scan-status">Starting camera…</div>
@@ -7976,9 +8021,10 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     $("aoChatScanRotate").addEventListener("click",rotateScan);
     $("aoChatScanUse").addEventListener("click",useScan);
     initPinchZoom();
-    [$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
+    [$("aoChatScanZoom"),$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
     $("aoChatScanAutoEnhance")?.addEventListener("change",queuePreview);
     $("aoChatScanRemoveShadow")?.addEventListener("change",queuePreview);
+    $("aoChatScanBlackWhite")?.addEventListener("change",()=>{updateLabels();queuePreview()});
     $("aoChatScanAutoBorder")?.addEventListener("change",e=>status(e.target.checked?"Auto border will run on the next capture.":"Auto border is off; the green guide frame will be used."));
     document.addEventListener("keydown",e=>{if($("aoChatScanModal")?.classList.contains("open")&&e.key==="Escape")closeScanner()});
     window.addEventListener("pagehide",stopCamera);
