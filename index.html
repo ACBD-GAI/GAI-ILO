@@ -7592,8 +7592,8 @@ let aoChatOpen=false, aoChatSending=false, aoChatTimer=null, aoChatUnread=0;
 let aoChatPendingImage=null;
 const AO_CHAT_IMAGE_BUCKET="ao-chat-images";
 const AO_CHAT_IMAGE_MAX_INPUT_BYTES=8*1024*1024;
-const AO_CHAT_IMAGE_MAX_OUTPUT_BYTES=4*1024*1024;
-const AO_CHAT_IMAGE_MAX_DIMENSION=3000;
+const AO_CHAT_IMAGE_MAX_OUTPUT_BYTES=1200*1024;
+const AO_CHAT_IMAGE_MAX_DIMENSION=1600;
 function aoChatEsc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
 function aoChatStatus(t){const e=document.getElementById("aoChatStatus");if(e)e.textContent=t||"";}
 function aoChatSession(){try{return currentSession()||{};}catch(e){return {};}}
@@ -7620,8 +7620,8 @@ async function aoChatCompressImage(file){
  const ctx=canvas.getContext("2d",{alpha:false});
  if(!ctx){bitmap.close?.();throw new Error("Unable to prepare the image.");}
  ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);ctx.drawImage(bitmap,0,0,width,height);bitmap.close?.();
- let quality=.94;let blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));
- while(blob&&blob.size>AO_CHAT_IMAGE_MAX_OUTPUT_BYTES&&quality>.68){quality-=.04;blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));}
+ let quality=.82;let blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));
+ while(blob&&blob.size>AO_CHAT_IMAGE_MAX_OUTPUT_BYTES&&quality>.50){quality-=.06;blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));}
  if(!blob)throw new Error("Image compression failed.");
  return new File([blob],"chat-image.jpg",{type:"image/jpeg",lastModified:Date.now()});
 }
@@ -7697,7 +7697,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       modal:$("aoChatScanModal"),video:$("aoChatScanVideo"),camera:$("aoChatScanCamera"),
       adjust:$("aoChatScanAdjust"),preview:$("aoChatScanPreview"),status:$("aoChatScanStatus"),
       capture:$("aoChatScanCapture"),cameraActions:$("aoChatScanCameraActions"),adjustActions:$("aoChatScanAdjustActions"),
-      zv:$("aoChatScanZoomValue"),
+      zoom:$("aoChatScanZoom"),zv:$("aoChatScanZoomValue"),
       b:$("aoChatScanBrightness"),c:$("aoChatScanContrast"),k:$("aoChatScanClarity"),
       bv:$("aoChatScanBrightnessValue"),cv:$("aoChatScanContrastValue"),kv:$("aoChatScanClarityValue"),
       enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),bw:$("aoChatScanBlackWhite"),badge:$("aoChatScanAutoBadge"),
@@ -7727,6 +7727,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     if(scanZoom<=1.001){panX=0;panY=0}
     clampPan();
     const e=els();
+    if(e.zoom)e.zoom.value=String(scanZoom);
     if(e.zv)e.zv.textContent=scanZoom.toFixed(1)+"×";
     queuePreview();
   }
@@ -7913,13 +7914,13 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     if(!navigator.mediaDevices?.getUserMedia)throw new Error("Camera capture is not supported by this browser.");
     stopCamera();
     cameraZoom=1;pinchStartDistance=0;pinchStartZoom=1;updateCameraZoomUI();
-    cameraStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:2560,max:3840},height:{ideal:1440,max:2160}}});
+    cameraStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280,max:1920},height:{ideal:960,max:1440}}});
     e.video.srcObject=cameraStream;e.video.muted=true;e.video.setAttribute("playsinline","");
     await e.video.play();e.capture.disabled=false;status("Position the whole document inside the green frame. Pinch with two fingers to zoom.")
   }
 
   function captureCanvas(){
-    const v=els().video,vw=v.videoWidth||1920,vh=v.videoHeight||1080,maxDim=3200;
+    const v=els().video,vw=v.videoWidth||1280,vh=v.videoHeight||960,maxDim=2200;
     const zoom=clamp(cameraZoom,1,3);
     const cropW=vw/zoom,cropH=vh/zoom,left=(vw-cropW)/2,top=(vh-cropH)/2;
     const s=Math.min(1,maxDim/Math.max(cropW,cropH));
@@ -8026,13 +8027,13 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 
   function crop(src,b){
     const l=Math.round(clamp(b.left,0,src.width-2)),t=Math.round(clamp(b.top,0,src.height-2)),r=Math.round(clamp(b.right,l+2,src.width)),bt=Math.round(clamp(b.bottom,t+2,src.height));
-    const c=document.createElement("canvas"),w=r-l,h=bt-t,s=Math.min(1,3200/Math.max(w,h));c.width=Math.round(w*s);c.height=Math.round(h*s);
+    const c=document.createElement("canvas"),w=r-l,h=bt-t,s=Math.min(1,2200/Math.max(w,h));c.width=Math.round(w*s);c.height=Math.round(h*s);
     const x=c.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(src,l,t,w,h,0,0,c.width,c.height);return c
   }
 
   function settings(){
     const e=els();return {
-      zoom:clamp(scanZoom||1,1,3),
+      zoom:Number(e.zoom?.value||1),
       brightness:Number(e.b?.value||103),
       contrast:Number(e.c?.value||108),
       clarity:Number(e.k?.value||6),
@@ -8154,7 +8155,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     try{
       const src=captureCanvas(),b=e.border?.checked!==false?detectBounds(src):{left:src.width*.07,top:src.height*.07,right:src.width*.93,bottom:src.height*.93,confidence:"guided"};
       scanSource=crop(src,b);previewBase=null;previewBaseKey="";panX=0;panY=0;setMode("adjust");stopCamera();e.badge.textContent=b.confidence==="high"?"AUTO BORDER":"GUIDED BORDER";
-      scanZoom=1;e.b.value="103";e.c.value="108";e.k.value="6";e.enhance.checked=true;e.shadow.checked=true;e.border.checked=true;e.bw.checked=false;updateLabels();queuePreview();
+      scanZoom=1;e.zoom.value="1";e.b.value="103";e.c.value="108";e.k.value="6";e.enhance.checked=true;e.shadow.checked=true;e.border.checked=true;e.bw.checked=false;updateLabels();queuePreview();
       status("Review the scan. Drag the image to move it • pinch to zoom • use the controls below.")
     }catch(err){console.error("Document capture failed:",err);status(err?.message||"Could not capture.");e.capture.disabled=false}
   }
@@ -8162,7 +8163,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   async function useScan(){
     if(!scanSource)return;status("Preparing final scan…");
     try{
-      const v=settings(),processed=renderProcessed(3200),out=document.createElement("canvas");
+      const v=settings(),processed=renderProcessed(2200),out=document.createElement("canvas");
       out.width=processed.width;out.height=processed.height;
       const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
       x.filter=cssFilter();x.drawImage(processed,0,0,out.width,out.height);x.filter="none";
@@ -8188,7 +8189,8 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
         <div id="aoChatScanAdjust" class="ao-chat-scan-adjust">
           <div class="ao-chat-scan-preview-wrap"><canvas id="aoChatScanPreview" class="ao-chat-scan-preview"></canvas><div id="aoChatScanAutoBadge" class="ao-chat-scan-auto-badge">AUTO BORDER</div></div>
           <div class="ao-chat-scan-controls">
-                        <div class="ao-chat-scan-control"><label><span>Brightness</span><span id="aoChatScanBrightnessValue" class="ao-chat-scan-range-value">+3</span></label><input id="aoChatScanBrightness" type="range" min="90" max="115" value="103"></div>
+            <div class="ao-chat-scan-control"><label><span>Zoom</span><span id="aoChatScanZoomValue" class="ao-chat-scan-range-value">1.0×</span></label><input id="aoChatScanZoom" type="range" min="1" max="3" step="0.1" value="1"></div>
+            <div class="ao-chat-scan-control"><label><span>Brightness</span><span id="aoChatScanBrightnessValue" class="ao-chat-scan-range-value">+3</span></label><input id="aoChatScanBrightness" type="range" min="90" max="115" value="103"></div>
             <div class="ao-chat-scan-control"><label><span>Contrast</span><span id="aoChatScanContrastValue" class="ao-chat-scan-range-value">108%</span></label><input id="aoChatScanContrast" type="range" min="90" max="135" value="108"></div>
             <div class="ao-chat-scan-control"><label><span>Clarity</span><span id="aoChatScanClarityValue" class="ao-chat-scan-range-value">6</span></label><input id="aoChatScanClarity" type="range" min="0" max="20" value="6"></div>
           </div>
@@ -8209,7 +8211,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     $("aoChatScanUse").addEventListener("click",useScan);
     initPinchZoom();
     initPreviewPanZoom();
-    [$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
+    [$("aoChatScanZoom"),$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
     $("aoChatScanAutoEnhance")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";queuePreview()});
     $("aoChatScanRemoveShadow")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";queuePreview()});
     $("aoChatScanBlackWhite")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";updateLabels();queuePreview()});
