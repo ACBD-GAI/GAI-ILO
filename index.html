@@ -2438,11 +2438,13 @@ input:focus-visible{
 .ao-chat-scan-capture{background:linear-gradient(135deg,#60a5fa,#2563eb)!important}.ao-chat-scan-capture:disabled{opacity:.45!important}
 .ao-chat-scan-lock{overflow:hidden!important}
 @media(max-width:600px){
-  .ao-chat-scan-modal{padding:0}.ao-chat-scan-card{width:100%;height:100%;max-height:none;border-radius:0}
+  .ao-chat-scan-modal{padding:0;align-items:flex-start}.ao-chat-scan-card{width:100%;height:100%;max-height:none;border-radius:0;min-height:100dvh}
   .ao-chat-scan-body{padding:8px}.ao-chat-scan-camera-wrap,.ao-chat-scan-preview-wrap{aspect-ratio:3/4;max-height:none}
   .ao-chat-scan-controls{grid-template-columns:1fr}.ao-chat-scan-frame{inset:6% 5%}
   .ao-chat-scan-corner.tl{left:5%;top:6%}.ao-chat-scan-corner.tr{right:5%;top:6%}.ao-chat-scan-corner.bl{left:5%;bottom:6%}.ao-chat-scan-corner.br{right:5%;bottom:6%}
   .ao-chat-scan-hint{white-space:normal;width:calc(100% - 20px);bottom:8px}
+  .ao-chat-scan-camera-actions,.ao-chat-scan-actions{padding:0 10px calc(18px + env(safe-area-inset-bottom));transform:translateY(-8px);position:relative;z-index:20}
+  .ao-chat-scan-camera-actions button,.ao-chat-scan-actions button{min-height:48px}
 }
 @media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}.ao-chat-emoji-picker{right:4px;bottom:58px;width:min(300px,calc(100vw - 28px));grid-template-columns:repeat(7,1fr)}}
 
@@ -7688,7 +7690,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       capture:$("aoChatScanCapture"),cameraActions:$("aoChatScanCameraActions"),adjustActions:$("aoChatScanAdjustActions"),
       b:$("aoChatScanBrightness"),c:$("aoChatScanContrast"),k:$("aoChatScanClarity"),
       bv:$("aoChatScanBrightnessValue"),cv:$("aoChatScanContrastValue"),kv:$("aoChatScanClarityValue"),
-      enhance:$("aoChatScanAutoEnhance"),border:$("aoChatScanAutoBorder"),badge:$("aoChatScanAutoBadge")
+      enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),badge:$("aoChatScanAutoBadge")
     };
   }
   function status(t){const e=els().status;if(e)e.textContent=t||"";}
@@ -7712,18 +7714,76 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   }
 
   function detectBounds(src){
-    const maxSide=520,s=Math.min(1,maxSide/Math.max(src.width,src.height)),w=Math.max(90,Math.round(src.width*s)),h=Math.max(90,Math.round(src.height*s));
-    const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(src,0,0,w,h);
-    const d=x.getImageData(0,0,w,h).data,g=new Float32Array(w*h),cols=new Float32Array(w),rows=new Float32Array(h);
+    // Conservative, consensus-based edge detection. A single hard shadow edge
+    // should not be allowed to become the document border.
+    const maxSide=520,s=Math.min(1,maxSide/Math.max(src.width,src.height)),w=Math.max(120,Math.round(src.width*s)),h=Math.max(120,Math.round(src.height*s));
+    const c=document.createElement("canvas");c.width=w;c.height=h;
+    const x=c.getContext("2d",{willReadFrequently:true});
+    x.drawImage(src,0,0,w,h);
+    const d=x.getImageData(0,0,w,h).data,g=new Float32Array(w*h);
     for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
-    for(let y=1;y<h-1;y++)for(let xx=1;xx<w-1;xx++){const p=y*w+xx,gx=Math.abs(g[p+1]-g[p-1]),gy=Math.abs(g[p+w]-g[p-w]),v=Math.min(255,Math.sqrt(gx*gx+gy*gy));cols[xx]+=v;rows[y]+=v}
-    const smooth=a=>{const o=new Float32Array(a.length);for(let i=0;i<a.length;i++)o[i]=(.5*(a[i]+(a[i-1]??a[i])+(a[i+1]??a[i]))/1.5);return o};
-    const C=smooth(cols),R=smooth(rows);
-    function pick(a,lo,hi){let sum=0,n=0;for(let i=Math.floor(a.length*lo);i<=Math.ceil(a.length*hi);i+=Math.max(1,Math.floor(a.length/100))){sum+=a[i];n++}const avg=n?sum/n:0,th=avg*1.18;let bi=-1,bs=0;for(let i=Math.floor(a.length*lo);i<=Math.ceil(a.length*hi);i++){const s=a[i];if(s>th&&s>bs){bs=s;bi=i}}return bi}
-    let l=pick(C,.04,.46),r=pick(C,.54,.96),t=pick(R,.04,.46),b=pick(R,.54,.96),gl=w*.07,gt=h*.07,gr=w*.93,gb=h*.93;
-    if(l<0||r-l<w*.35){l=gl;r=gr}if(t<0||b-t<h*.35){t=gt;b=gb}
-    l=clamp(l,w*.025,w*.45);r=clamp(r,w*.55,w*.975);t=clamp(t,h*.025,h*.45);b=clamp(b,h*.55,h*.975);
-    return {left:l/s,top:t/s,right:r/s,bottom:b/s,confidence:(r-l>w*.6&&b-t>h*.6)?"high":"guided"}
+
+    function sampleEdge(side){
+      const vertical=side==='left'||side==='right';
+      const count=9, picks=[], strengths=[];
+      const start=vertical?Math.round(h*.12):Math.round(w*.12);
+      const end=vertical?Math.round(h*.88):Math.round(w*.88);
+      const span=vertical?w:h;
+      const lo=Math.round(span*(side==='left'||side==='top'?.035:.965));
+      const hi=Math.round(span*(side==='left'||side==='top'?.47:.965));
+      const from=side==='left'||side==='top'?Math.round(span*.035):Math.round(span*.53);
+      const to=side==='left'||side==='top'?Math.round(span*.47):Math.round(span*.965);
+      const step=Math.max(1,Math.floor((end-start)/(count-1)));
+      for(let k=0;k<count;k++){
+        const q=Math.min(end,start+k*step);
+        let best=-1,bestScore=-1,bestJump=0;
+        const qLo=from,qHi=to;
+        for(let pos=qLo+2;pos<qHi-2;pos++){
+          let score=0;
+          for(let off=-2;off<=2;off++){
+            const line=Math.max(1,Math.min(vertical?h-2:q-0, q+off));
+            const idx=vertical?line*w+pos:pos*w+line;
+            const a=vertical?g[idx-1]:g[idx-w],b=vertical?g[idx+1]:g[idx+w];
+            score+=Math.abs(b-a);
+          }
+          score/=5;
+          if(score>bestScore){bestScore=score;best=pos;bestJump=score}
+        }
+        if(best>0){picks.push(best);strengths.push(bestJump)}
+      }
+      if(picks.length<6)return null;
+      const sorted=picks.slice().sort((a,b)=>a-b),median=sorted[Math.floor(sorted.length/2)];
+      const medStrength=strengths.slice().sort((a,b)=>a-b)[Math.floor(strengths.length/2)];
+      const tolerance=Math.max(10,Math.round(span*.075));
+      const inliers=[];for(let i=0;i<picks.length;i++)if(Math.abs(picks[i]-median)<=tolerance&&strengths[i]>=medStrength*.72)inliers.push(picks[i]);
+      if(inliers.length<6)return null;
+      const loP=Math.min(...inliers),hiP=Math.max(...inliers),spread=hiP-loP;
+      const edge=side==='left'||side==='top'?Math.round(median-Math.max(4,spread*.25)):Math.round(median+Math.max(4,spread*.25));
+      return {edge,median,strength:medStrength,consensus:inliers.length/picks.length,spread};
+    }
+
+    const L=sampleEdge('left'),R=sampleEdge('right'),T=sampleEdge('top'),B=sampleEdge('bottom');
+    const guided={left:w*.07,top:h*.07,right:w*.93,bottom:h*.93};
+    const valid=!!(L&&R&&T&&B);
+    if(!valid){
+      return {left:guided.left/s,top:guided.top/s,right:guided.right/s,bottom:guided.bottom/s,confidence:"guided"};
+    }
+
+    let l=L.edge,r=R.edge,t=T.edge,b=B.edge;
+    l=Math.max(2,Math.min(w*.45,l));r=Math.max(w*.55,Math.min(w-2,r));
+    t=Math.max(2,Math.min(h*.45,t));b=Math.max(h*.55,Math.min(h-2,b));
+    const width=r-l,height=b-t;
+    const okSize=width>w*.52&&height>h*.52;
+    const okConsensus=L.consensus>=.66&&R.consensus>=.66&&T.consensus>=.66&&B.consensus>=.66;
+    const sharp=(L.strength+R.strength+T.strength+B.strength)/4>9;
+    // Avoid aggressive crops when the detected rectangle is implausibly far
+    // from the guide or edge confidence is weak. Safer to leave a little margin.
+    const plausible=Math.abs((l+r)/2-w/2)<w*.17&&Math.abs((t+b)/2-h/2)<h*.17;
+    const high=okSize&&okConsensus&&sharp&&plausible;
+    if(!high){
+      return {left:guided.left/s,top:guided.top/s,right:guided.right/s,bottom:guided.bottom/s,confidence:"guided"};
+    }
+    return {left:l/s,top:t/s,right:r/s,bottom:b/s,confidence:"high"};
   }
 
   function crop(src,b){
@@ -7737,8 +7797,38 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       brightness:Number(e.b?.value||103),
       contrast:Number(e.c?.value||108),
       clarity:Number(e.k?.value||6),
-      enhance:e.enhance?.checked!==false
+      enhance:e.enhance?.checked!==false,
+      removeShadow:e.shadow?.checked!==false
     }
+  }
+  function applyShadowRemoval(sourceCanvas, targetCanvas, strength=0.78){
+    const tw=targetCanvas.width,th=targetCanvas.height;
+    const smallW=Math.max(42,Math.min(96,Math.round(tw/12)));
+    const smallH=Math.max(32,Math.min(96,Math.round(th/12)));
+    const bg=document.createElement("canvas");bg.width=smallW;bg.height=smallH;
+    const bx=bg.getContext("2d",{willReadFrequently:true});
+    bx.filter="blur(5px)";bx.drawImage(sourceCanvas,0,0,smallW,smallH);bx.filter="none";
+    const bgFull=document.createElement("canvas");bgFull.width=tw;bgFull.height=th;
+    const fx=bgFull.getContext("2d",{willReadFrequently:true});fx.imageSmoothingEnabled=true;fx.drawImage(bg,0,0,tw,th);
+    const dst=targetCanvas.getContext("2d",{willReadFrequently:true}),di=dst.getImageData(0,0,tw,th),bd=fx.getImageData(0,0,tw,th);
+    let sum=0,count=0;for(let i=0;i<bd.data.length;i+=4){const y=.2126*bd.data[i]+.7152*bd.data[i+1]+.0722*bd.data[i+2];if(y>80&&y<250){sum+=y;count++;}}
+    const target=count?Math.min(232,Math.max(205,sum/count+3)):220;
+    for(let i=0;i<di.data.length;i+=4){
+      const bl=.2126*bd.data[i]+.7152*bd.data[i+1]+.0722*bd.data[i+2];
+      const correction=(target-bl)*strength;
+      di.data[i]=Math.max(0,Math.min(255,di.data[i]+correction));
+      di.data[i+1]=Math.max(0,Math.min(255,di.data[i+1]+correction));
+      di.data[i+2]=Math.max(0,Math.min(255,di.data[i+2]+correction));
+    }
+    dst.putImageData(di,0,0);
+  }
+  function renderProcessed(targetW=900){
+    if(!scanSource)return null;
+    const v=settings(),s=Math.min(1,targetW/Math.max(scanSource.width,scanSource.height));
+    const out=document.createElement("canvas");out.width=Math.max(1,Math.round(scanSource.width*s));out.height=Math.max(1,Math.round(scanSource.height*s));
+    const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(scanSource,0,0,out.width,out.height);
+    if(v.removeShadow&&v.enhance)applyShadowRemoval(out,out,.78);
+    return out;
   }
   function updateLabels(){
     const e=els(),v=settings();if(e.bv)e.bv.textContent=(v.brightness>=100?"+":"")+(v.brightness-100);
@@ -7749,8 +7839,8 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     return "brightness("+bright.toFixed(3)+") contrast("+contrast.toFixed(3)+") saturate("+(v.enhance?".92":"1")+")"
   }
   function renderPreview(){
-    previewTimer=null;if(!scanSource)return;const e=els(),p=e.preview,max=900,s=Math.min(1,max/Math.max(scanSource.width,scanSource.height));
-    p.width=Math.round(scanSource.width*s);p.height=Math.round(scanSource.height*s);const x=p.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(scanSource,0,0,p.width,p.height);p.style.filter=cssFilter();updateLabels()
+    previewTimer=null;if(!scanSource)return;const e=els(),p=e.preview,processed=renderProcessed(900);
+    p.width=processed.width;p.height=processed.height;const x=p.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.filter=cssFilter();x.drawImage(processed,0,0,p.width,p.height);x.filter="none";p.style.filter="none";updateLabels()
   }
   function queuePreview(){if(previewTimer)clearTimeout(previewTimer);previewTimer=setTimeout(renderPreview,100)}
 
@@ -7767,10 +7857,10 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   async function useScan(){
     if(!scanSource)return;status("Preparing final scan…");
     try{
-      const v=settings(),out=document.createElement("canvas"),s=Math.min(1,2200/Math.max(scanSource.width,scanSource.height));
-      out.width=Math.round(scanSource.width*s);out.height=Math.round(scanSource.height*s);
+      const v=settings(),processed=renderProcessed(2200),out=document.createElement("canvas");
+      out.width=processed.width;out.height=processed.height;
       const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
-      x.filter=cssFilter();x.drawImage(scanSource,0,0,out.width,out.height);x.filter="none";
+      x.filter=cssFilter();x.drawImage(processed,0,0,out.width,out.height);x.filter="none";
       const blob=await new Promise(r=>out.toBlob(r,"image/jpeg",.94));if(!blob)throw new Error("Could not prepare the scanned image.");
       const file=new File([blob],"document-scan-"+Date.now()+".jpg",{type:"image/jpeg",lastModified:Date.now()});
       aoChatPendingImage=file;
@@ -7797,7 +7887,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
             <div class="ao-chat-scan-control"><label><span>Contrast</span><span id="aoChatScanContrastValue" class="ao-chat-scan-range-value">108%</span></label><input id="aoChatScanContrast" type="range" min="90" max="135" value="108"></div>
             <div class="ao-chat-scan-control"><label><span>Clarity</span><span id="aoChatScanClarityValue" class="ao-chat-scan-range-value">6</span></label><input id="aoChatScanClarity" type="range" min="0" max="20" value="6"></div>
           </div>
-          <div class="ao-chat-scan-checks"><label class="ao-chat-scan-check"><input id="aoChatScanAutoEnhance" type="checkbox" checked> Gentle document enhancement</label><label class="ao-chat-scan-check"><input id="aoChatScanAutoBorder" type="checkbox" checked> Auto border</label></div>
+          <div class="ao-chat-scan-checks"><label class="ao-chat-scan-check"><input id="aoChatScanAutoEnhance" type="checkbox" checked> Gentle document enhancement</label><label class="ao-chat-scan-check"><input id="aoChatScanRemoveShadow" type="checkbox" checked> Remove phone shadows</label><label class="ao-chat-scan-check"><input id="aoChatScanAutoBorder" type="checkbox" checked> Auto border</label></div>
         </div>
       </div>
       <div id="aoChatScanStatus" class="ao-chat-scan-status">Starting camera…</div>
@@ -7813,6 +7903,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     $("aoChatScanUse").addEventListener("click",useScan);
     [$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
     $("aoChatScanAutoEnhance")?.addEventListener("change",queuePreview);
+    $("aoChatScanRemoveShadow")?.addEventListener("change",queuePreview);
     $("aoChatScanAutoBorder")?.addEventListener("change",e=>status(e.target.checked?"Auto border will run on the next capture.":"Auto border is off; the green guide frame will be used."));
     document.addEventListener("keydown",e=>{if($("aoChatScanModal")?.classList.contains("open")&&e.key==="Escape")closeScanner()});
     window.addEventListener("pagehide",stopCamera);
