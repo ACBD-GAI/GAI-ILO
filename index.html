@@ -2423,6 +2423,7 @@ input:focus-visible{
 .ao-chat-scan-adjust{display:none;flex-direction:column;gap:10px}.ao-chat-scan-adjust.active{display:flex}
 .ao-chat-scan-preview-wrap{aspect-ratio:4/3;max-height:58vh}
 .ao-chat-scan-preview{object-fit:contain;filter:brightness(1.03) contrast(1.08) saturate(.92)}
+.ao-chat-scan-preview-wrap{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}.ao-chat-scan-preview-wrap.dragging{cursor:grabbing}
 .ao-chat-scan-auto-badge{position:absolute;top:10px;left:10px;padding:6px 9px;border-radius:999px;color:#ecfdf5;background:rgba(22,101,52,.86);font-size:10px;font-weight:900}
 .ao-chat-scan-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:11px;border-radius:14px;background:#f8fafc;border:1px solid #e5e7eb}
 .ao-chat-scan-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;color:#334155;font-size:10px;font-weight:900}
@@ -7684,6 +7685,10 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 (function(){
   let cameraStream=null,scanSource=null,previewTimer=null,mode="camera";
   let cameraZoom=1, scanZoom=1, pinchStartDistance=0, pinchStartZoom=1, rotationQuarterTurns=0;
+  let panX=0, panY=0, previewBase=null, previewBaseKey="", previewFrame=null;
+  const previewPointers=new Map();
+  let dragStartX=0, dragStartY=0, dragStartPanX=0, dragStartPanY=0;
+  let previewPinchStartDistance=0, previewPinchStartZoom=1, previewPinchStartPanX=0, previewPinchStartPanY=0;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const $=id=>document.getElementById(id);
 
@@ -7701,7 +7706,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   }
   function status(t){const e=els().status;if(e)e.textContent=t||"";}
   function stopCamera(){if(cameraStream){try{cameraStream.getTracks().forEach(t=>t.stop())}catch(e){}cameraStream=null}const v=els().video;if(v)v.srcObject=null}
-  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);previewTimer=null;scanSource=null;cameraZoom=1;scanZoom=1;pinchStartDistance=0;pinchStartZoom=1;rotationQuarterTurns=0;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
+  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);if(previewFrame)cancelAnimationFrame(previewFrame);previewTimer=null;previewFrame=null;scanSource=null;previewBase=null;previewBaseKey="";cameraZoom=1;scanZoom=1;panX=0;panY=0;pinchStartDistance=0;pinchStartZoom=1;previewPointers.clear();previewPinchStartDistance=0;rotationQuarterTurns=0;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
   function setMode(m){mode=m;const e=els();if(e.camera)e.camera.style.display=m==="camera"?"":"none";if(e.adjust)e.adjust.classList.toggle("active",m==="adjust");if(e.cameraActions)e.cameraActions.style.display=m==="camera"?"flex":"none";if(e.adjustActions)e.adjustActions.style.display=m==="adjust"?"flex":"none"}
 
   function updateCameraZoomUI(){
@@ -7719,10 +7724,161 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 
   function setScanZoom(next){
     scanZoom=clamp(Number(next)||1,1,3);
+    if(scanZoom<=1.001){panX=0;panY=0}
+    clampPan();
     const e=els();
     if(e.zoom)e.zoom.value=String(scanZoom);
     if(e.zv)e.zv.textContent=scanZoom.toFixed(1)+"×";
     queuePreview();
+  }
+
+  function clampPan(){
+    if(scanZoom<=1.001){panX=0;panY=0;return}
+    panX=clamp(panX,-1,1);panY=clamp(panY,-1,1);
+  }
+
+  function previewPinchDistance(a,b){
+    const dx=a.clientX-b.clientX,dy=a.clientY-b.clientY;
+    return Math.hypot(dx,dy);
+  }
+
+  function previewPinchMidpoint(a,b){
+    return {x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+  }
+
+  function setZoomAroundPoint(nextZoom,clientX,clientY,startZoom=scanZoom,startPanX=panX,startPanY=panY){
+    const e=els(),wrap=e.preview?.parentElement;
+    if(!wrap){setScanZoom(nextZoom);return}
+    const rect=wrap.getBoundingClientRect();
+    const z0=clamp(startZoom||1,1,3),z1=clamp(nextZoom||1,1,3);
+    if(z0<=1.001 || z1<=1.001){panX=0;panY=0;scanZoom=z1}
+    else {
+      const rx=(clientX-(rect.left+rect.width/2))/rect.width;
+      const ry=(clientY-(rect.top+rect.height/2))/rect.height;
+      const oldShiftX=(1-1/z0)/2,oldShiftY=(1-1/z0)/2;
+      const newShiftX=(1-1/z1)/2,newShiftY=(1-1/z1)/2;
+      panX=(startPanX*oldShiftX + rx*(1/z1-1/z0))/newShiftX;
+      panY=(startPanY*oldShiftY + ry*(1/z1-1/z0))/newShiftY;
+      scanZoom=z1;
+      clampPan();
+    }
+    const slider=e.zoom;if(slider)slider.value=String(scanZoom);
+    if(e.zv)e.zv.textContent=scanZoom.toFixed(1)+"×";
+    queuePreviewFast();
+  }
+
+  function initPreviewPanZoom(){
+    const e=els(),wrap=e.preview?.parentElement;
+    if(!wrap || wrap.dataset.panzoom==="2")return;
+    wrap.dataset.panzoom="2";
+    wrap.style.touchAction="none";
+    wrap.style.overscrollBehavior="contain";
+    wrap.style.cursor="grab";
+    let dragging=false,dragLastX=0,dragLastY=0;
+    let pinchActive=false,pinchStartDistance=0,pinchStartZoom=1;
+    let pinchStartMidX=0,pinchStartMidY=0,pinchStartPanX=0,pinchStartPanY=0;
+
+    const rect=()=>wrap.getBoundingClientRect();
+    const panByPixels=(dx,dy)=>{
+      if(scanZoom<=1.001)return;
+      const r=rect();
+      const travelX=Math.max(1,r.width*Math.max(.12,(scanZoom-1)/2));
+      const travelY=Math.max(1,r.height*Math.max(.12,(scanZoom-1)/2));
+      panX += dx/travelX;
+      panY += dy/travelY;
+      clampPan();
+      queuePreviewFast();
+    };
+    const touchDistance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const touchMid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+
+    wrap.addEventListener("touchstart",ev=>{
+      if(!ev.touches || !ev.touches.length)return;
+      ev.preventDefault();
+      if(ev.touches.length===2){
+        pinchActive=true;dragging=false;
+        pinchStartDistance=touchDistance(ev.touches[0],ev.touches[1])||1;
+        pinchStartZoom=scanZoom;
+        const mid=touchMid(ev.touches[0],ev.touches[1]);
+        pinchStartMidX=mid.x;pinchStartMidY=mid.y;
+        pinchStartPanX=panX;pinchStartPanY=panY;
+      }else if(ev.touches.length===1){
+        const t=ev.touches[0];dragging=scanZoom>1.001;
+        dragLastX=t.clientX;dragLastY=t.clientY;
+        if(dragging)wrap.classList.add("dragging");
+      }
+    },{passive:false});
+
+    wrap.addEventListener("touchmove",ev=>{
+      if(!ev.touches || !ev.touches.length)return;
+      ev.preventDefault();
+      if(ev.touches.length===2){
+        if(!pinchActive){
+          pinchActive=true;
+          pinchStartDistance=touchDistance(ev.touches[0],ev.touches[1])||1;
+          pinchStartZoom=scanZoom;
+          const mid=touchMid(ev.touches[0],ev.touches[1]);
+          pinchStartMidX=mid.x;pinchStartMidY=mid.y;
+          pinchStartPanX=panX;pinchStartPanY=panY;
+        }
+        const dist=touchDistance(ev.touches[0],ev.touches[1]);
+        const mid=touchMid(ev.touches[0],ev.touches[1]);
+        const nextZoom=clamp(pinchStartZoom*(dist/Math.max(1,pinchStartDistance)),1,3);
+        panX=pinchStartPanX;
+        panY=pinchStartPanY;
+        setZoomAroundPoint(nextZoom,mid.x,mid.y,pinchStartZoom,pinchStartPanX,pinchStartPanY);
+        // Also follow the midpoint, so a two-finger drag can reposition the image.
+        const moveX=mid.x-pinchStartMidX,moveY=mid.y-pinchStartMidY;
+        panByPixels(moveX*.65,moveY*.65);
+        pinchStartMidX=mid.x;pinchStartMidY=mid.y;
+        pinchStartPanX=panX;pinchStartPanY=panY;
+        pinchStartZoom=scanZoom;
+        pinchStartDistance=dist||pinchStartDistance;
+      }else if(ev.touches.length===1 && !pinchActive){
+        const t=ev.touches[0];
+        if(scanZoom>1.001){
+          panByPixels(t.clientX-dragLastX,t.clientY-dragLastY);
+          dragging=true;wrap.classList.add("dragging");
+        }
+        dragLastX=t.clientX;dragLastY=t.clientY;
+      }
+    },{passive:false});
+
+    const touchEnd=ev=>{
+      if(ev.touches && ev.touches.length===1){
+        const t=ev.touches[0];
+        pinchActive=false;
+        dragging=scanZoom>1.001;
+        dragLastX=t.clientX;dragLastY=t.clientY;
+        if(dragging)wrap.classList.add("dragging");
+      }else if(!ev.touches || ev.touches.length===0){
+        pinchActive=false;dragging=false;wrap.classList.remove("dragging");
+      }
+    };
+    wrap.addEventListener("touchend",touchEnd,{passive:false});
+    wrap.addEventListener("touchcancel",touchEnd,{passive:false});
+
+    // Desktop mouse drag fallback.
+    wrap.addEventListener("mousedown",ev=>{
+      if(ev.button!==0 || scanZoom<=1.001)return;
+      ev.preventDefault();dragging=true;dragLastX=ev.clientX;dragLastY=ev.clientY;wrap.classList.add("dragging");
+    });
+    window.addEventListener("mousemove",ev=>{
+      if(!dragging)return;
+      ev.preventDefault();
+      panByPixels(ev.clientX-dragLastX,ev.clientY-dragLastY);
+      dragLastX=ev.clientX;dragLastY=ev.clientY;
+    },{passive:false});
+    const mouseEnd=()=>{dragging=false;wrap.classList.remove("dragging")};
+    window.addEventListener("mouseup",mouseEnd,{passive:true});
+
+    // Mouse wheel / trackpad zoom around the pointer.
+    wrap.addEventListener("wheel",ev=>{
+      if(!ev.ctrlKey && !ev.metaKey)return;
+      ev.preventDefault();
+      const factor=Math.exp(-ev.deltaY*.0025);
+      setZoomAroundPoint(scanZoom*factor,ev.clientX,ev.clientY,scanZoom,panX,panY);
+    },{passive:false});
   }
 
   function pinchDistance(a,b){
@@ -7788,6 +7944,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   function rotateScan(){
     if(!scanSource)return;
     scanSource=rotateCanvas(scanSource);
+    previewBase=null;previewBaseKey="";clampPan();
     rotationQuarterTurns=(rotationQuarterTurns+1)%4;
     const e=els();
     if(e.rotate)e.rotate.textContent=rotationQuarterTurns===0?"↻ Rotate":"↻ Rotate";
@@ -7936,7 +8093,9 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     const v=settings(),zoom=clamp(v.zoom||1,1,3);
     const sourceW=scanSource.width,sourceH=scanSource.height;
     const cropW=sourceW/zoom,cropH=sourceH/zoom;
-    const sx=(sourceW-cropW)/2,sy=(sourceH-cropH)/2;
+    const maxShiftX=(sourceW-cropW)/2,maxShiftY=(sourceH-cropH)/2;
+    clampPan();
+    const sx=(sourceW-cropW)/2 - panX*maxShiftX,sy=(sourceH-cropH)/2 - panY*maxShiftY;
     const s=Math.min(1,targetW/Math.max(cropW,cropH));
     const out=document.createElement("canvas");out.width=Math.max(1,Math.round(cropW*s));out.height=Math.max(1,Math.round(cropH*s));
     const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
@@ -7945,6 +8104,36 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     if(v.blackWhite)applyBlackWhite(out);
     return out;
   }
+
+  function rebuildPreviewBase(){
+    if(!scanSource)return null;
+    const v=settings();
+    const key=[scanSource.width,scanSource.height,v.enhance?1:0,v.removeShadow?1:0,v.blackWhite?1:0].join("|");
+    if(previewBase&&previewBaseKey===key)return previewBase;
+    const maxDim=1400,s=Math.min(1,maxDim/Math.max(scanSource.width,scanSource.height));
+    const base=document.createElement("canvas");
+    base.width=Math.max(1,Math.round(scanSource.width*s));base.height=Math.max(1,Math.round(scanSource.height*s));
+    const bx=base.getContext("2d",{alpha:false});bx.imageSmoothingEnabled=true;bx.imageSmoothingQuality="high";bx.drawImage(scanSource,0,0,base.width,base.height);
+    if(v.removeShadow&&v.enhance)applyShadowRemoval(base,base,v.blackWhite?.9:.78);
+    if(v.blackWhite)applyBlackWhite(base);
+    previewBase=base;previewBaseKey=key;return base;
+  }
+
+  function renderPreviewFast(){
+    previewFrame=null;if(!scanSource)return;
+    const e=els(),p=e.preview,base=rebuildPreviewBase();if(!p||!base)return;
+    const v=settings(),zoom=clamp(v.zoom||1,1,3);clampPan();
+    const sourceW=base.width,sourceH=base.height;
+    const cropW=sourceW/zoom,cropH=sourceH/zoom;
+    const maxShiftX=(sourceW-cropW)/2,maxShiftY=(sourceH-cropH)/2;
+    const sx=clamp((sourceW-cropW)/2 - panX*maxShiftX,0,sourceW-cropW);
+    const sy=clamp((sourceH-cropH)/2 - panY*maxShiftY,0,sourceH-cropH);
+    const outScale=Math.min(1,900/Math.max(cropW,cropH));
+    const out=document.createElement("canvas");out.width=Math.max(1,Math.round(cropW*outScale));out.height=Math.max(1,Math.round(cropH*outScale));
+    const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(base,sx,sy,cropW,cropH,0,0,out.width,out.height);
+    p.width=out.width;p.height=out.height;const px=p.getContext("2d",{alpha:false});px.imageSmoothingEnabled=true;px.imageSmoothingQuality="high";px.filter=cssFilter();px.drawImage(out,0,0);px.filter="none";p.style.filter="none";updateLabels();
+  }
+
   function updateLabels(){
     const e=els(),v=settings();
     if(e.zv)e.zv.textContent=v.zoom.toFixed(1)+"×";
@@ -7956,18 +8145,18 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     return "brightness("+bright.toFixed(3)+") contrast("+contrast.toFixed(3)+") saturate("+(v.enhance?".92":"1")+")"
   }
   function renderPreview(){
-    previewTimer=null;if(!scanSource)return;const e=els(),p=e.preview,processed=renderProcessed(900);
-    p.width=processed.width;p.height=processed.height;const x=p.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.filter=cssFilter();x.drawImage(processed,0,0,p.width,p.height);x.filter="none";p.style.filter="none";updateLabels()
+    previewTimer=null;renderPreviewFast();
   }
-  function queuePreview(){if(previewTimer)clearTimeout(previewTimer);previewTimer=setTimeout(renderPreview,100)}
+  function queuePreview(){if(previewTimer)clearTimeout(previewTimer);previewTimer=setTimeout(renderPreview,90)}
+  function queuePreviewFast(){if(previewFrame)return;previewFrame=requestAnimationFrame(renderPreviewFast)}
 
   async function takePicture(){
     const e=els();if(!e.video.videoWidth){status("Camera is not ready yet.");return}e.capture.disabled=true;status("Capturing document…");
     try{
       const src=captureCanvas(),b=e.border?.checked!==false?detectBounds(src):{left:src.width*.07,top:src.height*.07,right:src.width*.93,bottom:src.height*.93,confidence:"guided"};
-      scanSource=crop(src,b);setMode("adjust");stopCamera();e.badge.textContent=b.confidence==="high"?"AUTO BORDER":"GUIDED BORDER";
+      scanSource=crop(src,b);previewBase=null;previewBaseKey="";panX=0;panY=0;setMode("adjust");stopCamera();e.badge.textContent=b.confidence==="high"?"AUTO BORDER":"GUIDED BORDER";
       scanZoom=1;e.zoom.value="1";e.b.value="103";e.c.value="108";e.k.value="6";e.enhance.checked=true;e.shadow.checked=true;e.border.checked=true;e.bw.checked=false;updateLabels();queuePreview();
-      status("Review the scan. Use Zoom, brightness, contrast, clarity, or B&W before sending.")
+      status("Review the scan. Drag the image to move it • pinch to zoom • use the controls below.")
     }catch(err){console.error("Document capture failed:",err);status(err?.message||"Could not capture.");e.capture.disabled=false}
   }
 
@@ -7988,7 +8177,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     }catch(err){console.error("Document scan finalize failed:",err);status(err?.message||"Could not prepare the scan.")}
   }
 
-  async function retake(){scanSource=null;scanZoom=1;rotationQuarterTurns=0;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
+  async function retake(){scanSource=null;previewBase=null;previewBaseKey="";panX=0;panY=0;scanZoom=1;rotationQuarterTurns=0;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
 
   function build(){
     if($("aoChatScanModal"))return;
@@ -8021,10 +8210,11 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     $("aoChatScanRotate").addEventListener("click",rotateScan);
     $("aoChatScanUse").addEventListener("click",useScan);
     initPinchZoom();
+    initPreviewPanZoom();
     [$("aoChatScanZoom"),$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
-    $("aoChatScanAutoEnhance")?.addEventListener("change",queuePreview);
-    $("aoChatScanRemoveShadow")?.addEventListener("change",queuePreview);
-    $("aoChatScanBlackWhite")?.addEventListener("change",()=>{updateLabels();queuePreview()});
+    $("aoChatScanAutoEnhance")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";queuePreview()});
+    $("aoChatScanRemoveShadow")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";queuePreview()});
+    $("aoChatScanBlackWhite")?.addEventListener("change",()=>{previewBase=null;previewBaseKey="";updateLabels();queuePreview()});
     $("aoChatScanAutoBorder")?.addEventListener("change",e=>status(e.target.checked?"Auto border will run on the next capture.":"Auto border is off; the green guide frame will be used."));
     document.addEventListener("keydown",e=>{if($("aoChatScanModal")?.classList.contains("open")&&e.key==="Escape")closeScanner()});
     window.addEventListener("pagehide",stopCamera);
