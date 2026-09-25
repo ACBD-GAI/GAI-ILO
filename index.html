@@ -2436,6 +2436,9 @@ input:focus-visible{
 .ao-chat-scan-secondary{background:#f1f5f9!important;color:#334155!important;border:1px solid #e2e8f0!important;box-shadow:none!important}
 .ao-chat-scan-primary{background:linear-gradient(135deg,#22c55e,#16a34a)!important;box-shadow:0 8px 20px rgba(22,163,74,.22)!important}
 .ao-chat-scan-capture{background:linear-gradient(135deg,#60a5fa,#2563eb)!important}.ao-chat-scan-capture:disabled{opacity:.45!important}
+.ao-chat-scan-rotate{background:linear-gradient(135deg,#8b5cf6,#6d28d9)!important;color:#fff!important;box-shadow:0 8px 18px rgba(109,40,217,.18)!important}
+.ao-chat-scan-camera-wrap{touch-action:none}
+.ao-chat-scan-zoom-badge{position:absolute;top:10px;right:10px;padding:6px 9px;border-radius:999px;color:#fff;background:rgba(15,23,42,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:10px;font-weight:900;z-index:4}
 .ao-chat-scan-lock{overflow:hidden!important}
 @media(max-width:600px){
   .ao-chat-scan-modal{padding:0;align-items:flex-start}.ao-chat-scan-card{width:100%;height:100%;max-height:none;border-radius:0;min-height:100dvh}
@@ -7680,6 +7683,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 <script id="aoChatDocumentScannerScript">
 (function(){
   let cameraStream=null,scanSource=null,previewTimer=null,mode="camera";
+  let cameraZoom=1, pinchStartDistance=0, pinchStartZoom=1, rotationQuarterTurns=0;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const $=id=>document.getElementById(id);
 
@@ -7690,27 +7694,96 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       capture:$("aoChatScanCapture"),cameraActions:$("aoChatScanCameraActions"),adjustActions:$("aoChatScanAdjustActions"),
       b:$("aoChatScanBrightness"),c:$("aoChatScanContrast"),k:$("aoChatScanClarity"),
       bv:$("aoChatScanBrightnessValue"),cv:$("aoChatScanContrastValue"),kv:$("aoChatScanClarityValue"),
-      enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),badge:$("aoChatScanAutoBadge")
+      enhance:$("aoChatScanAutoEnhance"),shadow:$("aoChatScanRemoveShadow"),border:$("aoChatScanAutoBorder"),badge:$("aoChatScanAutoBadge"),
+      rotate:$("aoChatScanRotate"),zoomBadge:$("aoChatScanZoomBadge")
     };
   }
   function status(t){const e=els().status;if(e)e.textContent=t||"";}
   function stopCamera(){if(cameraStream){try{cameraStream.getTracks().forEach(t=>t.stop())}catch(e){}cameraStream=null}const v=els().video;if(v)v.srcObject=null}
-  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);previewTimer=null;scanSource=null;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
+  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);previewTimer=null;scanSource=null;cameraZoom=1;pinchStartDistance=0;pinchStartZoom=1;rotationQuarterTurns=0;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
   function setMode(m){mode=m;const e=els();if(e.camera)e.camera.style.display=m==="camera"?"":"none";if(e.adjust)e.adjust.classList.toggle("active",m==="adjust");if(e.cameraActions)e.cameraActions.style.display=m==="camera"?"flex":"none";if(e.adjustActions)e.adjustActions.style.display=m==="adjust"?"flex":"none"}
+
+  function updateCameraZoomUI(){
+    const e=els();
+    if(!e.video)return;
+    e.video.style.transform=`scale(${cameraZoom})`;
+    e.video.style.transformOrigin="center center";
+    if(e.zoomBadge)e.zoomBadge.textContent=`${cameraZoom.toFixed(1)}×`;
+  }
+
+  function setCameraZoom(next){
+    cameraZoom=clamp(Number(next)||1,1,3);
+    updateCameraZoomUI();
+  }
+
+  function pinchDistance(a,b){
+    const dx=a.clientX-b.clientX,dy=a.clientY-b.clientY;
+    return Math.hypot(dx,dy);
+  }
+
+  function initPinchZoom(){
+    const e=els();
+    const wrap=e.camera;
+    if(!wrap || wrap.dataset.pinched==="1")return;
+    wrap.dataset.pinched="1";
+    wrap.addEventListener("touchstart",ev=>{
+      if(ev.touches.length===2){
+        pinchStartDistance=pinchDistance(ev.touches[0],ev.touches[1]);
+        pinchStartZoom=cameraZoom;
+      }
+    },{passive:false});
+    wrap.addEventListener("touchmove",ev=>{
+      if(ev.touches.length!==2 || !pinchStartDistance)return;
+      ev.preventDefault();
+      const dist=pinchDistance(ev.touches[0],ev.touches[1]);
+      if(dist>0)setCameraZoom(pinchStartZoom*(dist/pinchStartDistance));
+    },{passive:false});
+    wrap.addEventListener("touchend",ev=>{
+      if(ev.touches.length<2){pinchStartDistance=0;pinchStartZoom=cameraZoom;}
+    },{passive:false});
+    wrap.addEventListener("touchcancel",()=>{pinchStartDistance=0;pinchStartZoom=cameraZoom;},{passive:false});
+  }
 
   async function startCamera(){
     const e=els();
     if(!navigator.mediaDevices?.getUserMedia)throw new Error("Camera capture is not supported by this browser.");
     stopCamera();
+    cameraZoom=1;pinchStartDistance=0;pinchStartZoom=1;updateCameraZoomUI();
     cameraStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280,max:1920},height:{ideal:960,max:1440}}});
     e.video.srcObject=cameraStream;e.video.muted=true;e.video.setAttribute("playsinline","");
-    await e.video.play();e.capture.disabled=false;status("Position the whole document inside the green frame.")
+    await e.video.play();e.capture.disabled=false;status("Position the whole document inside the green frame. Pinch with two fingers to zoom.")
   }
 
   function captureCanvas(){
-    const v=els().video,vw=v.videoWidth||1280,vh=v.videoHeight||960,maxDim=2200,s=Math.min(1,maxDim/Math.max(vw,vh));
-    const c=document.createElement("canvas");c.width=Math.round(vw*s);c.height=Math.round(vh*s);
-    const x=c.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(v,0,0,c.width,c.height);return c
+    const v=els().video,vw=v.videoWidth||1280,vh=v.videoHeight||960,maxDim=2200;
+    const zoom=clamp(cameraZoom,1,3);
+    const cropW=vw/zoom,cropH=vh/zoom,left=(vw-cropW)/2,top=(vh-cropH)/2;
+    const s=Math.min(1,maxDim/Math.max(cropW,cropH));
+    const c=document.createElement("canvas");c.width=Math.max(1,Math.round(cropW*s));c.height=Math.max(1,Math.round(cropH*s));
+    const x=c.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+    x.drawImage(v,left,top,cropW,cropH,0,0,c.width,c.height);return c
+  }
+
+  function rotateCanvas(src){
+    if(!src)return src;
+    const c=document.createElement("canvas");
+    c.width=src.height;c.height=src.width;
+    const x=c.getContext("2d",{alpha:false});
+    x.translate(c.width/2,c.height/2);
+    x.rotate(Math.PI/2);
+    x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+    x.drawImage(src,-src.width/2,-src.height/2);
+    return c;
+  }
+
+  function rotateScan(){
+    if(!scanSource)return;
+    scanSource=rotateCanvas(scanSource);
+    rotationQuarterTurns=(rotationQuarterTurns+1)%4;
+    const e=els();
+    if(e.rotate)e.rotate.textContent=rotationQuarterTurns===0?"↻ Rotate":"↻ Rotate";
+    queuePreview();
+    status(`Rotated ${rotationQuarterTurns*90}°. You can rotate again if needed.`);
   }
 
   function detectBounds(src){
@@ -7871,7 +7944,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     }catch(err){console.error("Document scan finalize failed:",err);status(err?.message||"Could not prepare the scan.")}
   }
 
-  async function retake(){scanSource=null;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
+  async function retake(){scanSource=null;rotationQuarterTurns=0;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
 
   function build(){
     if($("aoChatScanModal"))return;
@@ -7879,7 +7952,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     m.innerHTML=`<div class="ao-chat-scan-card" role="dialog" aria-modal="true" aria-label="Document camera">
       <div class="ao-chat-scan-head"><div><div class="ao-chat-scan-title">📄 Document Capture</div><div class="ao-chat-scan-sub">Smooth camera • auto border • document enhancement</div></div><button type="button" class="ao-chat-scan-close" id="aoChatScanClose">✕</button></div>
       <div class="ao-chat-scan-body">
-        <div id="aoChatScanCamera" class="ao-chat-scan-camera-wrap"><video id="aoChatScanVideo" class="ao-chat-scan-video" autoplay muted playsinline></video><div class="ao-chat-scan-frame"></div><div class="ao-chat-scan-corner tl"></div><div class="ao-chat-scan-corner tr"></div><div class="ao-chat-scan-corner bl"></div><div class="ao-chat-scan-corner br"></div><div class="ao-chat-scan-hint">Fit the whole document inside the green frame</div></div>
+        <div id="aoChatScanCamera" class="ao-chat-scan-camera-wrap"><video id="aoChatScanVideo" class="ao-chat-scan-video" autoplay muted playsinline></video><div id="aoChatScanZoomBadge" class="ao-chat-scan-zoom-badge">1.0×</div><div class="ao-chat-scan-frame"></div><div class="ao-chat-scan-corner tl"></div><div class="ao-chat-scan-corner tr"></div><div class="ao-chat-scan-corner bl"></div><div class="ao-chat-scan-corner br"></div><div class="ao-chat-scan-hint">Fit the whole document inside the green frame</div></div>
         <div id="aoChatScanAdjust" class="ao-chat-scan-adjust">
           <div class="ao-chat-scan-preview-wrap"><canvas id="aoChatScanPreview" class="ao-chat-scan-preview"></canvas><div id="aoChatScanAutoBadge" class="ao-chat-scan-auto-badge">AUTO BORDER</div></div>
           <div class="ao-chat-scan-controls">
@@ -7892,7 +7965,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       </div>
       <div id="aoChatScanStatus" class="ao-chat-scan-status">Starting camera…</div>
       <div id="aoChatScanCameraActions" class="ao-chat-scan-camera-actions"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanUploadFallback">🖼️ Upload Instead</button><button type="button" class="ao-chat-scan-capture" id="aoChatScanCapture" disabled>📷 Capture</button></div>
-      <div id="aoChatScanAdjustActions" class="ao-chat-scan-actions" style="display:none"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanRetake">↻ Retake</button><button type="button" class="ao-chat-scan-primary" id="aoChatScanUse">✓ Use Scan</button></div>
+      <div id="aoChatScanAdjustActions" class="ao-chat-scan-actions" style="display:none"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanRetake">↻ Retake</button><button type="button" class="ao-chat-scan-rotate" id="aoChatScanRotate">⟳ Rotate</button><button type="button" class="ao-chat-scan-primary" id="aoChatScanUse">✓ Use Scan</button></div>
     </div>`;
     document.body.appendChild(m);
 
@@ -7900,7 +7973,9 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     $("aoChatScanUploadFallback").addEventListener("click",()=>{closeScanner();$("aoChatImageInput")?.click()});
     $("aoChatScanCapture").addEventListener("click",takePicture);
     $("aoChatScanRetake").addEventListener("click",retake);
+    $("aoChatScanRotate").addEventListener("click",rotateScan);
     $("aoChatScanUse").addEventListener("click",useScan);
+    initPinchZoom();
     [$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
     $("aoChatScanAutoEnhance")?.addEventListener("change",queuePreview);
     $("aoChatScanRemoveShadow")?.addEventListener("change",queuePreview);
