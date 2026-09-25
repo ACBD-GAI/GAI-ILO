@@ -2402,6 +2402,48 @@ input:focus-visible{
 .ao-chat-attach-menu[hidden]{display:none !important}
 .ao-chat-attach-menu button{min-height:38px;padding:7px 10px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#374151;font-size:12px;cursor:pointer;box-shadow:none;white-space:nowrap}
 .ao-chat-attach-menu button:hover{background:#f3f4f6;transform:none}
+
+.ao-chat-scan-modal{position:fixed;inset:0;z-index:120000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(15,23,42,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ao-chat-scan-modal.open{display:flex}
+.ao-chat-scan-card{width:min(720px,100%);max-height:min(92vh,860px);overflow:hidden;display:flex;flex-direction:column;border-radius:20px;background:#fff;border:1px solid rgba(255,255,255,.3);box-shadow:0 30px 90px rgba(0,0,0,.34)}
+.ao-chat-scan-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;background:#111827;color:#fff}
+.ao-chat-scan-title{font-size:15px;font-weight:900}.ao-chat-scan-sub{font-size:10px;opacity:.72;margin-top:3px}
+.ao-chat-scan-close{width:36px!important;min-width:36px!important;height:36px;min-height:36px!important;padding:0!important;border:0!important;border-radius:10px!important;background:rgba(255,255,255,.12)!important;color:#fff!important;box-shadow:none!important}
+.ao-chat-scan-body{flex:1;min-height:0;overflow:auto;padding:12px;background:#0b1220}
+.ao-chat-scan-camera-wrap,.ao-chat-scan-preview-wrap{position:relative;width:100%;aspect-ratio:4/3;max-height:62vh;overflow:hidden;margin:auto;border-radius:16px;background:#020617}
+.ao-chat-scan-video,.ao-chat-scan-preview{display:block;width:100%;height:100%;object-fit:contain;background:#020617}
+.ao-chat-scan-frame{position:absolute;inset:7%;border:2px solid rgba(74,222,128,.95);border-radius:10px;box-shadow:0 0 0 9999px rgba(2,6,23,.2),0 0 18px rgba(34,197,94,.22);pointer-events:none}
+.ao-chat-scan-corner{position:absolute;width:24px;height:24px;border-color:#fff;border-style:solid;pointer-events:none}
+.ao-chat-scan-corner.tl{left:7%;top:7%;border-width:3px 0 0 3px;border-radius:7px 0 0 0}
+.ao-chat-scan-corner.tr{right:7%;top:7%;border-width:3px 3px 0 0;border-radius:0 7px 0 0}
+.ao-chat-scan-corner.bl{left:7%;bottom:7%;border-width:0 0 3px 3px;border-radius:0 0 0 7px}
+.ao-chat-scan-corner.br{right:7%;bottom:7%;border-width:0 3px 3px 0;border-radius:0 0 7px 0}
+.ao-chat-scan-hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);max-width:calc(100% - 24px);padding:7px 10px;border-radius:999px;color:#fff;background:rgba(15,23,42,.68);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:10px;font-weight:800;text-align:center;white-space:nowrap}
+.ao-chat-scan-status{min-height:18px;padding:7px 3px 0;color:#cbd5e1;font-size:10px;text-align:center}
+.ao-chat-scan-adjust{display:none;flex-direction:column;gap:10px}.ao-chat-scan-adjust.active{display:flex}
+.ao-chat-scan-preview-wrap{aspect-ratio:4/3;max-height:58vh}
+.ao-chat-scan-preview{object-fit:contain;filter:brightness(1.03) contrast(1.08) saturate(.92)}
+.ao-chat-scan-auto-badge{position:absolute;top:10px;left:10px;padding:6px 9px;border-radius:999px;color:#ecfdf5;background:rgba(22,101,52,.86);font-size:10px;font-weight:900}
+.ao-chat-scan-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:11px;border-radius:14px;background:#f8fafc;border:1px solid #e5e7eb}
+.ao-chat-scan-control label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;color:#334155;font-size:10px;font-weight:900}
+.ao-chat-scan-control input[type=range]{width:100%;min-height:0;height:20px;margin:0;padding:0;border:0;box-shadow:none;transform:none}
+.ao-chat-scan-range-value{color:#2563eb}
+.ao-chat-scan-checks{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#475569;font-size:10px;font-weight:800}
+.ao-chat-scan-check{display:flex;align-items:center;gap:7px}.ao-chat-scan-check input{width:15px!important;min-height:15px!important;height:15px!important;margin:0!important;padding:0!important;box-shadow:none!important;transform:none!important}
+.ao-chat-scan-actions,.ao-chat-scan-camera-actions{display:flex;gap:8px;padding:0 12px 12px}
+.ao-chat-scan-actions{background:#fff}.ao-chat-scan-camera-actions{background:#0b1220}
+.ao-chat-scan-actions button,.ao-chat-scan-camera-actions button{flex:1;min-height:44px}
+.ao-chat-scan-secondary{background:#f1f5f9!important;color:#334155!important;border:1px solid #e2e8f0!important;box-shadow:none!important}
+.ao-chat-scan-primary{background:linear-gradient(135deg,#22c55e,#16a34a)!important;box-shadow:0 8px 20px rgba(22,163,74,.22)!important}
+.ao-chat-scan-capture{background:linear-gradient(135deg,#60a5fa,#2563eb)!important}.ao-chat-scan-capture:disabled{opacity:.45!important}
+.ao-chat-scan-lock{overflow:hidden!important}
+@media(max-width:600px){
+  .ao-chat-scan-modal{padding:0}.ao-chat-scan-card{width:100%;height:100%;max-height:none;border-radius:0}
+  .ao-chat-scan-body{padding:8px}.ao-chat-scan-camera-wrap,.ao-chat-scan-preview-wrap{aspect-ratio:3/4;max-height:none}
+  .ao-chat-scan-controls{grid-template-columns:1fr}.ao-chat-scan-frame{inset:6% 5%}
+  .ao-chat-scan-corner.tl{left:5%;top:6%}.ao-chat-scan-corner.tr{right:5%;top:6%}.ao-chat-scan-corner.bl{left:5%;bottom:6%}.ao-chat-scan-corner.br{right:5%;bottom:6%}
+  .ao-chat-scan-hint{white-space:normal;width:calc(100% - 20px);bottom:8px}
+}
 @media(max-width:600px){.ao-chat-fab{right:15px;bottom:15px}.ao-chat-panel{right:15px;bottom:82px;width:calc(100vw - 30px);height:calc(100vh - 105px)}.ao-chat-emoji-picker{right:4px;bottom:58px;width:min(300px,calc(100vw - 28px));grid-template-columns:repeat(7,1fr)}}
 
 </style>
@@ -7632,10 +7674,164 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
 <div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+
+<script id="aoChatDocumentScannerScript">
+(function(){
+  let cameraStream=null,scanSource=null,previewTimer=null,mode="camera";
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const $=id=>document.getElementById(id);
+
+  function els(){
+    return {
+      modal:$("aoChatScanModal"),video:$("aoChatScanVideo"),camera:$("aoChatScanCamera"),
+      adjust:$("aoChatScanAdjust"),preview:$("aoChatScanPreview"),status:$("aoChatScanStatus"),
+      capture:$("aoChatScanCapture"),cameraActions:$("aoChatScanCameraActions"),adjustActions:$("aoChatScanAdjustActions"),
+      b:$("aoChatScanBrightness"),c:$("aoChatScanContrast"),k:$("aoChatScanClarity"),
+      bv:$("aoChatScanBrightnessValue"),cv:$("aoChatScanContrastValue"),kv:$("aoChatScanClarityValue"),
+      enhance:$("aoChatScanAutoEnhance"),border:$("aoChatScanAutoBorder"),badge:$("aoChatScanAutoBadge")
+    };
+  }
+  function status(t){const e=els().status;if(e)e.textContent=t||"";}
+  function stopCamera(){if(cameraStream){try{cameraStream.getTracks().forEach(t=>t.stop())}catch(e){}cameraStream=null}const v=els().video;if(v)v.srcObject=null}
+  function closeScanner(){stopCamera();if(previewTimer)clearTimeout(previewTimer);previewTimer=null;scanSource=null;const e=els();if(e.modal){e.modal.classList.remove("open");e.modal.setAttribute("aria-hidden","true")}document.body.classList.remove("ao-chat-scan-lock")}
+  function setMode(m){mode=m;const e=els();if(e.camera)e.camera.style.display=m==="camera"?"":"none";if(e.adjust)e.adjust.classList.toggle("active",m==="adjust");if(e.cameraActions)e.cameraActions.style.display=m==="camera"?"flex":"none";if(e.adjustActions)e.adjustActions.style.display=m==="adjust"?"flex":"none"}
+
+  async function startCamera(){
+    const e=els();
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error("Camera capture is not supported by this browser.");
+    stopCamera();
+    cameraStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280,max:1920},height:{ideal:960,max:1440}}});
+    e.video.srcObject=cameraStream;e.video.muted=true;e.video.setAttribute("playsinline","");
+    await e.video.play();e.capture.disabled=false;status("Position the whole document inside the green frame.")
+  }
+
+  function captureCanvas(){
+    const v=els().video,vw=v.videoWidth||1280,vh=v.videoHeight||960,maxDim=2200,s=Math.min(1,maxDim/Math.max(vw,vh));
+    const c=document.createElement("canvas");c.width=Math.round(vw*s);c.height=Math.round(vh*s);
+    const x=c.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(v,0,0,c.width,c.height);return c
+  }
+
+  function detectBounds(src){
+    const maxSide=520,s=Math.min(1,maxSide/Math.max(src.width,src.height)),w=Math.max(90,Math.round(src.width*s)),h=Math.max(90,Math.round(src.height*s));
+    const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(src,0,0,w,h);
+    const d=x.getImageData(0,0,w,h).data,g=new Float32Array(w*h),cols=new Float32Array(w),rows=new Float32Array(h);
+    for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+    for(let y=1;y<h-1;y++)for(let xx=1;xx<w-1;xx++){const p=y*w+xx,gx=Math.abs(g[p+1]-g[p-1]),gy=Math.abs(g[p+w]-g[p-w]),v=Math.min(255,Math.sqrt(gx*gx+gy*gy));cols[xx]+=v;rows[y]+=v}
+    const smooth=a=>{const o=new Float32Array(a.length);for(let i=0;i<a.length;i++)o[i]=(.5*(a[i]+(a[i-1]??a[i])+(a[i+1]??a[i]))/1.5);return o};
+    const C=smooth(cols),R=smooth(rows);
+    function pick(a,lo,hi){let sum=0,n=0;for(let i=Math.floor(a.length*lo);i<=Math.ceil(a.length*hi);i+=Math.max(1,Math.floor(a.length/100))){sum+=a[i];n++}const avg=n?sum/n:0,th=avg*1.18;let bi=-1,bs=0;for(let i=Math.floor(a.length*lo);i<=Math.ceil(a.length*hi);i++){const s=a[i];if(s>th&&s>bs){bs=s;bi=i}}return bi}
+    let l=pick(C,.04,.46),r=pick(C,.54,.96),t=pick(R,.04,.46),b=pick(R,.54,.96),gl=w*.07,gt=h*.07,gr=w*.93,gb=h*.93;
+    if(l<0||r-l<w*.35){l=gl;r=gr}if(t<0||b-t<h*.35){t=gt;b=gb}
+    l=clamp(l,w*.025,w*.45);r=clamp(r,w*.55,w*.975);t=clamp(t,h*.025,h*.45);b=clamp(b,h*.55,h*.975);
+    return {left:l/s,top:t/s,right:r/s,bottom:b/s,confidence:(r-l>w*.6&&b-t>h*.6)?"high":"guided"}
+  }
+
+  function crop(src,b){
+    const l=Math.round(clamp(b.left,0,src.width-2)),t=Math.round(clamp(b.top,0,src.height-2)),r=Math.round(clamp(b.right,l+2,src.width)),bt=Math.round(clamp(b.bottom,t+2,src.height));
+    const c=document.createElement("canvas"),w=r-l,h=bt-t,s=Math.min(1,2200/Math.max(w,h));c.width=Math.round(w*s);c.height=Math.round(h*s);
+    const x=c.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(src,l,t,w,h,0,0,c.width,c.height);return c
+  }
+
+  function settings(){
+    const e=els();return {
+      brightness:Number(e.b?.value||103),
+      contrast:Number(e.c?.value||108),
+      clarity:Number(e.k?.value||6),
+      enhance:e.enhance?.checked!==false
+    }
+  }
+  function updateLabels(){
+    const e=els(),v=settings();if(e.bv)e.bv.textContent=(v.brightness>=100?"+":"")+(v.brightness-100);
+    if(e.cv)e.cv.textContent=v.contrast+"%";if(e.kv)e.kv.textContent=v.clarity
+  }
+  function cssFilter(){
+    const v=settings(),bright=(v.enhance?v.brightness:v.brightness)/100,contrast=(v.contrast+v.clarity)/100;
+    return "brightness("+bright.toFixed(3)+") contrast("+contrast.toFixed(3)+") saturate("+(v.enhance?".92":"1")+")"
+  }
+  function renderPreview(){
+    previewTimer=null;if(!scanSource)return;const e=els(),p=e.preview,max=900,s=Math.min(1,max/Math.max(scanSource.width,scanSource.height));
+    p.width=Math.round(scanSource.width*s);p.height=Math.round(scanSource.height*s);const x=p.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(scanSource,0,0,p.width,p.height);p.style.filter=cssFilter();updateLabels()
+  }
+  function queuePreview(){if(previewTimer)clearTimeout(previewTimer);previewTimer=setTimeout(renderPreview,100)}
+
+  async function takePicture(){
+    const e=els();if(!e.video.videoWidth){status("Camera is not ready yet.");return}e.capture.disabled=true;status("Capturing document…");
+    try{
+      const src=captureCanvas(),b=e.border?.checked!==false?detectBounds(src):{left:src.width*.07,top:src.height*.07,right:src.width*.93,bottom:src.height*.93,confidence:"guided"};
+      scanSource=crop(src,b);setMode("adjust");stopCamera();e.badge.textContent=b.confidence==="high"?"AUTO BORDER":"GUIDED BORDER";
+      e.b.value="103";e.c.value="108";e.k.value="6";e.enhance.checked=true;e.border.checked=true;updateLabels();queuePreview();
+      status("Review the scan. Adjust brightness, contrast, or clarity before sending.")
+    }catch(err){console.error("Document capture failed:",err);status(err?.message||"Could not capture.");e.capture.disabled=false}
+  }
+
+  async function useScan(){
+    if(!scanSource)return;status("Preparing final scan…");
+    try{
+      const v=settings(),out=document.createElement("canvas"),s=Math.min(1,2200/Math.max(scanSource.width,scanSource.height));
+      out.width=Math.round(scanSource.width*s);out.height=Math.round(scanSource.height*s);
+      const x=out.getContext("2d",{alpha:false});x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+      x.filter=cssFilter();x.drawImage(scanSource,0,0,out.width,out.height);x.filter="none";
+      const blob=await new Promise(r=>out.toBlob(r,"image/jpeg",.94));if(!blob)throw new Error("Could not prepare the scanned image.");
+      const file=new File([blob],"document-scan-"+Date.now()+".jpg",{type:"image/jpeg",lastModified:Date.now()});
+      aoChatPendingImage=file;
+      const preview=$("aoChatImagePreview"),thumb=$("aoChatImageThumb"),name=$("aoChatImageName"),input=$("aoChatImageInput");
+      const url=URL.createObjectURL(file);if(thumb){thumb.src=url;thumb.onload=()=>URL.revokeObjectURL(url)}
+      if(name)name.textContent="Document scan.jpg";if(preview)preview.hidden=false;if(input)input.value="";
+      closeScanner();aoChatStatus("")
+    }catch(err){console.error("Document scan finalize failed:",err);status(err?.message||"Could not prepare the scan.")}
+  }
+
+  async function retake(){scanSource=null;setMode("camera");status("Starting camera…");try{await startCamera()}catch(err){status(err?.message||"Camera could not be restarted.")}}
+
+  function build(){
+    if($("aoChatScanModal"))return;
+    const m=document.createElement("div");m.id="aoChatScanModal";m.className="ao-chat-scan-modal";m.setAttribute("aria-hidden","true");
+    m.innerHTML=`<div class="ao-chat-scan-card" role="dialog" aria-modal="true" aria-label="Document camera">
+      <div class="ao-chat-scan-head"><div><div class="ao-chat-scan-title">📄 Document Capture</div><div class="ao-chat-scan-sub">Smooth camera • auto border • document enhancement</div></div><button type="button" class="ao-chat-scan-close" id="aoChatScanClose">✕</button></div>
+      <div class="ao-chat-scan-body">
+        <div id="aoChatScanCamera" class="ao-chat-scan-camera-wrap"><video id="aoChatScanVideo" class="ao-chat-scan-video" autoplay muted playsinline></video><div class="ao-chat-scan-frame"></div><div class="ao-chat-scan-corner tl"></div><div class="ao-chat-scan-corner tr"></div><div class="ao-chat-scan-corner bl"></div><div class="ao-chat-scan-corner br"></div><div class="ao-chat-scan-hint">Fit the whole document inside the green frame</div></div>
+        <div id="aoChatScanAdjust" class="ao-chat-scan-adjust">
+          <div class="ao-chat-scan-preview-wrap"><canvas id="aoChatScanPreview" class="ao-chat-scan-preview"></canvas><div id="aoChatScanAutoBadge" class="ao-chat-scan-auto-badge">AUTO BORDER</div></div>
+          <div class="ao-chat-scan-controls">
+            <div class="ao-chat-scan-control"><label><span>Brightness</span><span id="aoChatScanBrightnessValue" class="ao-chat-scan-range-value">+3</span></label><input id="aoChatScanBrightness" type="range" min="90" max="115" value="103"></div>
+            <div class="ao-chat-scan-control"><label><span>Contrast</span><span id="aoChatScanContrastValue" class="ao-chat-scan-range-value">108%</span></label><input id="aoChatScanContrast" type="range" min="90" max="135" value="108"></div>
+            <div class="ao-chat-scan-control"><label><span>Clarity</span><span id="aoChatScanClarityValue" class="ao-chat-scan-range-value">6</span></label><input id="aoChatScanClarity" type="range" min="0" max="20" value="6"></div>
+          </div>
+          <div class="ao-chat-scan-checks"><label class="ao-chat-scan-check"><input id="aoChatScanAutoEnhance" type="checkbox" checked> Gentle document enhancement</label><label class="ao-chat-scan-check"><input id="aoChatScanAutoBorder" type="checkbox" checked> Auto border</label></div>
+        </div>
+      </div>
+      <div id="aoChatScanStatus" class="ao-chat-scan-status">Starting camera…</div>
+      <div id="aoChatScanCameraActions" class="ao-chat-scan-camera-actions"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanUploadFallback">🖼️ Upload Instead</button><button type="button" class="ao-chat-scan-capture" id="aoChatScanCapture" disabled>📷 Capture</button></div>
+      <div id="aoChatScanAdjustActions" class="ao-chat-scan-actions" style="display:none"><button type="button" class="ao-chat-scan-secondary" id="aoChatScanRetake">↻ Retake</button><button type="button" class="ao-chat-scan-primary" id="aoChatScanUse">✓ Use Scan</button></div>
+    </div>`;
+    document.body.appendChild(m);
+
+    $("aoChatScanClose").addEventListener("click",closeScanner);
+    $("aoChatScanUploadFallback").addEventListener("click",()=>{closeScanner();$("aoChatImageInput")?.click()});
+    $("aoChatScanCapture").addEventListener("click",takePicture);
+    $("aoChatScanRetake").addEventListener("click",retake);
+    $("aoChatScanUse").addEventListener("click",useScan);
+    [$("aoChatScanBrightness"),$("aoChatScanContrast"),$("aoChatScanClarity")].forEach(r=>r?.addEventListener("input",()=>{updateLabels();queuePreview()}));
+    $("aoChatScanAutoEnhance")?.addEventListener("change",queuePreview);
+    $("aoChatScanAutoBorder")?.addEventListener("change",e=>status(e.target.checked?"Auto border will run on the next capture.":"Auto border is off; the green guide frame will be used."));
+    document.addEventListener("keydown",e=>{if($("aoChatScanModal")?.classList.contains("open")&&e.key==="Escape")closeScanner()});
+    window.addEventListener("pagehide",stopCamera);
+
+    window.aoChatOpenDocumentScanner=async function(){
+      const e=els();e.modal.classList.add("open");e.modal.setAttribute("aria-hidden","false");document.body.classList.add("ao-chat-scan-lock");setMode("camera");status("Starting camera…");
+      try{await startCamera()}catch(err){console.error("Camera access failed:",err);status(err?.message||"Camera permission was not granted. Use Upload Instead.");e.capture.disabled=true}
+    };
+  }
+
+  window.aoChatInitDocumentScanner=build;
+})();
+</script>
+
 <script id="aoChatEmojiScript">
 (function(){
   const emojis=["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😍","🥰","😘","😋","😛","😜","🤪","🤨","🤓","😎","🤩","🥳","😏","😞","😔","😟","😕","🙁","😣","😫","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","😱","😨","😰","🤗","🤔","🫡","🤭","🤫","😶","😐","😬","🙄","😮","😲","🥱","😴","🤢","🤮","🤧","😷","❤️","🧡","💛","💚","💙","💜","🖤","🤍","💯","🔥","👍","👎","👏","🙌","🙏","👌","✌️","🤝","💪","🎉","🎊","⭐","✨","💡","✅","❌","⚠️","❗","❓","💬","📌","🚀"];
   function init(){
+    if(typeof window.aoChatInitDocumentScanner==="function")window.aoChatInitDocumentScanner();
     const input=document.getElementById("aoChatInput"),emojiBtn=document.getElementById("aoChatEmoji"),compose=document.querySelector(".ao-chat-compose");if(!input||!emojiBtn||!compose)return;
     let picker=document.getElementById("aoChatEmojiPicker");
     if(!picker){picker=document.createElement("div");picker.id="aoChatEmojiPicker";picker.className="ao-chat-emoji-picker";picker.hidden=true;emojis.forEach(emoji=>{const b=document.createElement("button");b.type="button";b.textContent=emoji;b.title=emoji;b.addEventListener("click",()=>{const start=input.selectionStart??input.value.length,end=input.selectionEnd??input.value.length,next=input.value.slice(0,start)+emoji+input.value.slice(end);if(next.length>500)return;input.value=next;const pos=start+emoji.length;input.focus();input.setSelectionRange(pos,pos);picker.hidden=true;});picker.appendChild(b);});compose.appendChild(picker);}
@@ -7665,7 +7861,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       if(attachMenu)attachMenu.hidden=true;
     }
     attach?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=!attachMenu.hidden;});
-    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;captureInput?.click();});
+    attachMenu?.querySelector("[data-ao-chat-capture]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;if(typeof window.aoChatOpenDocumentScanner==="function")window.aoChatOpenDocumentScanner();else captureInput?.click();});
     attachMenu?.querySelector("[data-ao-chat-upload]")?.addEventListener("click",e=>{e.stopPropagation();if(attachMenu)attachMenu.hidden=true;imageInput?.click();});
     imageInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
     captureInput?.addEventListener("change",e=>handleChatImageFile(e.target.files?.[0]));
