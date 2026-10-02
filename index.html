@@ -2401,6 +2401,119 @@ input:focus-visible{
 .ao-chat-delete-link{display:inline-flex;margin-top:6px;margin-left:5px;padding:3px 7px;border:1px solid rgba(220,38,38,.35);border-radius:7px;background:rgba(220,38,38,.08);color:#b91c1c;font-size:9px;font-weight:800;cursor:pointer;box-shadow:none;min-height:24px;align-items:center}
 .ao-chat-row.mine .ao-chat-delete-link{color:inherit;border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.08)}
 .ao-chat-search-hidden{display:none!important}
+
+/* ================= CREATIVE DELETE CONFIRMATION ================= */
+.ao-chat-delete-confirm{
+  position:fixed;
+  inset:0;
+  z-index:130000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(15,23,42,.38);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease;
+}
+.ao-chat-delete-confirm.open{
+  opacity:1;
+  pointer-events:auto;
+}
+.ao-chat-delete-confirm-card{
+  width:min(340px,calc(100vw - 34px));
+  padding:22px 20px 18px;
+  border:1px solid rgba(226,232,240,.95);
+  border-radius:22px;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 28px 70px rgba(15,23,42,.24);
+  text-align:center;
+  transform:translateY(10px) scale(.96);
+  transition:transform .22s cubic-bezier(.2,.8,.2,1);
+}
+.ao-chat-delete-confirm.open .ao-chat-delete-confirm-card{
+  transform:translateY(0) scale(1);
+}
+.ao-chat-delete-confirm-icon{
+  width:54px;
+  height:54px;
+  margin:0 auto 11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:18px;
+  color:#dc2626;
+  background:linear-gradient(145deg,#fff1f2,#ffe4e6);
+  border:1px solid #fecdd3;
+  box-shadow:0 10px 24px rgba(244,63,94,.14);
+  font-size:25px;
+  animation:aoChatDeleteIconPop .35s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes aoChatDeleteIconPop{
+  0%{transform:scale(.72) rotate(-8deg);opacity:.35}
+  70%{transform:scale(1.07) rotate(3deg);opacity:1}
+  100%{transform:scale(1) rotate(0deg)}
+}
+.ao-chat-delete-confirm-title{
+  margin:0 0 5px;
+  color:#111827;
+  font-size:17px;
+  font-weight:900;
+}
+.ao-chat-delete-confirm-text{
+  margin:0;
+  color:#64748b;
+  font-size:12px;
+  line-height:1.5;
+}
+.ao-chat-delete-confirm-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:16px;
+}
+.ao-chat-delete-confirm-btn{
+  min-height:42px!important;
+  padding:9px 11px!important;
+  border-radius:12px!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  box-shadow:none!important;
+}
+.ao-chat-delete-confirm-no{
+  color:#334155!important;
+  background:#f8fafc!important;
+  border:1px solid #e2e8f0!important;
+}
+.ao-chat-delete-confirm-no:hover{
+  background:#f1f5f9!important;
+  transform:translateY(-1px)!important;
+}
+.ao-chat-delete-confirm-yes{
+  color:#fff!important;
+  background:linear-gradient(135deg,#fb7185,#ef4444)!important;
+  border:1px solid rgba(220,38,38,.15)!important;
+  box-shadow:0 8px 18px rgba(239,68,68,.20)!important;
+}
+.ao-chat-delete-confirm-yes:hover{
+  filter:brightness(1.04)!important;
+  transform:translateY(-1px)!important;
+}
+.ao-chat-delete-confirm-hint{
+  margin-top:9px;
+  color:#94a3b8;
+  font-size:9px;
+  font-weight:700;
+}
+@media(max-width:600px){
+  .ao-chat-delete-confirm-card{
+    width:min(330px,calc(100vw - 28px));
+    padding:20px 16px 16px;
+    border-radius:20px;
+  }
+}
 .ao-chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}.ao-chat-input{flex:1;min-width:0;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;outline:none;font-size:13px}.ao-chat-send{width:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:18px;cursor:pointer}.ao-chat-send:disabled{opacity:.5;cursor:not-allowed}
 .ao-chat-status{min-height:17px;padding:0 11px 8px;color:#dc2626;font-size:10px;background:#fff}
 .ao-chat-compose{position:relative;align-items:center}
@@ -7723,6 +7836,75 @@ async function aoChatDeleteStoredImage(path){
  }
 }
 
+function aoChatConfirmDelete(){
+ return new Promise(resolve=>{
+   const finish=(result)=>{
+     const overlay=document.getElementById("aoChatDeleteConfirm");
+     if(overlay){
+       overlay.classList.remove("open");
+       overlay.setAttribute("aria-hidden","true");
+       setTimeout(()=>overlay.remove(),180);
+     }
+     if(window.aoChatDeleteConfirmKeyHandler){
+       document.removeEventListener("keydown",window.aoChatDeleteConfirmKeyHandler);
+       window.aoChatDeleteConfirmKeyHandler=null;
+     }
+     window.aoChatDeleteConfirmResolver=null;
+     resolve(result);
+   };
+
+   if(window.aoChatDeleteConfirmResolver){
+     window.aoChatDeleteConfirmResolver(false);
+     return;
+   }
+
+   let overlay=document.getElementById("aoChatDeleteConfirm");
+   if(overlay)overlay.remove();
+
+   overlay=document.createElement("div");
+   overlay.id="aoChatDeleteConfirm";
+   overlay.className="ao-chat-delete-confirm";
+   overlay.setAttribute("role","dialog");
+   overlay.setAttribute("aria-modal","true");
+   overlay.setAttribute("aria-labelledby","aoChatDeleteConfirmTitle");
+   overlay.setAttribute("aria-describedby","aoChatDeleteConfirmText");
+   overlay.setAttribute("aria-hidden","false");
+   overlay.innerHTML=
+     '<div class="ao-chat-delete-confirm-card" role="document">'+
+       '<div class="ao-chat-delete-confirm-icon" aria-hidden="true">🗑️</div>'+
+       '<h3 id="aoChatDeleteConfirmTitle" class="ao-chat-delete-confirm-title">Delete this message?</h3>'+
+       '<p id="aoChatDeleteConfirmText" class="ao-chat-delete-confirm-text">This message will be removed from the conversation.</p>'+
+       '<div class="ao-chat-delete-confirm-actions">'+
+         '<button type="button" class="ao-chat-delete-confirm-btn ao-chat-delete-confirm-no">NO, KEEP IT</button>'+
+         '<button type="button" class="ao-chat-delete-confirm-btn ao-chat-delete-confirm-yes">YES, DELETE</button>'+
+       '</div>'+
+       '<div class="ao-chat-delete-confirm-hint">Press Esc to keep the message</div>'+
+     '</div>';
+
+   document.body.appendChild(overlay);
+   window.aoChatDeleteConfirmResolver=finish;
+
+   const noBtn=overlay.querySelector(".ao-chat-delete-confirm-no");
+   const yesBtn=overlay.querySelector(".ao-chat-delete-confirm-yes");
+   noBtn?.addEventListener("click",()=>finish(false));
+   yesBtn?.addEventListener("click",()=>finish(true));
+   overlay.addEventListener("click",e=>{
+     if(e.target===overlay)finish(false);
+   });
+
+   window.aoChatDeleteConfirmKeyHandler=e=>{
+     if(e.key==="Escape"){
+       e.preventDefault();
+       finish(false);
+     }
+   };
+   document.addEventListener("keydown",window.aoChatDeleteConfirmKeyHandler);
+
+   requestAnimationFrame(()=>overlay.classList.add("open"));
+   setTimeout(()=>noBtn?.focus(),40);
+ });
+}
+
 async function aoChatDeleteMessage(id,imagePath){
  const messageId=String(id||"").trim();
  const branch=aoChatBranch();
@@ -7731,6 +7913,10 @@ async function aoChatDeleteMessage(id,imagePath){
    aoChatStatus("Please log in first.");
    return;
  }
+
+ const confirmed=await aoChatConfirmDelete();
+ if(!confirmed)return;
+
  aoChatStatus("Deleting…");
  try{
    const deleted=await sbRequest(
