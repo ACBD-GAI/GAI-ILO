@@ -7752,7 +7752,7 @@ async function aoChatEditMessage(id,originalText,imagePath){
    if(!text){aoChatStatus(imagePath?"Pictures must include a text message.":"Message text cannot be empty.");textarea.focus();return;}
    save.disabled=true;cancel.disabled=true;aoChatStatus("Saving edit...");
    try{
-     const message=(imagePath?text+"\\n[[AO_CHAT_IMAGE]]"+imagePath:text);
+     const message=(imagePath?text+"\n[[AO_CHAT_IMAGE]]"+imagePath:text);
      await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER",{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message})});
      aoChatStatus("");
      aoChatEditing=false;
