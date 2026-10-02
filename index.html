@@ -2383,6 +2383,22 @@ input:focus-visible{
 .ao-chat-row.mine .ao-chat-bubble{background:#111827;color:#fff}
 .ao-chat-name{font-size:10px;font-weight:700;opacity:.65;margin-bottom:4px}.ao-chat-text{font-size:13px;line-height:1.4;white-space:pre-wrap}.ao-chat-time{font-size:9px;opacity:.55;margin-top:5px}
 .ao-chat-empty{text-align:center;color:#6b7280;font-size:12px;padding:35px 15px}
+
+.ao-chat-search{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:1px solid #e5e7eb;background:#fff;flex:none}
+.ao-chat-search-input{flex:1;min-width:0;height:36px;padding:8px 10px;border:1px solid #d1d5db;border-radius:10px;outline:none;background:#f9fafb;color:#1f2937;font-size:12px}
+.ao-chat-search-input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.10);background:#fff}
+.ao-chat-search-clear{width:34px;min-width:34px;height:34px;min-height:34px;padding:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;color:#6b7280;font-size:15px;cursor:pointer;box-shadow:none}
+.ao-chat-search-clear:hover{background:#f3f4f6;transform:none}
+.ao-chat-search-count{min-width:38px;text-align:center;color:#64748b;font-size:9px;font-weight:800;white-space:nowrap}
+.ao-chat-edit-wrap{margin-top:6px}
+.ao-chat-edit-input{width:100%;min-height:72px;resize:vertical;padding:8px 9px;border:1px solid #60a5fa;border-radius:10px;outline:none;background:#fff;color:#1f2937;font:inherit;font-size:12px;line-height:1.4;box-sizing:border-box}
+.ao-chat-edit-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+.ao-chat-edit-btn{min-height:30px;padding:6px 9px;border-radius:8px;border:1px solid #d1d5db;background:#fff;color:#475569;font-size:10px;font-weight:800;cursor:pointer;box-shadow:none}
+.ao-chat-edit-save{border-color:#16a34a;background:#15803d;color:#fff}
+.ao-chat-edit-btn:hover{transform:none;filter:none}
+.ao-chat-edit-link{display:inline-flex;margin-top:6px;padding:3px 7px;border:1px solid rgba(148,163,184,.35);border-radius:7px;background:rgba(255,255,255,.10);color:inherit;font-size:9px;font-weight:800;cursor:pointer;box-shadow:none;min-height:24px;align-items:center}
+.ao-chat-row:not(.mine) .ao-chat-edit-link{display:none}
+.ao-chat-search-hidden{display:none!important}
 .ao-chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid #e5e7eb;background:#fff}.ao-chat-input{flex:1;min-width:0;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;outline:none;font-size:13px}.ao-chat-send{width:42px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:18px;cursor:pointer}.ao-chat-send:disabled{opacity:.5;cursor:not-allowed}
 .ao-chat-status{min-height:17px;padding:0 11px 8px;color:#dc2626;font-size:10px;background:#fff}
 .ao-chat-compose{position:relative;align-items:center}
@@ -7653,8 +7669,102 @@ async function aoChatUploadImage(file){
  if(!res.ok){let msg="Image upload failed.";try{const d=await res.json();msg=d?.message||d?.error||msg;}catch(e){}throw new Error(msg);}
  return path;
 }
+function aoChatSearchValue(){
+ const e=document.getElementById("aoChatSearchInput");
+ return String(e?.value||"").trim().toLowerCase();
+}
+function aoChatUpdateSearchCount(count,total){
+ const e=document.getElementById("aoChatSearchCount");
+ if(!e)return;
+ const q=aoChatSearchValue();
+ e.textContent=q?(String(count)+"/"+String(total)):"";
+}
+function aoChatRenderSearch(){
+ const q=aoChatSearchValue();
+ let visible=0;
+ let total=0;
+ document.querySelectorAll("#aoChatMessages .ao-chat-row[data-chat-search-text]").forEach(row=>{
+   const hay=String(row.getAttribute("data-chat-search-text")||"").toLowerCase();
+   const match=!q||hay.includes(q);
+   row.classList.toggle("ao-chat-search-hidden",!match);
+   if(match)visible++;
+   total++;
+ });
+ document.querySelectorAll("#aoChatMessages .ao-chat-unread-divider").forEach(div=>{
+   const next=div.nextElementSibling;
+   div.classList.toggle("ao-chat-search-hidden",!!q && next?.classList.contains("ao-chat-search-hidden"));
+ });
+ aoChatUpdateSearchCount(visible,total);
+ const box=document.getElementById("aoChatMessages");
+ if(box&&q&&!visible){
+   const existing=box.querySelector(".ao-chat-search-none");
+   if(!existing){
+     const none=document.createElement("div");
+     none.className="ao-chat-empty ao-chat-search-none";
+     none.textContent="No matching messages found.";
+     box.appendChild(none);
+   }
+ }else{
+   box?.querySelector(".ao-chat-search-none")?.remove();
+ }
+}
+function aoChatSetupSearch(){
+ const input=document.getElementById("aoChatSearchInput"),clear=document.getElementById("aoChatSearchClear");
+ if(input&&!input.dataset.bound){
+   input.dataset.bound="1";
+   input.addEventListener("input",()=>aoChatRenderSearch());
+ }
+ if(clear&&!clear.dataset.bound){
+   clear.dataset.bound="1";
+   clear.addEventListener("click",()=>{if(input)input.value="";aoChatRenderSearch();input?.focus();});
+ }
+}
+async function aoChatEditMessage(id,originalText,imagePath){
+ const row=document.querySelector('#aoChatMessages .ao-chat-row[data-chat-id="'+CSS.escape(String(id))+'"]');
+ if(!row)return;
+ const bubble=row.querySelector(".ao-chat-bubble");
+ if(!bubble)return;
+ const existing=bubble.querySelector(".ao-chat-edit-wrap");
+ if(existing)return;
+ const editWrap=document.createElement("div");
+ editWrap.className="ao-chat-edit-wrap";
+ const textarea=document.createElement("textarea");
+ textarea.className="ao-chat-edit-input";
+ textarea.maxLength=500;
+ textarea.value=String(originalText||"");
+ const actions=document.createElement("div");
+ actions.className="ao-chat-edit-actions";
+ const cancel=document.createElement("button");
+ cancel.type="button";cancel.className="ao-chat-edit-btn";cancel.textContent="Cancel";
+ const save=document.createElement("button");
+ save.type="button";save.className="ao-chat-edit-btn ao-chat-edit-save";save.textContent="Save";
+ actions.append(cancel,save);editWrap.append(textarea,actions);
+ const nodes=[...bubble.children];
+ nodes.forEach(n=>{if(!n.classList.contains("ao-chat-name")&&!n.classList.contains("ao-chat-time"))n.style.display="none";});
+ bubble.querySelector(".ao-chat-name")?.after(editWrap);
+ textarea.focus();
+ textarea.setSelectionRange(textarea.value.length,textarea.value.length);
+ cancel.addEventListener("click",()=>aoChatLoad());
+ save.addEventListener("click",async()=>{
+   const text=String(textarea.value||"").trim();
+   if(!text){aoChatStatus(imagePath?"Pictures must include a text message.":"Message text cannot be empty.");textarea.focus();return;}
+   save.disabled=true;cancel.disabled=true;aoChatStatus("Saving edit...");
+   try{
+     const message=(imagePath?text+"\\n[[AO_CHAT_IMAGE]]"+imagePath:text);
+     await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER",{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message})});
+     aoChatStatus("");
+     await aoChatLoad();
+   }catch(e){
+     console.error("Scanner chat edit failed:",e);
+     aoChatStatus(e?.message||"Message could not be edited.");
+     save.disabled=false;cancel.disabled=false;
+   }
+ });
+}
 async function aoChatLoad(){
- const branch=aoChatBranch(),email=aoChatEmail(),box=document.getElementById("aoChatMessages");if(!box||!branch||!email)return;
+ const branch=aoChatBranch(),email=aoChatEmail(),box=document.getElementById("aoChatMessages");
+ if(!box||!branch||!email)return;
+ aoChatSetupSearch();
  try{
   const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+"&order=created_at.asc&limit=500");
   const list=Array.isArray(rows)?rows:[],read=aoChatRead();
@@ -7667,24 +7777,31 @@ async function aoChatLoad(){
    box.innerHTML=list.map(r=>{
     const mine=String(r.sender_email||"").toLowerCase()===email,label=String(r.sender_type||"").toUpperCase()==="SCANNER"?"BRANCH":(String(r.sender_type||"").toUpperCase()==="DASHBOARD"?"ADMIN":r.sender_type||"");
     const sep=firstUnreadId!==null&&r.id===firstUnreadId?'<div class="ao-chat-unread-divider">'+unread.length+' UNREAD MESSAGE'+(unread.length===1?'':'S')+' FROM ADMIN</div>':'';
-    const raw=String(r.message||"");const imagePath=aoChatImagePath(raw);const textPart=aoChatTextPart(raw);
+    const raw=String(r.message||""),imagePath=aoChatImagePath(raw),textPart=aoChatTextPart(raw);
     const imageHtml=imagePath?'<img class="ao-chat-message-image" src="'+aoChatEsc(aoChatPublicImageUrl(imagePath))+'" alt="Chat image" loading="lazy" onclick="window.open(this.src,\'_blank\',\'noopener\')">':'';
     const textHtml=textPart?'<div class="ao-chat-image-caption">'+aoChatEsc(textPart)+'</div>':'';
-    return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(r.sender_email||"")+'</div>'+textHtml+imageHtml+'<div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
+    const editHtml=mine?'<button type="button" class="ao-chat-edit-link" data-edit-id="'+aoChatEsc(r.id)+'">✎ Edit</button>':'';
+    const searchText=aoChatEsc([textPart,r.sender_email,label].join(" "));
+    return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'" data-chat-id="'+aoChatEsc(r.id)+'" data-chat-search-text="'+searchText+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(r.sender_email||"")+'</div>'+textHtml+imageHtml+editHtml+'<div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
    }).join("");
-   if(aoChatOpen&&bottom)box.scrollTop=box.scrollHeight;
+   box.querySelectorAll("[data-edit-id]").forEach(btn=>btn.addEventListener("click",()=>{
+     const id=btn.getAttribute("data-edit-id"),row=list.find(r=>String(r.id)===String(id));
+     if(row){aoChatEditMessage(row.id,aoChatTextPart(row.message),aoChatImagePath(row.message));}
+   }));
+   if(aoChatOpen&&bottom&&!aoChatSearchValue())box.scrollTop=box.scrollHeight;
   }
+  aoChatRenderSearch();
   if(aoChatOpen){const last=incoming.length?new Date(incoming[incoming.length-1].created_at).getTime():0;if(last)aoChatMark(last);aoChatBadge(0);}
   const sub=document.getElementById("aoChatSub");if(sub)sub.textContent=branch+" · "+email;
  }catch(e){console.warn("Scanner chat load failed:",e);aoChatStatus(e?.message||"Chat temporarily unavailable.");}
 }
 function aoChatToggle(){aoChatOpen=!aoChatOpen;const p=document.getElementById("aoChatPanel");if(!p)return;p.classList.toggle("open",aoChatOpen);p.setAttribute("aria-hidden",String(!aoChatOpen));if(aoChatOpen){aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}else aoChatLoad();}
-async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),pendingImage=aoChatPendingImage,branch=aoChatBranch(),email=aoChatEmail();if(!text&&!pendingImage)return;if(!branch||!email){aoChatStatus("Please log in first.");return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");let uploadedImagePath="";try{let message=text;if(pendingImage){aoChatStatus("Uploading image…");uploadedImagePath=await aoChatUploadImage(pendingImage);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}aoChatStatus("Sending...");await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:message})});input.value="";aoChatClearPendingImage();aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);try{if(uploadedImagePath){await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+uploadedImagePath,{method:"DELETE",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});}}catch(cleanupError){console.warn("Scanner chat image cleanup failed:",cleanupError);}aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
+async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),pendingImage=aoChatPendingImage,branch=aoChatBranch(),email=aoChatEmail();if(!text&&!pendingImage)return;if(pendingImage&&!text){aoChatStatus("Please add a text message before sending a picture.");input?.focus();return;}if(!branch||!email){aoChatStatus("Please log in first.");return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");let uploadedImagePath="";try{let message=text;if(pendingImage){aoChatStatus("Uploading image…");uploadedImagePath=await aoChatUploadImage(pendingImage);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}aoChatStatus("Sending...");await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:message})});input.value="";aoChatClearPendingImage();aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);try{if(uploadedImagePath){await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+uploadedImagePath,{method:"DELETE",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});}}catch(cleanupError){console.warn("Scanner chat image cleanup failed:",cleanupError);}aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
 document.addEventListener("DOMContentLoaded",()=>{const input=document.getElementById("aoChatInput");if(input)input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();aoChatSend();}});setTimeout(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},1500);if(!aoChatTimer)aoChatTimer=setInterval(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},3000);});
 </script>
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
-<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div class="ao-chat-search"><input id="aoChatSearchInput" class="ao-chat-search-input" type="search" maxlength="100" autocomplete="off" placeholder="Search conversation..."><span id="aoChatSearchCount" class="ao-chat-search-count"></span><button id="aoChatSearchClear" class="ao-chat-search-clear" type="button" aria-label="Clear search" title="Clear search">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 
 <script id="aoChatDocumentScannerScript">
 (function(){
