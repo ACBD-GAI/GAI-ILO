@@ -7731,8 +7731,7 @@ async function aoChatDeleteMessage(id,imagePath){
    aoChatStatus("Please log in first.");
    return;
  }
- if(!window.confirm("Delete this message"+(imagePath?" and attached photo":"")+"?"))return;
- aoChatStatus("Deleting...");
+ aoChatStatus("Deleting…");
  try{
    const deleted=await sbRequest(
      "/rest/v1/chat_messages?id=eq."+encodeURIComponent(messageId)+
@@ -7755,7 +7754,7 @@ async function aoChatDeleteMessage(id,imagePath){
    if(!document.getElementById("aoChatStatus")?.textContent)aoChatStatus("");
  }catch(e){
    console.error("Scanner chat delete failed:",e);
-   aoChatStatus(e?.message||"Message could not be deleted.");
+   aoChatStatus("Unable to delete this message. Please try again.");
  }
 }
 function aoChatEditedImagePath(oldPath,label){
