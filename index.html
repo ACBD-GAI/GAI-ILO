@@ -7722,7 +7722,7 @@ function aoChatSetupSearch(){
 }
 async function aoChatEditMessage(id,originalText,imagePath){
  aoChatEditing=true;
- const row=document.querySelector('#aoChatMessages .ao-chat-row[data-chat-id="'+CSS.escape(String(id))+'"]');
+ const row=[...document.querySelectorAll('#aoChatMessages .ao-chat-row[data-chat-id]')].find(el=>String(el.getAttribute('data-chat-id'))===String(id));
  if(!row)return;
  const bubble=row.querySelector(".ao-chat-bubble");
  if(!bubble)return;
