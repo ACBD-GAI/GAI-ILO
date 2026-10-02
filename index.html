@@ -7629,6 +7629,7 @@ function aoChatBadge(n){aoChatUnread=Math.max(0,Number(n)||0);const b=document.g
 function aoChatIsImageMessage(message){return String(message||"").includes("[[AO_CHAT_IMAGE]]");}
 function aoChatImagePath(message){const m=String(message||"").match(/\[\[AO_CHAT_IMAGE\]\]([^\n\r]+)/);return m?String(m[1]||"").trim():"";}
 function aoChatTextPart(message){return String(message||"").replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
+function aoChatIsSharedStateMessage(message){return String(message||"").startsWith("[[AO_CHAT_SHARED_STATE]]");}
 function aoChatPublicImageUrl(path){if(!path)return "";return SUPABASE_URL+"/storage/v1/object/public/"+AO_CHAT_IMAGE_BUCKET+"/"+String(path).split("/").map(encodeURIComponent).join("/");}
 async function aoChatCompressImage(file){
  if(!(file instanceof File))throw new Error("Invalid image file.");
@@ -7771,7 +7772,7 @@ async function aoChatLoad(){
  aoChatSetupSearch();
  try{
   const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+"&order=created_at.asc&limit=500");
-  const list=Array.isArray(rows)?rows:[],read=aoChatRead();
+  const list=(Array.isArray(rows)?rows:[]).filter(r=>!aoChatIsSharedStateMessage(r?.message)),read=aoChatRead();
   const incoming=list.filter(r=>String(r.sender_type||"").toUpperCase()==="DASHBOARD"),unread=incoming.filter(r=>new Date(r.created_at).getTime()>read);
   if(!aoChatOpen)aoChatBadge(unread.length);
   const old=box.scrollTop,bottom=(box.scrollHeight-box.clientHeight-old)<60;
