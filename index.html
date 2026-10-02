@@ -7680,6 +7680,37 @@ async function aoChatUploadImage(file,label){
  if(!res.ok){let msg="Image upload failed.";try{const d=await res.json();msg=d?.message||d?.error||msg;}catch(e){}throw new Error(msg);}
  return path;
 }
+async function aoChatMoveStoredImage(sourcePath,destinationPath){
+ if(!sourcePath||!destinationPath||sourcePath===destinationPath){
+   return;
+ }
+ const res=await fetch(SUPABASE_URL+"/storage/v1/object/move",{
+   method:"POST",
+   headers:{
+     apikey:SUPABASE_KEY,
+     Authorization:"Bearer "+SUPABASE_KEY,
+     "Content-Type":"application/json"
+   },
+   body:JSON.stringify({
+     bucketId:AO_CHAT_IMAGE_BUCKET,
+     sourceKey:sourcePath,
+     destinationKey:destinationPath
+   })
+ });
+ if(!res.ok){
+   let msg="Image filename update failed.";
+   try{const d=await res.json();msg=d?.message||d?.error||msg;}catch(e){}
+   throw new Error(msg);
+ }
+}
+function aoChatEditedImagePath(oldPath,label){
+ const path=String(oldPath||"").trim();
+ if(!path)return "";
+ const slash=path.lastIndexOf("/");
+ const folder=slash>=0?path.slice(0,slash):"";
+ const fileName=aoChatStorageFileName(label);
+ return (folder?folder+"/":"")+fileName;
+}
 function aoChatSearchValue(){
  const e=document.getElementById("aoChatSearchInput");
  return String(e?.value||"").trim().toLowerCase();
@@ -7761,13 +7792,37 @@ async function aoChatEditMessage(id,originalText,imagePath){
    const text=String(textarea.value||"").trim();
    if(!text){aoChatStatus(imagePath?"Pictures must include a text message.":"Message text cannot be empty.");textarea.focus();return;}
    save.disabled=true;cancel.disabled=true;aoChatStatus("Saving edit...");
+   let movedImage=null;
    try{
-     const message=(imagePath?text+"\n[[AO_CHAT_IMAGE]]"+imagePath:text);
+     let editedImagePath=imagePath;
+
+     /*
+      * ONLY messages that already have an attached image get a
+      * filename update. Text-only messages never touch Storage.
+      */
+     if(imagePath){
+       aoChatStatus("Updating image filename...");
+       const destinationPath=aoChatEditedImagePath(imagePath,text);
+       if(destinationPath&&destinationPath!==imagePath){
+         await aoChatMoveStoredImage(imagePath,destinationPath);
+         movedImage={from:imagePath,to:destinationPath};
+         editedImagePath=destinationPath;
+       }
+     }
+
+     const message=(editedImagePath?text+"\n[[AO_CHAT_IMAGE]]"+editedImagePath:text);
      await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER",{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message})});
      aoChatStatus("");
      aoChatEditing=false;
      await aoChatLoad();
    }catch(e){
+     if(movedImage){
+       try{
+         await aoChatMoveStoredImage(movedImage.to,movedImage.from);
+       }catch(rollbackError){
+         console.warn("Scanner chat image filename rollback failed:",rollbackError);
+       }
+     }
      console.error("Scanner chat edit failed:",e);
      aoChatStatus(e?.message||"Message could not be edited.");
      save.disabled=false;cancel.disabled=false;
