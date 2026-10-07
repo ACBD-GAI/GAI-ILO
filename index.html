@@ -10990,5 +10990,155 @@ async function confirmPullOutRequest(){
 })();
 </script>
 
+
+<script id="aoAdminDisplayNameScannerAddOn">
+(function(){
+  "use strict";
+
+  const TABLE = "admin_display_names";
+  const CACHE_MS = 15000;
+  let nameMap = new Map();
+  let loadedAt = 0;
+  let loadPromise = null;
+  let observerStarted = false;
+  let currentIncomingAdminEmail = "";
+
+  function esc(value){
+    return String(value == null ? "" : value)
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/\"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function apiHeaders(){
+    return {
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + SUPABASE_KEY,
+      Accept: "application/json"
+    };
+  }
+
+  function nameFor(email){
+    const e = String(email || "").trim().toLowerCase();
+    return nameMap.get(e) || e;
+  }
+
+  async function loadNames(force){
+    const now = Date.now();
+    if(!force && loadedAt && (now - loadedAt) < CACHE_MS) return nameMap;
+    if(loadPromise && !force) return loadPromise;
+
+    loadPromise = (async function(){
+      try{
+        const response = await fetch(
+          SUPABASE_URL + "/rest/v1/" + TABLE + "?select=email,display_name",
+          {method:"GET",headers:apiHeaders()}
+        );
+        const body = await response.text();
+        if(!response.ok) throw new Error("Display-name service error (" + response.status + ")");
+        const rows = body ? JSON.parse(body) : [];
+        const next = new Map();
+        (Array.isArray(rows) ? rows : []).forEach(function(row){
+          const email = String(row && row.email || "").trim().toLowerCase();
+          const display = String(row && row.display_name || "").trim();
+          if(email && display) next.set(email,display);
+        });
+        nameMap = next;
+      }catch(error){
+        console.warn("Scanner admin display-name load failed:",error);
+      }
+      loadedAt = Date.now();
+      loadPromise = null;
+      applyAll();
+      return nameMap;
+    })();
+
+    return loadPromise;
+  }
+
+  function applyChat(){
+    document.querySelectorAll("#aoChatMessages .ao-chat-name, .ao-chat-messages .ao-chat-name").forEach(function(el){
+      const raw = String(el.textContent || "").trim();
+      const sep = raw.indexOf(" · ");
+      if(sep < 0) return;
+      const role = raw.slice(0,sep).trim();
+      const sender = raw.slice(sep+3).trim();
+      if(role.toUpperCase() !== "ADMIN" || !sender || !sender.includes("@")) return;
+      const nextText = role + " · " + nameFor(sender);
+      if(el.textContent !== nextText) el.textContent = nextText;
+    });
+  }
+
+  function applyVideoPicker(){
+    document.querySelectorAll(".ao-video-admin-option[data-admin-email]").forEach(function(button){
+      const email = String(button.getAttribute("data-admin-email") || "").trim().toLowerCase();
+      if(!email) return;
+      const label = button.querySelector(".ao-video-admin-email");
+      if(label){
+        const nextText = nameFor(email);
+        if(label.textContent !== nextText) label.textContent = nextText;
+      }
+    });
+  }
+
+  function applyIncomingCall(){
+    const el = document.getElementById("aoVideoIncomingFrom");
+    if(el){
+      const raw = String(el.textContent || "").trim();
+      const match = raw.match(/^Admin\s*·\s*([^\n]+)(?:\n|$)/i);
+      if(match){
+        const email = String(match[1] || "").trim().toLowerCase();
+        if(email.includes("@")){
+          currentIncomingAdminEmail = email;
+          const rest = raw.slice(match[0].length).trim();
+          el.innerHTML =
+            "<strong>" + esc(nameFor(email)) + "</strong>" +
+            (rest ? "<br>" + esc(rest) : "");
+        }
+      }
+    }
+
+    const overlay = document.getElementById("aoVideoCallOverlay");
+    const title = document.getElementById("aoVideoCallTitle");
+    if(overlay && title && overlay.classList.contains("open") && currentIncomingAdminEmail){
+      title.textContent = nameFor(currentIncomingAdminEmail) + " Video Call";
+    }
+  }
+
+  function applyAll(){
+    applyChat();
+    applyVideoPicker();
+    applyIncomingCall();
+  }
+
+  function startObserver(){
+    if(observerStarted || !document.body) return;
+    observerStarted = true;
+    let timer = 0;
+    const observer = new MutationObserver(function(){
+      clearTimeout(timer);
+      timer = setTimeout(applyAll,80);
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+  }
+
+  function boot(){
+    loadNames(false).catch(function(){});
+    applyAll();
+    setInterval(function(){
+      loadNames(true).catch(function(){});
+    },CACHE_MS);
+    startObserver();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",boot,{once:true});
+  }else{
+    boot();
+  }
+})();
+</script>
 </body>
 </html>
