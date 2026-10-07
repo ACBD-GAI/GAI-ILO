@@ -8091,8 +8091,11 @@ async function aoChatLoad(){
     const textHtml=textPart?'<div class="ao-chat-image-caption">'+aoChatEsc(textPart)+'</div>':'';
     const editHtml=mine?'<button type="button" class="ao-chat-edit-link" data-edit-id="'+aoChatEsc(r.id)+'">✎ Edit</button>':'';
     const deleteHtml=mine?'<button type="button" class="ao-chat-delete-link" data-delete-id="'+aoChatEsc(r.id)+'" data-delete-path="'+aoChatEsc(imagePath)+'">🗑 Delete</button>':'';
-    const searchText=aoChatEsc([textPart,r.sender_email,label].join(" "));
-    return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'" data-chat-id="'+aoChatEsc(r.id)+'" data-chat-search-text="'+searchText+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(r.sender_email||"")+'</div>'+textHtml+imageHtml+editHtml+deleteHtml+'<div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
+    const displaySender=(typeof window.aoAdminDisplayNameFor === "function")
+      ? window.aoAdminDisplayNameFor(r.sender_email||"")
+      : (r.sender_email||"");
+    const searchText=aoChatEsc([textPart,r.sender_email,displaySender,label].join(" "));
+    return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'" data-chat-id="'+aoChatEsc(r.id)+'" data-chat-search-text="'+searchText+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(displaySender)+'</div>'+textHtml+imageHtml+editHtml+deleteHtml+'<div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
    }).join("");
    box.querySelectorAll("[data-edit-id]").forEach(btn=>btn.addEventListener("click",()=>{
      const id=btn.getAttribute("data-edit-id"),row=list.find(r=>String(r.id)===String(id));
@@ -11025,6 +11028,10 @@ async function confirmPullOutRequest(){
     return nameMap.get(e) || e;
   }
 
+  /* Existing scanner chat rendering calls this helper directly.
+     Email remains the permanent internal identity; only the visible label changes. */
+  window.aoAdminDisplayNameFor = nameFor;
+
   async function loadNames(force){
     const now = Date.now();
     if(!force && loadedAt && (now - loadedAt) < CACHE_MS) return nameMap;
@@ -11093,9 +11100,12 @@ async function confirmPullOutRequest(){
         if(email.includes("@")){
           currentIncomingAdminEmail = email;
           const rest = raw.slice(match[0].length).trim();
-          el.innerHTML =
+          const nextHtml =
             "<strong>" + esc(nameFor(email)) + "</strong>" +
             (rest ? "<br>" + esc(rest) : "");
+          if(el.innerHTML !== nextHtml){
+            el.innerHTML = nextHtml;
+          }
         }
       }
     }
@@ -11108,7 +11118,8 @@ async function confirmPullOutRequest(){
   }
 
   function applyAll(){
-    applyChat();
+    /* Chat names are now rendered correctly at the source, so do not
+       rewrite the live chat DOM after every refresh (prevents blinking). */
     applyVideoPicker();
     applyIncomingCall();
   }
