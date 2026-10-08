@@ -2364,19 +2364,6 @@ input:focus-visible{
    
 
 </style>
-<style id="aoScannerPeerChatStyle">
-.ao-scanner-chat-targets{padding:9px 10px;border-bottom:1px solid #e5e7eb;background:linear-gradient(180deg,#fbfdff,#f3f7fb);display:grid;gap:7px}
-.ao-scanner-chat-mode-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.ao-scanner-chat-mode{min-height:34px!important;padding:7px 8px!important;border:1px solid #dbe5f0!important;border-radius:9px!important;background:#fff!important;color:#64748b!important;font-size:10px!important;font-weight:900!important;box-shadow:none!important}
-.ao-scanner-chat-mode.active{border-color:#60a5fa!important;background:#eff6ff!important;color:#1d4ed8!important;box-shadow:0 4px 12px rgba(37,99,235,.08)!important}
-.ao-scanner-chat-mode:hover{transform:none!important;filter:none!important}
-.ao-scanner-chat-field{display:grid;gap:4px}
-.ao-scanner-chat-field[hidden]{display:none!important}
-.ao-scanner-chat-field label{font-size:8px;font-weight:950;letter-spacing:.08em;color:#64748b}
-.ao-scanner-chat-field select{width:100%;min-height:36px;padding:0 10px;border:1px solid #d1d5db;border-radius:9px;background:#fff;color:#243447;font-size:11px;font-weight:750;outline:none}
-.ao-scanner-chat-field select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.10)}
-</style>
-
 <style>
 
 /* ================= PRIVATE DASHBOARD CHAT ================= */
@@ -7756,7 +7743,26 @@ function aoChatMark(ts){if(ts)localStorage.setItem(aoChatKey(),String(ts));}
 function aoChatBadge(n){aoChatUnread=Math.max(0,Number(n)||0);const b=document.getElementById("aoChatBadge");if(b){b.textContent=aoChatUnread>99?"99+":String(aoChatUnread);b.style.display=aoChatUnread?"flex":"none";}}
 function aoChatIsImageMessage(message){return String(message||"").includes("[[AO_CHAT_IMAGE]]");}
 function aoChatImagePath(message){const m=String(message||"").match(/\[\[AO_CHAT_IMAGE\]\]([^\n\r]+)/);return m?String(m[1]||"").trim():"";}
-function aoChatTextPart(message){return aoChatStripTargetMeta(String(message||"")).replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
+function aoChatTextPart(message){return String(message||"").replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
+function aoChatIsSharedStateMessage(message){return String(message||"").startsWith("[[AO_CHAT_SHARED_STATE]]");}
+function aoChatPublicImageUrl(path){if(!path)return "";return SUPABASE_URL+"/storage/v1/object/public/"+AO_CHAT_IMAGE_BUCKET+"/"+String(path).split("/").map(encodeURIComponent).join("/");}
+async function aoChatCompressImage(file){
+ if(!(file instanceof File))throw new Error("Invalid image file.");
+ if(file.size>AO_CHAT_IMAGE_MAX_INPUT_BYTES)throw new Error("Image is too large. Maximum is 8 MB.");
+ if(!String(file.type||"").startsWith("image/"))throw new Error("Please select an image file.");
+ const bitmap=await createImageBitmap(file);
+ let width=bitmap.width,height=bitmap.height;
+ const scale=Math.min(1,AO_CHAT_IMAGE_MAX_DIMENSION/Math.max(width,height));
+ width=Math.max(1,Math.round(width*scale));height=Math.max(1,Math.round(height*scale));
+ const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+ const ctx=canvas.getContext("2d",{alpha:false});
+ if(!ctx){bitmap.close?.();throw new Error("Unable to prepare the image.");}
+ ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);ctx.drawImage(bitmap,0,0,width,height);bitmap.close?.();
+ let quality=.82;let blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));
+ while(blob&&blob.size>AO_CHAT_IMAGE_MAX_OUTPUT_BYTES&&quality>.50){quality-=.06;blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));}
+ if(!blob)throw new Error("Image compression failed.");
+ return new File([blob],"chat-image.jpg",{type:"image/jpeg",lastModified:Date.now()});
+}
 function aoChatStorageFileName(label){
   const d = new Date();
   const pad = n => String(n).padStart(2,"0");
@@ -7777,33 +7783,6 @@ function aoChatStorageFileName(label){
     pad(d.getMinutes()) + "-" +
     pad(d.getSeconds()) + "-" +
     ms + ".jpg";
-}
-
-
-/* =========================================================
-   PRIVATE CHAT TARGET METADATA
-   Stored inside existing chat text so no database schema
-   change is required. Hidden before display.
-========================================================= */
-const AO_CHAT_TARGET_OPEN="[[AO_CHAT_TARGET]]";
-const AO_CHAT_TARGET_CLOSE="[[/AO_CHAT_TARGET]]";
-function aoChatTargetMeta(message){
-  const raw=String(message||"");
-  const match=raw.match(/\[\[AO_CHAT_TARGET\]\]([\s\S]*?)\[\[\/AO_CHAT_TARGET\]\]/);
-  if(!match)return null;
-  try{
-    const data=JSON.parse(match[1]);
-    const adminEmail=String(data?.adminEmail||"").trim().toLowerCase();
-    return adminEmail?{adminEmail}:null;
-  }catch(e){return null;}
-}
-function aoChatStripTargetMeta(message){
-  return String(message||"").replace(/\[\[AO_CHAT_TARGET\]\][\s\S]*?\[\[\/AO_CHAT_TARGET\]\]\s*/g,"").trim();
-}
-function aoChatAttachAdminTarget(message,adminEmail){
-  const clean=aoChatStripTargetMeta(message);
-  const email=String(adminEmail||"").trim().toLowerCase();
-  return email ? AO_CHAT_TARGET_OPEN+JSON.stringify({adminEmail:email})+AO_CHAT_TARGET_CLOSE+"\n"+clean : clean;
 }
 
 async function aoChatUploadImage(file,label){
@@ -8071,15 +8050,7 @@ async function aoChatEditMessage(id,originalText,imagePath){
        }
      }
 
-     let message=(editedImagePath?text+"\n[[AO_CHAT_IMAGE]]"+editedImagePath:text);
-     try{
-       const target=(typeof window.aoScannerChatConversationTarget==="function")
-         ? window.aoScannerChatConversationTarget()
-         : null;
-       if(target?.mode==="admin" && target?.email){
-         message=aoChatAttachAdminTarget(message,target.email);
-       }
-     }catch(e){}
+     const message=(editedImagePath?text+"\n[[AO_CHAT_IMAGE]]"+editedImagePath:text);
      await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER",{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message})});
      aoChatStatus("");
      aoChatEditing=false;
@@ -8144,319 +8115,9 @@ function aoChatToggle(){aoChatOpen=!aoChatOpen;const p=document.getElementById("
 async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),pendingImage=aoChatPendingImage,branch=aoChatBranch(),email=aoChatEmail();if(!text&&!pendingImage)return;if(pendingImage&&!text){aoChatStatus("Please add a text message before sending a picture.");input?.focus();return;}if(!branch||!email){aoChatStatus("Please log in first.");return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");let uploadedImagePath="";try{let message=text;if(pendingImage){aoChatStatus("Uploading image…");uploadedImagePath=await aoChatUploadImage(pendingImage,text);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}aoChatStatus("Sending...");await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:message})});input.value="";aoChatClearPendingImage();aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);try{if(uploadedImagePath){await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+uploadedImagePath,{method:"DELETE",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});}}catch(cleanupError){console.warn("Scanner chat image cleanup failed:",cleanupError);}aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
 document.addEventListener("DOMContentLoaded",()=>{const input=document.getElementById("aoChatInput");if(input)input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();aoChatSend();}});setTimeout(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},1500);if(!aoChatTimer)aoChatTimer=setInterval(()=>{if(!aoChatEditing&&aoChatEmail()&&aoChatBranch())aoChatLoad();},3000);});
 </script>
-<script id="aoScannerPeerChatAddOn">
-(function(){
-  "use strict";
-
-  let scannerChatTargetMode="admin";
-  let scannerChatPeerBranch="";
-  let scannerChatPeerEmail="";
-  let scannerChatInitialized=false;
-
-  function targetBranch(){
-    if(scannerChatTargetMode==="admin") return aoChatBranch();
-    return String(scannerChatPeerBranch || "").trim().toUpperCase();
-  }
-
-  function targetEmail(){
-    if(scannerChatTargetMode==="admin") return aoChatEmail();
-    return String(scannerChatPeerEmail || "").trim().toLowerCase();
-  }
-
-  function targetLabel(){
-    if(scannerChatTargetMode==="admin") return "Admin";
-    return "Scanner · "+targetBranch();
-  }
-
-  function conversationKey(){
-    return targetBranch()+"|"+targetEmail();
-  }
-
-  function readKey(){
-    return "aoChatRead:SCANNER:"+targetBranch()+":"+targetEmail();
-  }
-
-  function getRead(){return Number(localStorage.getItem(readKey())||0);}
-  function markRead(ts){if(ts)localStorage.setItem(readKey(),String(ts));}
-
-  async function fetchRecipients(){
-    const mode=scannerChatTargetMode;
-    const select=document.getElementById("aoScannerChatRecipient");
-    if(!select) return;
-    select.disabled=true;
-    select.innerHTML='<option value="">Loading...</option>';
-
-    try{
-      const path=mode==="admin"
-        ? "app_allowed_users?select=email,is_admin,active"
-        : "allowed_users?select=email,branch,active&branch=eq."+encodeURIComponent(String(scannerChatPeerBranch||"").trim().toUpperCase());
-      const rows=await fetch(SUPABASE_URL+"/rest/v1/"+path,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Accept:"application/json"}}).then(async r=>{
-        const t=await r.text(); const d=t?JSON.parse(t):[]; if(!r.ok)throw new Error("Unable to load chat recipients ("+r.status+")"); return d;
-      });
-      const current=aoChatEmail();
-      const isTrue=v=>{const s=String(v==null?"":v).trim().toLowerCase();return v===true||s==="true"||s==="1"||s==="yes";};
-      let list=(Array.isArray(rows)?rows:[]).filter(row=>{
-        const active=row?.active; return active===undefined||active===null||isTrue(active);
-      });
-
-      if(mode==="admin"){
-        list=list.filter(r=>isTrue(r?.is_admin)).map(r=>String(r?.email||"").trim().toLowerCase()).filter(Boolean).filter(e=>e!==current);
-      }else{
-        list=list.map(r=>String(r?.email||"").trim().toLowerCase()).filter(Boolean).filter(e=>e!==current);
-      }
-
-      list=[...new Set(list)].sort();
-      if(!list.length){
-        select.innerHTML='<option value="">No '+(mode==="admin"?"administrators":"scanner users")+' found</option>';
-        select.disabled=true;
-        return;
-      }
-      select.innerHTML='<option value="">Select '+(mode==="admin"?"admin":"user")+'...</option>'+list.map(email=>'<option value="'+aoChatEsc(email)+'">'+aoChatEsc(email)+'</option>').join("");
-      const desired=mode==="admin"?String(scannerChatPeerEmail||"").trim().toLowerCase():String(scannerChatPeerEmail||"").trim().toLowerCase();
-      if(desired && list.includes(desired)) select.value=desired;
-      select.disabled=false;
-      scannerChatPeerEmail=String(select.value||"").trim().toLowerCase();
-    }catch(error){
-      console.warn("Scanner chat recipient load failed:",error);
-      select.innerHTML='<option value="">Unable to load recipients</option>';
-      select.disabled=true;
-    }
-  }
-
-  async function fetchBranches(){
-    const select=document.getElementById("aoScannerChatBranch");
-    if(!select) return;
-    const branches=Array.isArray(BRANCHES)?BRANCHES.slice():[];
-    select.innerHTML='<option value="">Select branch...</option>'+branches.map(b=>{
-      let label=String(b).toUpperCase();
-      try{if(typeof BRANCH_NAMES!=="undefined"&&BRANCH_NAMES&&BRANCH_NAMES[label])label=label+" — "+BRANCH_NAMES[label];}catch(e){}
-      return '<option value="'+aoChatEsc(String(b).toUpperCase())+'">'+aoChatEsc(label)+'</option>';
-    }).join("");
-    const current=aoChatBranch();
-    if(current && branches.map(x=>String(x).toUpperCase()).includes(current)) select.value=current;
-    scannerChatPeerBranch=String(select.value||"").toUpperCase();
-  }
-
-  function updateChatHeader(){
-    const title=document.querySelector("#aoChatPanel .ao-chat-title");
-    const sub=document.getElementById("aoChatSub");
-    const input=document.getElementById("aoChatInput");
-    if(title) title.textContent=scannerChatTargetMode==="admin"?"Chat with Admin":"Branch Task Chat";
-    if(sub) sub.textContent=scannerChatTargetMode==="admin"?"Private admin task channel":(targetBranch()?(targetEmail()?targetBranch()+" · "+targetEmail():targetBranch()+" · Select user"):"Select branch and user");
-    if(input) input.placeholder=scannerChatTargetMode==="admin"?"Message Admin...":"Message selected branch user...";
-  }
-
-  function updateModeUI(){
-    document.querySelectorAll("[data-chat-target-mode]").forEach(btn=>btn.classList.toggle("active",btn.dataset.chatTargetMode===scannerChatTargetMode));
-    const branchWrap=document.getElementById("aoScannerChatBranchWrap");
-    const branchSelect=document.getElementById("aoScannerChatBranch");
-    const label=document.getElementById("aoScannerChatRecipientLabel");
-    if(branchWrap) branchWrap.hidden=false;
-    if(branchSelect){
-      branchSelect.disabled=scannerChatTargetMode==="admin";
-      if(scannerChatTargetMode==="admin") branchSelect.value=String(aoChatBranch()||"").trim().toUpperCase();
-    }
-    if(label) label.textContent=scannerChatTargetMode==="admin"?"ADMIN":"BRANCH USER";
-    updateChatHeader();
-  }
-
-  async function loadPeerConversation(){
-    if(aoChatEditing)return;
-    const box=document.getElementById("aoChatMessages");
-    const peerBranch=targetBranch(), peerEmail=targetEmail(), me=aoChatEmail(), myBranch=aoChatBranch();
-    if(!box || !myBranch || !me) return;
-
-    if(scannerChatTargetMode==="admin"){
-      if(!peerEmail){
-        box.innerHTML='<div class="ao-chat-empty">Select an administrator to open a private conversation.</div>';
-        return;
-      }
-      const rawRows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(myBranch)+"&scanner_email=eq."+encodeURIComponent(me)+"&order=created_at.asc&limit=500");
-      const rows=(Array.isArray(rawRows)?rawRows:[]).filter(r=>{
-        const senderType=String(r?.sender_type||"").trim().toUpperCase();
-        const senderEmail=String(r?.sender_email||"").trim().toLowerCase();
-        const meta=aoChatTargetMeta(r?.message);
-        if(senderType==="SCANNER") return !meta || meta.adminEmail===peerEmail;
-        if(senderType==="DASHBOARD") return senderEmail===peerEmail && (!meta || meta.adminEmail===peerEmail);
-        return true;
-      });
-      renderConversation(rows,myBranch,peerEmail,"admin");
-      return;
-    }
-
-    if(!peerBranch || !peerEmail){
-      box.innerHTML='<div class="ao-chat-empty">Select a branch and branch user to open a private conversation.</div>';
-      return;
-    }
-
-    // Private scanner-to-scanner thread:
-    // outgoing rows are addressed to the selected peer; incoming rows are addressed to me.
-    const [outgoing,incoming]=await Promise.all([
-      sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(peerBranch)+"&scanner_email=eq."+encodeURIComponent(peerEmail)+"&sender_email=eq."+encodeURIComponent(me)+"&order=created_at.asc&limit=500"),
-      sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(myBranch)+"&scanner_email=eq."+encodeURIComponent(me)+"&sender_email=eq."+encodeURIComponent(peerEmail)+"&order=created_at.asc&limit=500")
-    ]);
-    const map=new Map();[...(Array.isArray(outgoing)?outgoing:[]),...(Array.isArray(incoming)?incoming:[])].forEach(r=>map.set(String(r.id||r.created_at+"|"+r.message),r));
-    renderConversation([...map.values()].sort((a,b)=>new Date(a.created_at).getTime()-new Date(b.created_at).getTime()),peerBranch,peerEmail,"scanner");
-  }
-
-  function renderConversation(list,peerBranch,peerEmail,mode){
-    const box=document.getElementById("aoChatMessages");
-    if(!box)return;
-    const me=aoChatEmail();
-    const rows=(Array.isArray(list)?list:[]).filter(r=>!aoChatIsSharedStateMessage(r?.message));
-    const read=getRead();
-    const incoming=rows.filter(r=>String(r.sender_email||"").toLowerCase()!==me);
-    const unread=incoming.filter(r=>new Date(r.created_at).getTime()>read);
-    if(!rows.length){box.innerHTML='<div class="ao-chat-empty">No messages yet. Start the '+(mode==="admin"?"admin":"private branch")+' task conversation.</div>';}else{
-      const firstUnread=unread.length?unread[0].id:null;
-      box.innerHTML=rows.map(r=>{
-        const mine=String(r.sender_email||"").toLowerCase()===me;
-        const senderType=String(r.sender_type||"").toUpperCase();
-        const label=mine?"YOU":(senderType==="DASHBOARD"?"ADMIN":"SCANNER");
-        const sender=(typeof window.aoAdminDisplayNameFor==="function"?window.aoAdminDisplayNameFor(r.sender_email||""):(r.sender_email||""));
-        const sep=firstUnread!==null&&r.id===firstUnread?'<div class="ao-chat-unread-divider">'+unread.length+' UNREAD MESSAGE'+(unread.length===1?'':'S')+'</div>':'';
-        const raw=String(r.message||""),imagePath=aoChatImagePath(raw),textPart=aoChatTextPart(raw);
-        const imageHtml=imagePath?'<img class="ao-chat-message-image" src="'+aoChatEsc(aoChatPublicImageUrl(imagePath))+'" alt="Chat image" loading="lazy" onclick="window.open(this.src,\'_blank\',\'noopener\')">':'';
-        const textHtml=textPart?'<div class="ao-chat-image-caption">'+aoChatEsc(textPart)+'</div>':'';
-        const editHtml=mine?'<button type="button" class="ao-chat-edit-link" data-edit-id="'+aoChatEsc(r.id)+'">✎ Edit</button>':'';
-        const deleteHtml=mine?'<button type="button" class="ao-chat-delete-link" data-delete-id="'+aoChatEsc(r.id)+'" data-delete-path="'+aoChatEsc(imagePath)+'">🗑 Delete</button>':'';
-        return sep+'<div class="ao-chat-row '+(mine?'mine':'')+'" data-chat-id="'+aoChatEsc(r.id)+'" data-chat-search-text="'+aoChatEsc([textPart,r.sender_email,sender,label].join(" "))+'"><div class="ao-chat-bubble"><div class="ao-chat-name">'+aoChatEsc(label)+' · '+aoChatEsc(sender)+'</div>'+textHtml+imageHtml+editHtml+deleteHtml+'<div class="ao-chat-time">'+aoChatEsc(aoChatTime(r.created_at))+'</div></div></div>';
-      }).join("");
-      box.querySelectorAll("[data-edit-id]").forEach(btn=>btn.addEventListener("click",()=>{
-        const row=rows.find(r=>String(r.id)===String(btn.getAttribute("data-edit-id")));
-        if(row)aoChatEditMessage(row.id,aoChatTextPart(row.message),aoChatImagePath(row.message));
-      }));
-      box.querySelectorAll("[data-delete-id]").forEach(btn=>btn.addEventListener("click",()=>aoChatDeleteMessage(btn.getAttribute("data-delete-id"),btn.getAttribute("data-delete-path")||"")));
-      if(aoChatOpen && !aoChatSearchValue()) box.scrollTop=box.scrollHeight;
-    }
-    aoChatRenderSearch();
-    if(unread.length){markRead(new Date(unread[unread.length-1].created_at).getTime());}
-    aoChatBadge(0);
-    updateChatHeader();
-  }
-
-  window.aoScannerChatConversationTarget=function(){
-    return {mode:scannerChatTargetMode,branch:targetBranch(),email:targetEmail()};
-  };
-
-  window.aoChatLoad=async function(){
-    try{await loadPeerConversation();}
-    catch(e){console.warn("Scanner task chat load failed:",e);aoChatStatus(e?.message||"Chat temporarily unavailable.");}
-  };
-
-  window.aoChatSend=async function(){
-    if(aoChatSending)return;
-    const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),pending=aoChatPendingImage,me=aoChatEmail(),myBranch=aoChatBranch();
-    if(!me||!myBranch){aoChatStatus("Please log in first.");return;}
-    if(!text&&!pending)return;
-    if(pending&&!text){aoChatStatus("Please add a text message before sending a picture.");input?.focus();return;}
-
-    const target=window.aoScannerChatConversationTarget();
-    if(!target.email){aoChatStatus("Select a chat recipient first.");return;}
-
-    aoChatSending=true;
-    const btn=document.getElementById("aoChatSend"); if(btn)btn.disabled=true;
-    aoChatStatus("Sending...");
-    let uploadedImagePath="";
-    try{
-      let message=text;
-      if(pending){uploadedImagePath=await aoChatUploadImage(pending,text);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}
-      const targetBranch=target.mode==="admin"?myBranch:target.branch;
-      const targetEmail=target.mode==="admin"?me:target.email;
-      if(target.mode==="admin") message=aoChatAttachAdminTarget(message,target.email);
-      await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:targetBranch,scanner_email:targetEmail,sender_email:me,sender_type:"SCANNER",message})});
-      input.value="";aoChatClearPendingImage();aoChatStatus("");await loadPeerConversation();
-    }catch(e){
-      console.error("Scanner task chat send failed:",e);
-      try{if(uploadedImagePath){await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+uploadedImagePath,{method:"DELETE",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});}}catch(cleanupError){console.warn("Scanner task chat image cleanup failed:",cleanupError);}
-      aoChatStatus(e?.message||"Message could not be sent.");
-    }finally{aoChatSending=false;if(btn)btn.disabled=false;}
-  };
-
-  window.aoChatDeleteMessage=async function(id,imagePath){
-    const messageId=String(id||"").trim(),target=window.aoScannerChatConversationTarget(),me=aoChatEmail(),myBranch=aoChatBranch();
-    if(!messageId||!me||!myBranch){aoChatStatus("Please log in first.");return;}
-    const confirmed=typeof aoChatConfirmDelete==="function" ? await aoChatConfirmDelete() : true;
-    if(!confirmed)return;
-    const targetBranch=target.mode==="admin"?myBranch:target.branch;
-    const targetEmail=target.mode==="admin"?me:target.email;
-    aoChatStatus("Deleting…");
-    try{
-      const deleted=await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(messageId)+"&branch=eq."+encodeURIComponent(targetBranch)+"&scanner_email=eq."+encodeURIComponent(targetEmail)+"&sender_email=eq."+encodeURIComponent(me)+"&sender_type=eq.SCANNER",{method:"DELETE",headers:{Prefer:"return=representation"}});
-      if(!Array.isArray(deleted)||!deleted.length)throw new Error("Message could not be deleted.");
-      try{if(imagePath)await aoChatDeleteStoredImage(imagePath);}catch(imageError){console.warn("Scanner task chat image delete failed:",imageError);}
-      await loadPeerConversation();aoChatStatus("");
-    }catch(e){console.error("Scanner task chat delete failed:",e);aoChatStatus(e?.message||"Unable to delete this message. Please try again.");}
-  };
-
-  async function setMode(mode){
-    scannerChatTargetMode=mode==="scanner"?"scanner":"admin";
-    if(scannerChatTargetMode==="scanner"){
-      scannerChatPeerBranch=String(document.getElementById("aoScannerChatBranch")?.value||aoChatBranch()).trim().toUpperCase();
-    }
-    scannerChatPeerEmail="";
-    updateModeUI();
-    await fetchRecipients();
-    scannerChatPeerEmail=String(document.getElementById("aoScannerChatRecipient")?.value||"").trim().toLowerCase();
-    await loadPeerConversation();
-  }
-
-  function init(){
-    if(scannerChatInitialized)return;
-    const panel=document.getElementById("aoChatPanel"),recipient=document.getElementById("aoScannerChatRecipient"),branch=document.getElementById("aoScannerChatBranch");
-    if(!panel||!recipient||!branch)return;
-    scannerChatInitialized=true;
-    fetchBranches().catch(()=>{});
-    document.querySelectorAll("[data-chat-target-mode]").forEach(btn=>btn.addEventListener("click",()=>setMode(btn.dataset.chatTargetMode)));
-    branch.addEventListener("change",async()=>{
-      scannerChatPeerBranch=String(branch.value||"").trim().toUpperCase();
-      scannerChatPeerEmail="";
-      await fetchRecipients();
-      scannerChatPeerEmail=String(recipient.value||"").trim().toLowerCase();
-      await loadPeerConversation();
-    });
-    recipient.addEventListener("change",async()=>{scannerChatPeerEmail=String(recipient.value||"").trim().toLowerCase();await loadPeerConversation();});
-    updateModeUI();
-    fetchRecipients().catch(()=>{});
-    const originalToggle=window.aoChatToggle;
-    window.aoChatToggle=function(){
-      aoChatOpen=!aoChatOpen;
-      const p=document.getElementById("aoChatPanel");
-      if(!p)return;
-      p.classList.toggle("open",aoChatOpen);p.setAttribute("aria-hidden",String(!aoChatOpen));
-      if(aoChatOpen){aoChatBadge(0);loadPeerConversation();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}else loadPeerConversation();
-    };
-    setTimeout(()=>{if(aoChatEmail()&&aoChatBranch())loadPeerConversation().catch(()=>{});},1600);
-    if(!window.__aoScannerTaskChatTimer) window.__aoScannerTaskChatTimer=setInterval(()=>{if(!aoChatEditing&&aoChatEmail()&&aoChatBranch()&&aoChatOpen)loadPeerConversation().catch(()=>{});},3000);
-  }
-
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
-})();
-</script>
-
-</script>
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
-<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div class="ao-chat-search"><input id="aoChatSearchInput" class="ao-chat-search-input" type="search" maxlength="100" autocomplete="off" placeholder="Search conversation..."><span id="aoChatSearchCount" class="ao-chat-search-count"></span><button id="aoChatSearchClear" class="ao-chat-search-clear" type="button" aria-label="Clear search" title="Clear search">✕</button></div><div class="ao-scanner-chat-targets">
-  <div class="ao-scanner-chat-mode-row">
-    <button type="button" class="ao-scanner-chat-mode active" data-chat-target-mode="admin">🛡 Admin</button>
-    <button type="button" class="ao-scanner-chat-mode" data-chat-target-mode="scanner">👓 Branch User</button>
-  </div>
-  <div class="ao-scanner-chat-field" id="aoScannerChatBranchWrap" hidden>
-    <label for="aoScannerChatBranch">CHAT BRANCH</label>
-    <select id="aoScannerChatBranch">
-      <option value="">Select branch...</option>
-    </select>
-  </div>
-  <div class="ao-scanner-chat-field">
-    <label id="aoScannerChatRecipientLabel" for="aoScannerChatRecipient">ADMIN</label>
-    <select id="aoScannerChatRecipient">
-      <option value="">Loading recipients...</option>
-    </select>
-  </div>
-</div>
-
-<div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><button id="aoVideoCallBtn" class="ao-video-call-btn" type="button" aria-label="Video call" title="Video call">📹</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div class="ao-chat-search"><input id="aoChatSearchInput" class="ao-chat-search-input" type="search" maxlength="100" autocomplete="off" placeholder="Search conversation..."><span id="aoChatSearchCount" class="ao-chat-search-count"></span><button id="aoChatSearchClear" class="ao-chat-search-clear" type="button" aria-label="Clear search" title="Clear search">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><button id="aoVideoCallBtn" class="ao-video-call-btn" type="button" aria-label="Video call" title="Video call">📹</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 
 <script id="aoChatDocumentScannerScript">
 (function(){
@@ -10013,25 +9674,6 @@ async function confirmPullOutRequest(){
   .ao-video-controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
   .ao-video-control{min-width:95px}
 }
-
-<style id="aoVideoUnifiedPickerAddOn">
-.ao-video-unified-picker{overflow:hidden}
-.ao-video-target-tabs{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;padding:12px 14px 0;background:#fff}
-.ao-video-target-tab{min-height:40px!important;padding:8px 10px!important;border:1px solid #dbe5f0!important;border-radius:11px!important;background:#f8fbff!important;color:#4b6380!important;font-size:10px!important;font-weight:950!important;box-shadow:none!important}
-.ao-video-target-tab.active{border-color:#60a5fa!important;background:linear-gradient(135deg,#eff6ff,#dbeafe)!important;color:#1d4ed8!important;box-shadow:0 5px 16px rgba(37,99,235,.10)!important}
-.ao-video-target-tab:hover{transform:none!important;filter:none!important}
-.ao-video-scanner-picker-tools{padding:11px 14px 0;background:#fff}
-.ao-video-scanner-picker-tools[hidden]{display:none!important}
-.ao-video-picker-field{display:grid;gap:5px;color:#64748b;font-size:9px;font-weight:950;letter-spacing:.08em}
-.ao-video-target-select{width:100%;min-height:40px;padding:0 12px;border:1px solid #cddceb;border-radius:11px;background:#f8fbff;color:#243447;font-size:11px;font-weight:800;outline:none}
-.ao-video-picker-person{display:flex;align-items:center;min-width:0;gap:10px}
-.ao-video-picker-avatar{width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:linear-gradient(135deg,#eff6ff,#ede9fe);font-size:15px}
-.ao-video-picker-person-copy{display:grid;min-width:0;text-align:left}
-.ao-video-picker-role{margin-top:2px;color:#7b8da4;font-size:9px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ao-video-unified-picker .ao-video-admin-list{max-height:330px;overflow:auto}
-@media(max-width:650px){.ao-video-target-tabs{grid-template-columns:1fr 1fr}.ao-video-unified-picker .ao-video-admin-list{max-height:calc(100dvh - 265px)}}
-</style>
-
 </style>
 
 <script id="aoVideoCallScript">
@@ -10186,50 +9828,13 @@ async function confirmPullOutRequest(){
     return online;
   }
 
-  function aoVideoOnlineEmails(typeFilter){
-    const online=new Set();
-    try{
-      const channel=aoVideoSignalChannel;
-      if(!channel || typeof channel.presenceState!=="function") return online;
-      const state=channel.presenceState() || {};
-      Object.keys(state).forEach(key=>{
-        const metas=Array.isArray(state[key]) ? state[key] : [];
-        metas.forEach(meta=>{
-          const type=String(meta?.type || "").trim().toUpperCase();
-          const email=String(meta?.email || key || "").trim().toLowerCase();
-          if(email && (!typeFilter || type===typeFilter)) online.add(email);
-        });
-      });
-    }catch(error){
-      console.warn("Video-call presence read failed:",error);
-    }
-    return online;
-  }
-
-  function aoVideoOnlineScannerEmails(){
-    return aoVideoOnlineEmails("SCANNER");
-  }
-
   function aoVideoRefreshAdminPresence(){
-    const onlineAdmins=aoVideoOnlineAdminEmails();
-    const onlineScanners=aoVideoOnlineScannerEmails();
-
+    const online=aoVideoOnlineAdminEmails();
     document.querySelectorAll(".ao-video-admin-option[data-admin-email]").forEach(button=>{
       const email=String(button.getAttribute("data-admin-email") || "").trim().toLowerCase();
       const state=button.querySelector(".ao-video-admin-state");
       if(!state) return;
-      const isOnline=onlineAdmins.has(email);
-      state.classList.toggle("online",isOnline);
-      state.classList.toggle("offline",!isOnline);
-      state.innerHTML='<span class="ao-video-admin-dot"></span>'+(isOnline ? "ONLINE" : "OFFLINE");
-      button.setAttribute("data-admin-online",String(isOnline));
-    });
-
-    document.querySelectorAll(".ao-video-scanner-option[data-scanner-email]").forEach(button=>{
-      const email=String(button.getAttribute("data-scanner-email") || "").trim().toLowerCase();
-      const state=button.querySelector(".ao-video-admin-state");
-      if(!state) return;
-      const isOnline=onlineScanners.has(email);
+      const isOnline=online.has(email);
       state.classList.toggle("online",isOnline);
       state.classList.toggle("offline",!isOnline);
       state.innerHTML='<span class="ao-video-admin-dot"></span>'+(isOnline ? "ONLINE" : "OFFLINE");
@@ -11440,26 +11045,18 @@ async function confirmPullOutRequest(){
     modal.className="ao-video-incoming-overlay open";
     modal.setAttribute("aria-hidden","false");
     modal.innerHTML=
-      '<div class="ao-video-picker-card ao-video-unified-picker">' +
+      '<div class="ao-video-picker-card">' +
         '<div class="ao-video-picker-head">' +
           '<div>' +
-            '<div class="ao-video-picker-title">Choose Who to Call</div>' +
-            '<div class="ao-video-picker-sub">Call an administrator or another branch scanner</div>' +
+            '<div class="ao-video-picker-title">Choose Admin to Call</div>' +
+            '<div class="ao-video-picker-sub">' +
+              'Branch: ' + aoVideoEscape(identity.branch) +
+            '</div>' +
           '</div>' +
           '<button type="button" class="ao-video-picker-close" aria-label="Close">✕</button>' +
         '</div>' +
-        '<div class="ao-video-target-tabs" role="tablist" aria-label="Call target type">' +
-          '<button type="button" class="ao-video-target-tab active" data-call-target="admin">🛡 Admins</button>' +
-          '<button type="button" class="ao-video-target-tab" data-call-target="scanner">👓 Branch Scanners</button>' +
-        '</div>' +
-        '<div class="ao-video-scanner-picker-tools" hidden>' +
-          '<label class="ao-video-picker-field">' +
-            '<span>BRANCH</span>' +
-            '<select id="aoVideoTargetBranch" class="ao-video-target-select"></select>' +
-          '</label>' +
-        '</div>' +
         '<div id="aoVideoAdminList" class="ao-video-admin-list">' +
-          '<div class="ao-video-admin-empty">Loading administrators…</div>' +
+          '<div class="ao-video-admin-empty">Loading admins…</div>' +
         '</div>' +
       '</div>';
 
@@ -11477,122 +11074,18 @@ async function confirmPullOutRequest(){
     });
 
     const list=modal.querySelector("#aoVideoAdminList");
-    const tabs=[...modal.querySelectorAll("[data-call-target]")];
-    const branchTools=modal.querySelector(".ao-video-scanner-picker-tools");
-    const branchSelect=modal.querySelector("#aoVideoTargetBranch");
-
-    const escape=aoVideoEscape;
-    const isTrue=value=>{
-      const s=String(value == null ? "" : value).trim().toLowerCase();
-      return value===true || s==="true" || s==="1" || s==="yes";
-    };
-
-    let admins=[];
-    let scanners=[];
-
-    const renderState=(online,label)=>
-      '<span class="ao-video-admin-state ' + (online ? 'online' : 'offline') + '">' +
-        '<span class="ao-video-admin-dot"></span>' +
-        (online ? 'ONLINE' : 'OFFLINE') +
-      '</span>';
-
-    const renderAdmins=()=>{
-      const onlineAdmins=aoVideoOnlineAdminEmails();
-      if(!admins.length){
-        list.innerHTML='<div class="ao-video-admin-empty">No active administrators were found.</div>';
-        return;
-      }
-      list.innerHTML=admins.map(email=>{
-        const online=onlineAdmins.has(email);
-        return '<button type="button" class="ao-video-admin-option" data-admin-email="'+escape(email)+'" data-admin-online="'+String(online)+'">'+
-          '<span class="ao-video-picker-person">'+
-            '<span class="ao-video-picker-avatar">🛡</span>'+
-            '<span class="ao-video-picker-person-copy">'+
-              '<span class="ao-video-admin-email">'+escape(email)+'</span>'+ 
-              '<span class="ao-video-picker-role">Administrator</span>'+ 
-            '</span>'+ 
-          '</span>'+ 
-          renderState(online,"") +
-        '</button>';
-      }).join("");
-
-      list.querySelectorAll("[data-admin-email]").forEach(button=>{
-        button.addEventListener("click",()=>{
-          const email=String(button.dataset.adminEmail || "").trim().toLowerCase();
-          close();
-          aoVideoStartCall({toEmail:email,toType:"ADMIN",toBranch:""}).catch(error=>{
-            console.error("Scanner admin video call start failed:",error);
-            if(typeof aoChatStatus==="function"){
-              aoChatStatus(error?.message || "Unable to start video call.");
-            }
-          });
-        });
-      });
-    };
-
-    const renderBranchUsers=()=>{
-      const branch=String(branchSelect?.value || "").trim().toUpperCase();
-      if(!branch){
-        list.innerHTML='<div class="ao-video-admin-empty">Choose a branch to see its scanner users.</div>';
-        return;
-      }
-
-      const onlineScanners=aoVideoOnlineScannerEmails();
-      const rows=scanners.filter(row=>row.branch===branch && row.email!==identity.email);
-
-      if(!rows.length){
-        list.innerHTML='<div class="ao-video-admin-empty">No scanner users were found for '+escape(branch)+'.</div>';
-        return;
-      }
-
-      list.innerHTML=rows.map(row=>{
-        const online=onlineScanners.has(row.email);
-        return '<button type="button" class="ao-video-admin-option ao-video-scanner-option" data-scanner-email="'+escape(row.email)+'" data-scanner-branch="'+escape(row.branch)+'" data-admin-online="'+String(online)+'">'+
-          '<span class="ao-video-picker-person">'+
-            '<span class="ao-video-picker-avatar">👓</span>'+ 
-            '<span class="ao-video-picker-person-copy">'+
-              '<span class="ao-video-admin-email">'+escape(row.email)+'</span>'+ 
-              '<span class="ao-video-picker-role">Scanner · '+escape(row.branch)+'</span>'+ 
-            '</span>'+ 
-          '</span>'+ 
-          renderState(online,"") +
-        '</button>';
-      }).join("");
-
-      list.querySelectorAll("[data-scanner-email]").forEach(button=>{
-        button.addEventListener("click",()=>{
-          const email=String(button.dataset.scannerEmail || "").trim().toLowerCase();
-          const branch=String(button.dataset.scannerBranch || "").trim().toUpperCase();
-          close();
-          aoVideoStartCall({toEmail:email,toType:"SCANNER",toBranch:branch}).catch(error=>{
-            console.error("Scanner-to-scanner video call start failed:",error);
-            if(typeof aoChatStatus==="function"){
-              aoChatStatus(error?.message || "Unable to start video call.");
-            }
-          });
-        });
-      });
-    };
-
-    const setMode=mode=>{
-      tabs.forEach(tab=>tab.classList.toggle("active",tab.dataset.callTarget===mode));
-      const scannerMode=mode==="scanner";
-      if(branchTools) branchTools.hidden=!scannerMode;
-      if(scannerMode) renderBranchUsers();
-      else renderAdmins();
-    };
-
-    tabs.forEach(tab=>{
-      tab.addEventListener("click",()=>setMode(tab.dataset.callTarget || "admin"));
-    });
 
     try{
-      const [adminRows,userRows]=await Promise.all([
-        aoVideoRest("app_allowed_users?select=email,is_admin,active"),
-        aoVideoRest("allowed_users?select=email,branch,active")
-      ]);
+      const rows=await aoVideoRest(
+        "app_allowed_users?select=email,is_admin,active"
+      );
 
-      admins=[...(Array.isArray(adminRows) ? adminRows : [])]
+      const isTrue=value=>{
+        const s=String(value == null ? "" : value).trim().toLowerCase();
+        return value===true || s==="true" || s==="1" || s==="yes";
+      };
+
+      const admins=(Array.isArray(rows) ? rows : [])
         .filter(row=>isTrue(row?.is_admin))
         .filter(row=>{
           const active=row?.active;
@@ -11601,42 +11094,61 @@ async function confirmPullOutRequest(){
         .map(row=>String(row?.email || "").trim().toLowerCase())
         .filter(Boolean)
         .filter(email=>email!==identity.email);
-      admins=[...new Set(admins)].sort();
 
-      scanners=[...(Array.isArray(userRows) ? userRows : [])]
-        .filter(row=>{
-          const active=row?.active;
-          return active===undefined || active===null || isTrue(active);
-        })
-        .map(row=>({
-          email:String(row?.email || "").trim().toLowerCase(),
-          branch:String(row?.branch || "").trim().toUpperCase()
-        }))
-        .filter(row=>row.email && row.branch && row.email!==identity.email)
-        .filter(row=>Array.isArray(BRANCHES) ? BRANCHES.includes(row.branch) : true);
+      const unique=[...new Set(admins)].sort();
 
-      const scannerMap=new Map();
-      scanners.forEach(row=>scannerMap.set(row.branch+"|"+row.email,row));
-      scanners=[...scannerMap.values()].sort((a,b)=>a.branch.localeCompare(b.branch)||a.email.localeCompare(b.email));
-
-      const branches=[...new Set(scanners.map(row=>row.branch))].sort();
-      if(branchSelect){
-        branchSelect.innerHTML='<option value="">Select branch...</option>'+branches.map(branch=>{
-          let label=branch;
-          try{
-            if(typeof BRANCH_NAMES!=="undefined" && BRANCH_NAMES && BRANCH_NAMES[branch]) label=branch+" — "+BRANCH_NAMES[branch];
-          }catch(e){}
-          return '<option value="'+escape(branch)+'">'+escape(label)+'</option>';
-        }).join("");
-        if(branches.includes(identity.branch)) branchSelect.value=identity.branch;
-        branchSelect.addEventListener("change",renderBranchUsers);
+      if(!unique.length){
+        if(list){
+          list.innerHTML=
+            '<div class="ao-video-admin-empty">' +
+              'No active administrators were found.' +
+            '</div>';
+        }
+        return;
       }
 
-      setMode("admin");
-    }catch(error){
-      console.error("Call recipient lists failed:",error);
       if(list){
-        list.innerHTML='<div class="ao-video-admin-empty">'+escape(error?.message || "Unable to load call recipients.")+'</div>';
+        const onlineAdmins=aoVideoOnlineAdminEmails();
+        list.innerHTML=unique.map(email=>{
+          const isOnline=onlineAdmins.has(email);
+          return '<button type="button" class="ao-video-admin-option" data-admin-email="' +
+            aoVideoEscape(email) +
+          '" data-admin-online="' + String(isOnline) + '">' +
+            '<span class="ao-video-admin-email">' +
+              aoVideoEscape(email) +
+            '</span>' +
+            '<span class="ao-video-admin-state ' + (isOnline ? 'online' : 'offline') + '">' +
+              '<span class="ao-video-admin-dot"></span>' +
+              (isOnline ? 'ONLINE' : 'OFFLINE') +
+            '</span>' +
+          '</button>';
+        }).join("");
+
+        list.querySelectorAll("[data-admin-email]").forEach(button=>{
+          button.addEventListener("click",()=>{
+            const email=String(button.dataset.adminEmail || "").trim().toLowerCase();
+            close();
+
+            aoVideoStartCall({
+              toEmail:email,
+              toType:"ADMIN",
+              toBranch:identity.branch
+            }).catch(error=>{
+              console.error("Scanner video call start failed:",error);
+              if(typeof aoChatStatus==="function"){
+                aoChatStatus(error?.message || "Unable to start video call.");
+              }
+            });
+          });
+        });
+      }
+    }catch(error){
+      console.error("Admin list for video call failed:",error);
+      if(list){
+        list.innerHTML=
+          '<div class="ao-video-admin-empty">' +
+            aoVideoEscape(error?.message || "Unable to load administrators.") +
+          '</div>';
       }
     }
   }
