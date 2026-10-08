@@ -7756,26 +7756,7 @@ function aoChatMark(ts){if(ts)localStorage.setItem(aoChatKey(),String(ts));}
 function aoChatBadge(n){aoChatUnread=Math.max(0,Number(n)||0);const b=document.getElementById("aoChatBadge");if(b){b.textContent=aoChatUnread>99?"99+":String(aoChatUnread);b.style.display=aoChatUnread?"flex":"none";}}
 function aoChatIsImageMessage(message){return String(message||"").includes("[[AO_CHAT_IMAGE]]");}
 function aoChatImagePath(message){const m=String(message||"").match(/\[\[AO_CHAT_IMAGE\]\]([^\n\r]+)/);return m?String(m[1]||"").trim():"";}
-function aoChatTextPart(message){return String(message||"").replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
-function aoChatIsSharedStateMessage(message){return String(message||"").startsWith("[[AO_CHAT_SHARED_STATE]]");}
-function aoChatPublicImageUrl(path){if(!path)return "";return SUPABASE_URL+"/storage/v1/object/public/"+AO_CHAT_IMAGE_BUCKET+"/"+String(path).split("/").map(encodeURIComponent).join("/");}
-async function aoChatCompressImage(file){
- if(!(file instanceof File))throw new Error("Invalid image file.");
- if(file.size>AO_CHAT_IMAGE_MAX_INPUT_BYTES)throw new Error("Image is too large. Maximum is 8 MB.");
- if(!String(file.type||"").startsWith("image/"))throw new Error("Please select an image file.");
- const bitmap=await createImageBitmap(file);
- let width=bitmap.width,height=bitmap.height;
- const scale=Math.min(1,AO_CHAT_IMAGE_MAX_DIMENSION/Math.max(width,height));
- width=Math.max(1,Math.round(width*scale));height=Math.max(1,Math.round(height*scale));
- const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
- const ctx=canvas.getContext("2d",{alpha:false});
- if(!ctx){bitmap.close?.();throw new Error("Unable to prepare the image.");}
- ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);ctx.drawImage(bitmap,0,0,width,height);bitmap.close?.();
- let quality=.82;let blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));
- while(blob&&blob.size>AO_CHAT_IMAGE_MAX_OUTPUT_BYTES&&quality>.50){quality-=.06;blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));}
- if(!blob)throw new Error("Image compression failed.");
- return new File([blob],"chat-image.jpg",{type:"image/jpeg",lastModified:Date.now()});
-}
+function aoChatTextPart(message){return aoChatStripTargetMeta(String(message||"")).replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
 function aoChatStorageFileName(label){
   const d = new Date();
   const pad = n => String(n).padStart(2,"0");
@@ -7796,6 +7777,33 @@ function aoChatStorageFileName(label){
     pad(d.getMinutes()) + "-" +
     pad(d.getSeconds()) + "-" +
     ms + ".jpg";
+}
+
+
+/* =========================================================
+   PRIVATE CHAT TARGET METADATA
+   Stored inside existing chat text so no database schema
+   change is required. Hidden before display.
+========================================================= */
+const AO_CHAT_TARGET_OPEN="[[AO_CHAT_TARGET]]";
+const AO_CHAT_TARGET_CLOSE="[[/AO_CHAT_TARGET]]";
+function aoChatTargetMeta(message){
+  const raw=String(message||"");
+  const match=raw.match(/\[\[AO_CHAT_TARGET\]\]([\s\S]*?)\[\[\/AO_CHAT_TARGET\]\]/);
+  if(!match)return null;
+  try{
+    const data=JSON.parse(match[1]);
+    const adminEmail=String(data?.adminEmail||"").trim().toLowerCase();
+    return adminEmail?{adminEmail}:null;
+  }catch(e){return null;}
+}
+function aoChatStripTargetMeta(message){
+  return String(message||"").replace(/\[\[AO_CHAT_TARGET\]\][\s\S]*?\[\[\/AO_CHAT_TARGET\]\]\s*/g,"").trim();
+}
+function aoChatAttachAdminTarget(message,adminEmail){
+  const clean=aoChatStripTargetMeta(message);
+  const email=String(adminEmail||"").trim().toLowerCase();
+  return email ? AO_CHAT_TARGET_OPEN+JSON.stringify({adminEmail:email})+AO_CHAT_TARGET_CLOSE+"\n"+clean : clean;
 }
 
 async function aoChatUploadImage(file,label){
@@ -8063,7 +8071,15 @@ async function aoChatEditMessage(id,originalText,imagePath){
        }
      }
 
-     const message=(editedImagePath?text+"\n[[AO_CHAT_IMAGE]]"+editedImagePath:text);
+     let message=(editedImagePath?text+"\n[[AO_CHAT_IMAGE]]"+editedImagePath:text);
+     try{
+       const target=(typeof window.aoScannerChatConversationTarget==="function")
+         ? window.aoScannerChatConversationTarget()
+         : null;
+       if(target?.mode==="admin" && target?.email){
+         message=aoChatAttachAdminTarget(message,target.email);
+       }
+     }catch(e){}
      await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER",{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message})});
      aoChatStatus("");
      aoChatEditing=false;
@@ -8233,8 +8249,13 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
   function updateModeUI(){
     document.querySelectorAll("[data-chat-target-mode]").forEach(btn=>btn.classList.toggle("active",btn.dataset.chatTargetMode===scannerChatTargetMode));
     const branchWrap=document.getElementById("aoScannerChatBranchWrap");
+    const branchSelect=document.getElementById("aoScannerChatBranch");
     const label=document.getElementById("aoScannerChatRecipientLabel");
-    if(branchWrap) branchWrap.hidden=scannerChatTargetMode!=="scanner";
+    if(branchWrap) branchWrap.hidden=false;
+    if(branchSelect){
+      branchSelect.disabled=scannerChatTargetMode==="admin";
+      if(scannerChatTargetMode==="admin") branchSelect.value=String(aoChatBranch()||"").trim().toUpperCase();
+    }
     if(label) label.textContent=scannerChatTargetMode==="admin"?"ADMIN":"BRANCH USER";
     updateChatHeader();
   }
@@ -8246,9 +8267,20 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
     if(!box || !myBranch || !me) return;
 
     if(scannerChatTargetMode==="admin"){
-      // Existing admin conversation: keep the original storage convention.
-      const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(myBranch)+"&scanner_email=eq."+encodeURIComponent(me)+"&order=created_at.asc&limit=500");
-      renderConversation(Array.isArray(rows)?rows:[],myBranch,me,"admin");
+      if(!peerEmail){
+        box.innerHTML='<div class="ao-chat-empty">Select an administrator to open a private conversation.</div>';
+        return;
+      }
+      const rawRows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(myBranch)+"&scanner_email=eq."+encodeURIComponent(me)+"&order=created_at.asc&limit=500");
+      const rows=(Array.isArray(rawRows)?rawRows:[]).filter(r=>{
+        const senderType=String(r?.sender_type||"").trim().toUpperCase();
+        const senderEmail=String(r?.sender_email||"").trim().toLowerCase();
+        const meta=aoChatTargetMeta(r?.message);
+        if(senderType==="SCANNER") return !meta || meta.adminEmail===peerEmail;
+        if(senderType==="DASHBOARD") return senderEmail===peerEmail && (!meta || meta.adminEmail===peerEmail);
+        return true;
+      });
+      renderConversation(rows,myBranch,peerEmail,"admin");
       return;
     }
 
@@ -8331,6 +8363,7 @@ document.addEventListener("DOMContentLoaded",()=>{const input=document.getElemen
       if(pending){uploadedImagePath=await aoChatUploadImage(pending,text);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}
       const targetBranch=target.mode==="admin"?myBranch:target.branch;
       const targetEmail=target.mode==="admin"?me:target.email;
+      if(target.mode==="admin") message=aoChatAttachAdminTarget(message,target.email);
       await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:targetBranch,scanner_email:targetEmail,sender_email:me,sender_type:"SCANNER",message})});
       input.value="";aoChatClearPendingImage();aoChatStatus("");await loadPeerConversation();
     }catch(e){
