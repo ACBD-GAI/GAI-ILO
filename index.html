@@ -10311,8 +10311,16 @@ async function confirmPullOutRequest(){
 
     const mute=document.getElementById("aoVideoMute");
     const camera=document.getElementById("aoVideoCamera");
-    if(mute) mute.textContent="🎤 Mute";
-    if(camera) camera.textContent="📷 Camera";
+    if(mute){
+      mute.textContent="🎤 Mute";
+      mute.disabled=false;
+      mute.removeAttribute("title");
+    }
+    if(camera){
+      camera.textContent="📷 Camera";
+      camera.disabled=false;
+      camera.removeAttribute("title");
+    }
   }
 
   function aoVideoOpenIncoming(info){
@@ -10353,10 +10361,9 @@ async function confirmPullOutRequest(){
     return !!aoVideoState;
   }
 
-  function aoVideoCreatePeer(){
+function aoVideoCreatePeer(){
     const state=aoVideoState;
     if(!state) throw new Error("No active video call.");
-
     if(state.peer) return state.peer;
 
     const peer=new RTCPeerConnection({
@@ -10365,6 +10372,16 @@ async function confirmPullOutRequest(){
         {urls:"stun:stun1.l.google.com:19302"}
       ]
     });
+
+    /*
+     * Always negotiate the same media order on both pages, even if this
+     * device has no local microphone/camera. Empty senders can still receive.
+     */
+    if(typeof peer.addTransceiver!=="function"){
+      throw new Error("This browser does not support WebRTC media transceivers. Please update the browser or Android System WebView.");
+    }
+    state.audioTransceiver=peer.addTransceiver("audio",{direction:"sendrecv"});
+    state.videoTransceiver=peer.addTransceiver("video",{direction:"sendrecv"});
 
     peer.onicecandidate=event=>{
       if(event.candidate){
@@ -10384,6 +10401,7 @@ async function confirmPullOutRequest(){
     peer.ontrack=event=>{
       const remote=document.getElementById("aoVideoRemote");
       if(!remote) return;
+
       if(event.streams && event.streams[0]){
         remote.srcObject=event.streams[0];
       }else{
@@ -10392,15 +10410,36 @@ async function confirmPullOutRequest(){
           stream=new MediaStream();
           remote.srcObject=stream;
         }
-        stream.addTrack(event.track);
+        const exists=stream.getTracks().some(track=>track.id===event.track.id);
+        if(!exists) stream.addTrack(event.track);
       }
+
+      remote.autoplay=true;
+      remote.playsInline=true;
+
+      const remoteStream=remote.srcObject;
+      const hasRemoteVideo=!!(
+        remoteStream &&
+        typeof remoteStream.getVideoTracks==="function" &&
+        remoteStream.getVideoTracks().some(track=>track.readyState!=="ended")
+      );
       const placeholder=document.getElementById("aoVideoRemotePlaceholder");
-      if(placeholder) placeholder.style.display="none";
+      if(placeholder) placeholder.style.display=hasRemoteVideo ? "none" : "";
+
+      try{
+        const playPromise=remote.play();
+        if(playPromise && typeof playPromise.catch==="function"){
+          playPromise.catch(error=>{
+            console.warn("Remote media autoplay was blocked; tap the call video to play it:",error);
+          });
+        }
+      }catch(error){
+        console.warn("Remote media playback could not start automatically:",error);
+      }
     };
 
     peer.onconnectionstatechange=()=>{
       const cs=peer.connectionState;
-
       if(cs==="connected"){
         state.connected=true;
         state.status="connected";
@@ -10443,84 +10482,186 @@ async function confirmPullOutRequest(){
     };
 
     state.peer=peer;
-
-    if(state.localStream){
-      state.localStream.getTracks().forEach(track=>{
-        try{
-          peer.addTrack(track,state.localStream);
-        }catch(error){
-          console.warn("Video track attach failed:",error);
-        }
-      });
-    }
-
     return peer;
   }
 
   async function aoVideoEnsureLocalMedia(){
     const state=aoVideoState;
     if(!state) throw new Error("No active video call.");
-
     if(state.localStream) return state.localStream;
 
-    if(!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia!=="function"){
-      throw new Error("Camera and microphone access are unavailable in this app. The Android WebView must be granted CAMERA and RECORD_AUDIO permissions.");
-    }
+    const collected=[];
+    let combined=null;
+    const mediaDevices=navigator.mediaDevices;
+    const canGetMedia=!!(
+      mediaDevices &&
+      typeof mediaDevices.getUserMedia==="function"
+    );
 
-    let stream;
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({
-        video:{
-          width:{ideal:1280},
-          height:{ideal:720},
-          frameRate:{ideal:24,max:30},
-          facingMode:{ideal:"user"}
-        },
-        audio:{
-          echoCancellation:true,
-          noiseSuppression:true,
-          autoGainControl:true
-        }
-      });
-    }catch(error){
-      /* Some Android WebView builds are stricter about constraints.
-         Retry once with the simplest WebRTC request before surfacing
-         the native-permission error. */
-      if(
-        error?.name === "OverconstrainedError" ||
-        error?.name === "NotReadableError" ||
-        error?.name === "TypeError"
-      ){
-        stream=await navigator.mediaDevices.getUserMedia({
-          video:true,
-          audio:true
+    if(canGetMedia){
+      try{
+        combined=await mediaDevices.getUserMedia({
+          video:{
+            width:{ideal:1280},
+            height:{ideal:720},
+            frameRate:{ideal:24,max:30},
+            facingMode:{ideal:"user"}
+          },
+          audio:{
+            echoCancellation:true,
+            noiseSuppression:true,
+            autoGainControl:true
+          }
         });
-      }else{
-        const name=String(error?.name || "").trim();
-        if(name === "NotAllowedError" || name === "SecurityError"){
-          throw new Error("Camera and microphone permission was denied by the app. Allow Camera and Microphone for this Android app, then try the video call again.");
-        }
-        throw error;
+      }catch(error){
+        console.warn("Combined microphone/camera request failed; trying available devices separately:",error?.name || error);
       }
     }
 
-    state.localStream=stream;
+    if(combined && typeof combined.getTracks==="function"){
+      combined.getTracks().forEach(track=>collected.push(track));
+    }
+
+    const hasKind=kind=>collected.some(
+      track=>track.kind===kind && track.readyState!=="ended"
+    );
+
+    /*
+     * Asking for both devices at once fails if either device is missing.
+     * Retry only the missing kind so a camera-only or microphone-only
+     * device can still send its available media.
+     */
+    if(canGetMedia && !hasKind("audio")){
+      try{
+        const audioOnly=await mediaDevices.getUserMedia({
+          audio:{
+            echoCancellation:true,
+            noiseSuppression:true,
+            autoGainControl:true
+          },
+          video:false
+        });
+        audioOnly.getAudioTracks().forEach(track=>{
+          if(!hasKind("audio")) collected.push(track);
+          else try{track.stop();}catch(e){}
+        });
+      }catch(error){
+        console.info("No usable microphone; continuing without local audio:",error?.name || error);
+      }
+    }
+
+    if(canGetMedia && !hasKind("video")){
+      try{
+        const videoOnly=await mediaDevices.getUserMedia({
+          video:{
+            width:{ideal:1280},
+            height:{ideal:720},
+            frameRate:{ideal:24,max:30},
+            facingMode:{ideal:"user"}
+          },
+          audio:false
+        });
+        videoOnly.getVideoTracks().forEach(track=>{
+          if(!hasKind("video")) collected.push(track);
+          else try{track.stop();}catch(e){}
+        });
+      }catch(error){
+        console.info("No usable camera; continuing without local video:",error?.name || error);
+      }
+    }
+
+    const localStream=new MediaStream();
+    const addedKinds=new Set();
+    collected.forEach(track=>{
+      if(track.readyState==="ended") return;
+      if(addedKinds.has(track.kind)){
+        try{track.stop();}catch(e){}
+        return;
+      }
+      addedKinds.add(track.kind);
+      localStream.addTrack(track);
+    });
+
+    state.localStream=localStream;
+
+    const hasAudio=localStream.getAudioTracks().some(track=>track.readyState!=="ended");
+    const hasVideo=localStream.getVideoTracks().some(track=>track.readyState!=="ended");
 
     const local=document.getElementById("aoVideoLocal");
     if(local){
-      local.srcObject=stream;
-      try{ await local.play(); }catch(e){}
+      local.srcObject=hasVideo ? localStream : null;
+      local.autoplay=true;
+      local.playsInline=true;
+      if(hasVideo){
+        try{
+          const playPromise=local.play();
+          if(playPromise && typeof playPromise.catch==="function") playPromise.catch(()=>{});
+        }catch(e){}
+      }
     }
 
     const placeholder=document.getElementById("aoVideoLocalPlaceholder");
-    if(placeholder) placeholder.style.display="none";
+    if(placeholder){
+      placeholder.textContent=hasVideo
+        ? ""
+        : "Camera unavailable or off";
+      placeholder.style.display=hasVideo ? "none" : "flex";
+    }
 
-    return stream;
+    const muteButton=document.getElementById("aoVideoMute");
+    if(muteButton){
+      muteButton.disabled=!hasAudio;
+      muteButton.textContent=hasAudio ? "🎤 Mute" : "🎤 No microphone";
+      muteButton.title=hasAudio ? "Mute or unmute your microphone" : "No usable microphone is available";
+    }
+    const cameraButton=document.getElementById("aoVideoCamera");
+    if(cameraButton){
+      cameraButton.disabled=!hasVideo;
+      cameraButton.textContent=hasVideo ? "📷 Camera" : "📷 No camera";
+      cameraButton.title=hasVideo ? "Turn your camera on or off" : "No usable camera is available";
+    }
+
+    if(!hasAudio && !hasVideo){
+      aoVideoSetStatus("No local microphone or camera. Connecting in receive-only mode…");
+    }
+
+    return localStream;
   }
 
   async function aoVideoPreparePeerWithMedia(){
-    await aoVideoEnsureLocalMedia();
-    aoVideoCreatePeer();
+    const state=aoVideoState;
+    if(!state) throw new Error("No active video call.");
+
+    const stream=await aoVideoEnsureLocalMedia();
+    const peer=aoVideoCreatePeer();
+
+    const audioTrack=stream.getAudioTracks().find(track=>track.readyState!=="ended") || null;
+    const videoTrack=stream.getVideoTracks().find(track=>track.readyState!=="ended") || null;
+    const attachPromises=[];
+
+    [
+      [state.audioTransceiver,audioTrack],
+      [state.videoTransceiver,videoTrack]
+    ].forEach(([transceiver,track])=>{
+      if(!transceiver || !transceiver.sender) return;
+      try{
+        if(track && typeof transceiver.sender.setStreams==="function"){
+          transceiver.sender.setStreams(stream);
+        }
+        if(typeof transceiver.sender.replaceTrack==="function"){
+          attachPromises.push(
+            transceiver.sender.replaceTrack(track).catch(error=>{
+              console.warn("Optional local media track could not be attached:",error);
+            })
+          );
+        }
+      }catch(error){
+        console.warn("Optional local media track setup failed:",error);
+      }
+    });
+
+    await Promise.all(attachPromises);
+    return peer;
   }
 
   async function aoVideoStartCall(options){
@@ -10561,21 +10702,24 @@ async function confirmPullOutRequest(){
       localStream:null,
       peer:null,
       connected:false,
-      pendingIce:[]
+      pendingIce:[],
+      audioTransceiver:null,
+      videoTransceiver:null
     };
 
     aoVideoTrackPresence().catch(()=>{});
 
     aoVideoOpenCallUi(
       targetType==="ADMIN" ? "Calling Admin" : "Calling Scanner",
-      "Starting camera and microphone…"
+      "Calling " + targetEmail + "… camera and microphone are optional."
     );
 
+    /*
+     * Invite first. Do not require the caller's camera or microphone to
+     * be available before the other user can answer. Media is prepared
+     * after acceptance, with receive-only fallback if no local tracks exist.
+     */
     try{
-      await aoVideoPreparePeerWithMedia();
-
-      aoVideoSetStatus("Calling " + targetEmail + "…");
-
       await aoVideoSend({
         kind:"invite",
         callId,
@@ -10604,7 +10748,7 @@ async function confirmPullOutRequest(){
     return true;
   }
 
-  async function aoVideoAcceptIncoming(){
+    async function aoVideoAcceptIncoming(){
     const info=aoVideoIncoming;
     if(!info) return;
 
@@ -10635,7 +10779,9 @@ async function confirmPullOutRequest(){
       localStream:null,
       peer:null,
       connected:false,
-      pendingIce:[]
+      pendingIce:[],
+      audioTransceiver:null,
+      videoTransceiver:null
     };
 
     aoVideoOpenCallUi(
@@ -10782,10 +10928,7 @@ async function confirmPullOutRequest(){
 
         await aoVideoPreparePeerWithMedia();
 
-        const offer=await aoVideoState.peer.createOffer({
-          offerToReceiveAudio:true,
-          offerToReceiveVideo:true
-        });
+        const offer=await aoVideoState.peer.createOffer();
 
         await aoVideoState.peer.setLocalDescription(offer);
 
