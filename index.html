@@ -7784,7 +7784,9 @@ function aoChatUpdateHeaderAdminIdentity(){
  const nickname=aoChatAdminNickname(admin),status=aoChatAdminAvailability(admin);
  const statusClass=status==="ONLINE"?"online":"offline";
  const statusLabel=status==="ONLINE"?"Online":status==="OFFLINE"?"Offline":"Offline / unavailable";
- const html='<span class="ao-chat-admin-title-text">'+aoChatEsc(branch||"BR")+', '+aoChatEsc(nickname)+'</span><span class="ao-chat-admin-presence-dot '+statusClass+'" title="'+aoChatEsc(statusLabel)+'" aria-label="'+aoChatEsc(statusLabel)+'"></span>';
+ const photoUrl=typeof window.aoAdminProfilePhotoFor==="function"?String(window.aoAdminProfilePhotoFor(admin)||""):"";
+ const photoHtml=photoUrl?'<img class="ao-chat-admin-title-avatar" src="'+aoChatEsc(photoUrl)+'" alt="'+aoChatEsc(nickname)+' profile photo">':'';
+ const html=photoHtml+'<span class="ao-chat-admin-title-text">'+aoChatEsc(branch||"BR")+', '+aoChatEsc(nickname)+'</span><span class="ao-chat-admin-presence-dot '+statusClass+'" title="'+aoChatEsc(statusLabel)+'" aria-label="'+aoChatEsc(statusLabel)+'"></span>';
  if(title.innerHTML!==html)title.innerHTML=html;
  title.setAttribute("data-admin-email",admin);
  title.title=statusLabel;
@@ -8251,7 +8253,9 @@ function aoChatEnsureAdminPickerStyles(){
  .ao-chat-admin-option{display:flex;align-items:center;gap:12px;width:100%;min-height:66px;padding:11px 13px;border:1px solid #d7e5f4;border-radius:15px;background:#fff;color:#213955;text-align:left;cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
  .ao-chat-admin-option:hover,.ao-chat-admin-option.selected{transform:translateY(-1px);border-color:#4da7ed;box-shadow:0 7px 18px rgba(32,107,190,.12)}
  .ao-chat-admin-option.selected{background:linear-gradient(135deg,#f0f8ff,#e7f1ff)}
- .ao-chat-admin-option-avatar{width:39px;height:39px;flex:0 0 39px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:linear-gradient(145deg,#38bdf8,#3658bb);color:#fff;font-size:16px;font-weight:950}
+ .ao-chat-admin-option-avatar{width:39px;height:39px;flex:0 0 39px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:13px;background:linear-gradient(145deg,#38bdf8,#3658bb);color:#fff;font-size:16px;font-weight:950}
+ .ao-chat-admin-option-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+ .ao-chat-admin-title-avatar{display:block;width:27px;height:27px;flex:0 0 27px;object-fit:cover;border-radius:50%;border:2px solid rgba(255,255,255,.95);box-shadow:0 3px 10px rgba(15,23,42,.16);background:#e2e8f0}
  .ao-chat-admin-option-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
  .ao-chat-admin-option-copy strong{font-size:12px;font-weight:900;overflow-wrap:anywhere}
  .ao-chat-admin-presence-dot{width:10px;height:10px;flex:0 0 10px;display:inline-block;border-radius:50%;border:1px solid rgba(255,255,255,.9);background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.12);vertical-align:middle}
@@ -11793,10 +11797,14 @@ function aoVideoCreatePeer(){
   const TABLE = "admin_display_names";
   const CACHE_MS = 15000;
   let nameMap = new Map();
+  let profilePhotoPathMap = new Map();
+  let profilePhotosLoadedAt = 0;
+  let profilePhotosLoadPromise = null;
   let loadedAt = 0;
   let loadPromise = null;
   let observerStarted = false;
   let currentIncomingAdminEmail = "";
+  const PHOTO_BUCKET = "ao-chat-images";
 
   function esc(value){
     return String(value == null ? "" : value)
@@ -11820,9 +11828,48 @@ function aoVideoCreatePeer(){
     return nameMap.get(e) || e;
   }
 
-  /* Existing scanner chat rendering calls this helper directly.
-     Email remains the permanent internal identity; only the visible label changes. */
+  function profilePhotoUrl(email){
+    const e = String(email || "").trim().toLowerCase();
+    const path = profilePhotoPathMap.get(e) || "";
+    if(!path) return "";
+    return SUPABASE_URL + "/storage/v1/object/public/" + PHOTO_BUCKET + "/" +
+      path.split("/").map(encodeURIComponent).join("/");
+  }
+
+  /* Existing scanner chat rendering calls these helpers; account email remains internal only. */
   window.aoAdminDisplayNameFor = nameFor;
+  window.aoAdminProfilePhotoFor = profilePhotoUrl;
+
+  async function loadProfilePhotos(force){
+    const now=Date.now();
+    if(!force && profilePhotosLoadedAt && (now-profilePhotosLoadedAt)<CACHE_MS) return profilePhotoPathMap;
+    if(profilePhotosLoadPromise && !force) return profilePhotosLoadPromise;
+    profilePhotosLoadPromise=(async function(){
+      try{
+        const response=await fetch(
+          SUPABASE_URL + "/rest/v1/" + TABLE + "?select=email,profile_photo_path",
+          {method:"GET",headers:apiHeaders()}
+        );
+        const body=await response.text();
+        if(!response.ok) throw new Error("Profile-photo column is not available yet.");
+        const rows=body?JSON.parse(body):[];
+        const next=new Map();
+        (Array.isArray(rows)?rows:[]).forEach(function(row){
+          const email=String(row&&row.email||"").trim().toLowerCase();
+          const path=String(row&&row.profile_photo_path||"").trim();
+          if(email&&path) next.set(email,path);
+        });
+        profilePhotoPathMap=next;
+      }catch(error){
+        console.warn("Scanner admin profile-photo load skipped:",error);
+      }
+      profilePhotosLoadedAt=Date.now();
+      profilePhotosLoadPromise=null;
+      applyAll();
+      return profilePhotoPathMap;
+    })();
+    return profilePhotosLoadPromise;
+  }
 
   async function loadNames(force){
     const now = Date.now();
@@ -11848,6 +11895,7 @@ function aoVideoCreatePeer(){
       }catch(error){
         console.warn("Scanner admin display-name load failed:",error);
       }
+      await loadProfilePhotos(force);
       loadedAt = Date.now();
       loadPromise = null;
       applyAll();
@@ -11892,7 +11940,24 @@ function aoVideoCreatePeer(){
       if(label && label.textContent!==nickname)label.textContent=nickname;
       const avatar=button.querySelector(".ao-chat-admin-option-avatar");
       const initial=String(nickname || "A").trim().charAt(0).toUpperCase() || "A";
-      if(avatar && avatar.textContent!==initial)avatar.textContent=initial;
+      const photoUrl=profilePhotoUrl(email);
+      if(avatar && photoUrl && avatar.dataset.failedPhotoUrl !== photoUrl){
+        let img=avatar.querySelector("img");
+        if(!img){
+          avatar.textContent="";
+          img=document.createElement("img");
+          img.alt=nickname + " profile photo";
+          img.style.cssText="display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;";
+          img.onerror=function(){avatar.dataset.failedPhotoUrl=photoUrl;avatar.textContent=initial;};
+          avatar.appendChild(img);
+        }
+        if(img.getAttribute("src")!==photoUrl)img.setAttribute("src",photoUrl);
+        img.alt=nickname + " profile photo";
+      }else if(avatar){
+        if(photoUrl && avatar.dataset.failedPhotoUrl !== photoUrl) avatar.dataset.failedPhotoUrl="";
+        const existing=avatar.querySelector("img");
+        if(existing || avatar.textContent!==initial)avatar.textContent=initial;
+      }
     });
   }
 
