@@ -7745,6 +7745,62 @@ function aoChatAdminMessageFilter(email){const marker=aoChatAdminMarker(email||a
 function aoChatAdminChoiceKey(){return "aoChatAdminTarget:"+aoChatBranch()+":"+aoChatEmail();}
 function aoChatSelectedAdminEmail(){return String(localStorage.getItem(aoChatAdminChoiceKey())||"").trim().toLowerCase();}
 function aoChatSetSelectedAdmin(email){const normalized=String(email||"").trim().toLowerCase();if(normalized)localStorage.setItem(aoChatAdminChoiceKey(),normalized);else localStorage.removeItem(aoChatAdminChoiceKey());}
+function aoChatAdminNickname(email){
+ const normalized=String(email||"").trim().toLowerCase();
+ if(!normalized)return "Admin";
+ let label="";
+ try{label=String(typeof window.aoAdminDisplayNameFor==="function"?window.aoAdminDisplayNameFor(normalized):"").trim();}catch(e){}
+ return label && label.toLowerCase()!==normalized && !label.includes("@") ? label : "Admin";
+}
+function aoChatAdminAvailability(email){
+ try{
+  if(typeof window.aoVideoAdminAvailabilityFor==="function"){
+   const value=String(window.aoVideoAdminAvailabilityFor(email)||"").trim().toUpperCase();
+   return value==="ONLINE"?"ONLINE":value==="OFFLINE"?"OFFLINE":"UNAVAILABLE";
+  }
+ }catch(e){}
+ return "UNAVAILABLE";
+}
+function aoChatUpdatePresenceDot(dot,email){
+ if(!dot)return "UNAVAILABLE";
+ const status=aoChatAdminAvailability(email),online=status==="ONLINE";
+ dot.classList.toggle("online",online);
+ dot.classList.toggle("offline",!online);
+ dot.title=online?"Online":status==="OFFLINE"?"Offline":"Offline / unavailable";
+ dot.setAttribute("aria-label",online?"Online":"Offline");
+ return status;
+}
+function aoChatUpdateHeaderAdminIdentity(){
+ const panel=document.getElementById("aoChatPanel");
+ const title=panel?.querySelector(".ao-chat-title");
+ const sub=document.getElementById("aoChatSub");
+ if(!title)return;
+ const branch=aoChatBranch(),admin=aoChatSelectedAdminEmail();
+ if(!admin){
+  if(title.textContent!=="Chat with Admin")title.textContent="Chat with Admin";
+  if(sub&&sub.textContent!=="Choose an admin for a private conversation")sub.textContent="Choose an admin for a private conversation";
+  return;
+ }
+ const nickname=aoChatAdminNickname(admin),status=aoChatAdminAvailability(admin);
+ const statusClass=status==="ONLINE"?"online":"offline";
+ const statusLabel=status==="ONLINE"?"Online":status==="OFFLINE"?"Offline":"Offline / unavailable";
+ const html='<span class="ao-chat-admin-title-text">'+aoChatEsc(branch||"BR")+', '+aoChatEsc(nickname)+'</span><span class="ao-chat-admin-presence-dot '+statusClass+'" title="'+aoChatEsc(statusLabel)+'" aria-label="'+aoChatEsc(statusLabel)+'"></span>';
+ if(title.innerHTML!==html)title.innerHTML=html;
+ title.setAttribute("data-admin-email",admin);
+ title.title=statusLabel;
+ if(sub&&sub.textContent!=="Private conversation")sub.textContent="Private conversation";
+}
+function aoChatRefreshAdminAvailabilityUi(){
+ document.querySelectorAll("#aoChatAdminPicker .ao-chat-admin-option[data-admin-email]").forEach(button=>{
+  const email=String(button.getAttribute("data-admin-email")||"").trim().toLowerCase();
+  const dot=button.querySelector(".ao-chat-admin-presence-dot");
+  const status=aoChatUpdatePresenceDot(dot,email);
+  button.setAttribute("data-admin-status",status);
+ });
+ aoChatUpdateHeaderAdminIdentity();
+}
+window.aoChatRefreshAdminAvailabilityUi=aoChatRefreshAdminAvailabilityUi;
+window.aoChatUpdateHeaderAdminIdentity=aoChatUpdateHeaderAdminIdentity;
 function aoChatTime(v){const d=new Date(v);return Number.isNaN(d.getTime())?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}
 function aoChatKey(){return "aoChatRead:BRANCH:"+aoChatBranch()+":"+aoChatEmail()+":ADMIN:"+aoChatSelectedAdminEmail();}
 function aoChatRead(){return Number(localStorage.getItem(aoChatKey())||0);}
@@ -8118,7 +8174,7 @@ async function aoChatLoad(){
   }
   aoChatRenderSearch();
   if(aoChatOpen){const last=incoming.length?new Date(incoming[incoming.length-1].created_at).getTime():0;if(last)aoChatMark(last);aoChatBadge(0);}
-  const sub=document.getElementById("aoChatSub");if(sub)sub.textContent=branch+" · Admin: "+admin;
+  aoChatUpdateHeaderAdminIdentity();
  }catch(e){console.warn("Scanner chat load failed:",e);aoChatStatus(e?.message||"Chat temporarily unavailable.");}
 }
 function aoChatSetPanelOpen(open){
@@ -8127,7 +8183,7 @@ function aoChatSetPanelOpen(open){
  aoChatOpen=!!open;
  panel.classList.toggle("open",aoChatOpen);
  panel.setAttribute("aria-hidden",String(!aoChatOpen));
- if(aoChatOpen){aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}
+ if(aoChatOpen){aoChatUpdateHeaderAdminIdentity();aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}
 }
 function aoChatToggle(){
  if(aoChatOpen){aoChatSetPanelOpen(false);return;}
@@ -8158,13 +8214,17 @@ async function aoChatOpenAdminPicker(forceSwitch){
    if(!admins.length){list.innerHTML='<div class="ao-chat-admin-picker-empty">No active administrators were found.</div>';return;}
    const current=aoChatSelectedAdminEmail();
    list.innerHTML=admins.map(email=>{
-     const label=(typeof window.aoAdminDisplayNameFor==="function")?window.aoAdminDisplayNameFor(email):email;
-     return '<button type="button" class="ao-chat-admin-option '+(email===current?'selected':'')+'" data-admin-email="'+aoChatEsc(email)+'"><span class="ao-chat-admin-option-avatar">'+aoChatEsc(String(label||email).trim().charAt(0).toUpperCase()||"A")+'</span><span class="ao-chat-admin-option-copy"><strong>'+aoChatEsc(label||email)+'</strong><span>'+aoChatEsc(email)+'</span></span><span class="ao-chat-admin-option-arrow">'+(email===current?'SELECTED':'›')+'</span></button>';
+     const rawLabel=(typeof window.aoAdminDisplayNameFor==="function")?String(window.aoAdminDisplayNameFor(email)||"").trim():"";
+     const label=rawLabel&&rawLabel.toLowerCase()!==email&&!rawLabel.includes("@")?rawLabel:"Admin";
+     const status=aoChatAdminAvailability(email),online=status==="ONLINE";
+     return '<button type="button" class="ao-chat-admin-option '+(email===current?'selected':'')+'" data-admin-email="'+aoChatEsc(email)+'" data-admin-status="'+status+'"><span class="ao-chat-admin-option-avatar">'+aoChatEsc(String(label||"A").trim().charAt(0).toUpperCase()||"A")+'</span><span class="ao-chat-admin-option-copy"><strong data-admin-nickname>'+aoChatEsc(label)+'</strong></span><span class="ao-chat-admin-presence-dot '+(online?'online':'offline')+'" title="'+(online?'Online':status==='OFFLINE'?'Offline':'Offline / unavailable')+'" aria-label="'+(online?'Online':'Offline')+'"></span><span class="ao-chat-admin-option-arrow">'+(email===current?'SELECTED':'›')+'</span></button>';
    }).join("");
+   aoChatRefreshAdminAvailabilityUi();
    list.querySelectorAll("[data-admin-email]").forEach(button=>button.addEventListener("click",()=>{
      const admin=String(button.getAttribute("data-admin-email")||"").trim().toLowerCase();
      if(!admin)return;
      aoChatSetSelectedAdmin(admin);
+     aoChatUpdateHeaderAdminIdentity();
      close();
      aoChatStatus("");
      aoChatSetPanelOpen(true);
@@ -8194,7 +8254,12 @@ function aoChatEnsureAdminPickerStyles(){
  .ao-chat-admin-option-avatar{width:39px;height:39px;flex:0 0 39px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:linear-gradient(145deg,#38bdf8,#3658bb);color:#fff;font-size:16px;font-weight:950}
  .ao-chat-admin-option-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
  .ao-chat-admin-option-copy strong{font-size:12px;font-weight:900;overflow-wrap:anywhere}
- .ao-chat-admin-option-copy span{font-size:10px;color:#68809a;overflow-wrap:anywhere}
+ .ao-chat-admin-presence-dot{width:10px;height:10px;flex:0 0 10px;display:inline-block;border-radius:50%;border:1px solid rgba(255,255,255,.9);background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.12);vertical-align:middle}
+ .ao-chat-admin-presence-dot.online{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.14),0 0 9px rgba(34,197,94,.52)}
+ .ao-chat-admin-presence-dot.offline{background:#f43f5e;box-shadow:0 0 0 3px rgba(244,63,94,.12),0 0 7px rgba(244,63,94,.22)}
+ .ao-chat-title{display:flex;align-items:center;gap:8px;min-width:0}
+ .ao-chat-admin-title-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .ao-chat-admin-presence-dot{vertical-align:middle}
  .ao-chat-admin-option-arrow{font-size:10px;font-weight:900;color:#2670bd;white-space:nowrap}
  .ao-chat-admin-picker-loading,.ao-chat-admin-picker-empty{padding:24px 16px;text-align:center;font-size:12px;color:#6b8199;line-height:1.5}
  .ao-chat-admin-picker-foot{padding:11px 17px 14px;border-top:1px solid #dce8f4;color:#71849a;font-size:10px;text-align:center}
@@ -9947,6 +10012,11 @@ async function confirmPullOutRequest(){
     }
   }
 
+  /* Read-only bridge used by the scanner chat header and admin picker. */
+  window.aoVideoAdminAvailabilityFor=function(email){
+    return aoVideoAdminAvailability(email);
+  };
+
   function aoVideoOnlineAdminEmails(){
     const online=new Set();
     try{
@@ -9979,6 +10049,9 @@ async function confirmPullOutRequest(){
       state.innerHTML='<span class="ao-video-admin-dot"></span>'+(isOnline ? "ONLINE" : "OFFLINE");
       button.setAttribute("data-admin-online",String(isOnline));
     });
+    if(typeof window.aoChatRefreshAdminAvailabilityUi==="function"){
+      window.aoChatRefreshAdminAvailabilityUi();
+    }
   }
 
   async function aoVideoTrackPresence(){
@@ -10321,9 +10394,9 @@ async function confirmPullOutRequest(){
     const button=document.getElementById("aoVideoCallBtn");
     if(button && !button.dataset.aoVideoBound){
       button.dataset.aoVideoBound="1";
-      button.addEventListener("click",()=>{
-        aoVideoMinimizeChat();
+      button.addEventListener("click",async()=>{
         if(aoVideoIsDashboard()){
+          aoVideoMinimizeChat();
           const branch=
             typeof aoChatBranch==="function"
               ? String(aoChatBranch() || "").trim().toUpperCase()
@@ -10350,8 +10423,60 @@ async function confirmPullOutRequest(){
               aoChatStatus(error?.message || "Unable to start video call.");
             }
           });
-        }else{
-          aoVideoOpenAdminPicker();
+          return;
+        }
+
+        const targetEmail=typeof aoChatSelectedAdminEmail==="function"
+          ? String(aoChatSelectedAdminEmail() || "").trim().toLowerCase()
+          : "";
+        const identity=aoVideoIdentity();
+        if(!targetEmail){
+          aoVideoShowNotice(
+            "Choose an admin first",
+            "Open the chat and choose an admin. Video calls will then go directly to that admin.",
+            "info",
+            4400
+          );
+          if(typeof aoChatOpenAdminPicker==="function") aoChatOpenAdminPicker(false);
+          return;
+        }
+
+        try{
+          await aoVideoEnsureSignal();
+          const availability=aoVideoAdminAvailability(targetEmail);
+          const rawName=typeof window.aoAdminDisplayNameFor==="function"
+            ? String(window.aoAdminDisplayNameFor(targetEmail) || "").trim()
+            : "";
+          const nickname=rawName && rawName.toLowerCase()!==targetEmail && !rawName.includes("@")
+            ? rawName
+            : "Admin";
+          if(availability!=="ONLINE"){
+            aoChatUpdateHeaderAdminIdentity?.();
+            aoVideoShowNotice(
+              availability==="OFFLINE" ? "Admin is offline" : "Admin unavailable",
+              nickname + (availability==="OFFLINE"
+                ? " has paused incoming calls. You can keep chatting or try again later."
+                : " is not connected right now. Please try again when they are online."),
+              "warning",
+              4600
+            );
+            return;
+          }
+
+          aoVideoMinimizeChat();
+          await aoVideoStartCall({
+            toEmail:targetEmail,
+            toType:"ADMIN",
+            toBranch:identity.branch
+          });
+        }catch(error){
+          console.error("Scanner video call start failed:",error);
+          aoVideoShowNotice(
+            "Unable to start call",
+            error?.message || "Please check your connection and try again.",
+            "danger",
+            4400
+          );
         }
       });
     }
@@ -10842,6 +10967,17 @@ function aoVideoCreatePeer(){
     }
 
     await aoVideoEnsureSignal();
+
+    if(me.type==="SCANNER" && targetType==="ADMIN"){
+      const availability=aoVideoAdminAvailability(targetEmail);
+      if(availability!=="ONLINE"){
+        throw new Error(
+          availability==="OFFLINE"
+            ? "The selected admin is offline or has paused incoming calls."
+            : "The selected admin is not currently online. Please try again in a moment."
+        );
+      }
+    }
 
     const callId=
       "AO-" +
@@ -11745,6 +11881,20 @@ function aoVideoCreatePeer(){
     });
   }
 
+  function applyChatAdminPicker(){
+    document.querySelectorAll("#aoChatAdminPicker .ao-chat-admin-option[data-admin-email]").forEach(function(button){
+      const email=String(button.getAttribute("data-admin-email") || "").trim().toLowerCase();
+      if(!email)return;
+      const raw=String(nameFor(email) || "").trim();
+      const nickname=raw && raw.toLowerCase()!==email && !raw.includes("@") ? raw : "Admin";
+      const label=button.querySelector("[data-admin-nickname]");
+      if(label && label.textContent!==nickname)label.textContent=nickname;
+      const avatar=button.querySelector(".ao-chat-admin-option-avatar");
+      const initial=String(nickname || "A").trim().charAt(0).toUpperCase() || "A";
+      if(avatar && avatar.textContent!==initial)avatar.textContent=initial;
+    });
+  }
+
   function applyIncomingCall(){
     const el = document.getElementById("aoVideoIncomingFrom");
     if(el){
@@ -11773,10 +11923,16 @@ function aoVideoCreatePeer(){
   }
 
   function applyAll(){
-    /* Chat names are now rendered correctly at the source, so do not
-       rewrite the live chat DOM after every refresh (prevents blinking). */
+    /* Preserve rendered messages; refresh only admin labels and presence title. */
     applyVideoPicker();
+    applyChatAdminPicker();
     applyIncomingCall();
+    if(typeof window.aoChatUpdateHeaderAdminIdentity==="function"){
+      window.aoChatUpdateHeaderAdminIdentity();
+    }
+    if(typeof window.aoChatRefreshAdminAvailabilityUi==="function"){
+      window.aoChatRefreshAdminAvailabilityUi();
+    }
   }
 
   function startObserver(){
