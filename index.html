@@ -2578,7 +2578,7 @@ input:focus-visible{
 .ao-chat-scan-zoom-badge{position:absolute;top:10px;right:10px;padding:6px 9px;border-radius:999px;color:#fff;background:rgba(15,23,42,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:10px;font-weight:900;z-index:4}
 .ao-chat-scan-lock{overflow:hidden!important}
 @media(max-width:600px){
-  .ao-chat-scan-modal{padding:0;align-items:flex-start}.ao-chat-scan-card{width:100%;height:100%;max-height:none;border-radius:0;min-height:100dvh}
+  .ao-chat-scan-modal{padding:0;align-items:flex-start}.ao-chat-scan-card{width:100%;height:100%;max-height:none;border-radius:0;min-height:100vh}
   .ao-chat-scan-body{padding:8px}.ao-chat-scan-camera-wrap,.ao-chat-scan-preview-wrap{aspect-ratio:3/4;max-height:none}
   .ao-chat-scan-controls{grid-template-columns:1fr}.ao-chat-scan-frame{inset:6% 5%}
   .ao-chat-scan-corner.tl{left:5%;top:6%}.ao-chat-scan-corner.tr{right:5%;top:6%}.ao-chat-scan-corner.bl{left:5%;bottom:6%}.ao-chat-scan-corner.br{right:5%;bottom:6%}
@@ -7736,15 +7736,24 @@ function aoChatStatus(t){const e=document.getElementById("aoChatStatus");if(e)e.
 function aoChatSession(){try{return currentSession()||{};}catch(e){return {};}}
 function aoChatBranch(){return String(BRANCH||"").trim().toUpperCase();}
 function aoChatEmail(){return String(aoChatSession().email||"").trim().toLowerCase();}
+const AO_CHAT_ADMIN_MARKER_PREFIX = "[[AO_CHAT_ADMIN:";
+function aoChatAdminMarker(email){const normalized=String(email||"").trim().toLowerCase();return normalized?AO_CHAT_ADMIN_MARKER_PREFIX+normalized+"]]":"";}
+function aoChatAdminMessageEmail(message){const m=String(message||"").match(/^\[\[AO_CHAT_ADMIN:([^\]\r\n]+)\]\]/i);return m?String(m[1]||"").trim().toLowerCase():"";}
+function aoChatStripAdminTag(message){return String(message||"").replace(/^\[\[AO_CHAT_ADMIN:[^\]\r\n]+\]\]\r?\n?/,"");}
+function aoChatTagAdminMessage(message,email){const marker=aoChatAdminMarker(email||aoChatSelectedAdminEmail());const body=aoChatStripAdminTag(message);return marker?marker+"\n"+body:body;}
+function aoChatAdminMessageFilter(email){const marker=aoChatAdminMarker(email||aoChatSelectedAdminEmail());return marker?"&message=like."+encodeURIComponent("*"+marker+"*"):"";}
+function aoChatAdminChoiceKey(){return "aoChatAdminTarget:"+aoChatBranch()+":"+aoChatEmail();}
+function aoChatSelectedAdminEmail(){return String(localStorage.getItem(aoChatAdminChoiceKey())||"").trim().toLowerCase();}
+function aoChatSetSelectedAdmin(email){const normalized=String(email||"").trim().toLowerCase();if(normalized)localStorage.setItem(aoChatAdminChoiceKey(),normalized);else localStorage.removeItem(aoChatAdminChoiceKey());}
 function aoChatTime(v){const d=new Date(v);return Number.isNaN(d.getTime())?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});}
-function aoChatKey(){return "aoChatRead:BRANCH:"+aoChatBranch()+":"+aoChatEmail();}
+function aoChatKey(){return "aoChatRead:BRANCH:"+aoChatBranch()+":"+aoChatEmail()+":ADMIN:"+aoChatSelectedAdminEmail();}
 function aoChatRead(){return Number(localStorage.getItem(aoChatKey())||0);}
 function aoChatMark(ts){if(ts)localStorage.setItem(aoChatKey(),String(ts));}
 function aoChatBadge(n){aoChatUnread=Math.max(0,Number(n)||0);const b=document.getElementById("aoChatBadge");if(b){b.textContent=aoChatUnread>99?"99+":String(aoChatUnread);b.style.display=aoChatUnread?"flex":"none";}}
-function aoChatIsImageMessage(message){return String(message||"").includes("[[AO_CHAT_IMAGE]]");}
-function aoChatImagePath(message){const m=String(message||"").match(/\[\[AO_CHAT_IMAGE\]\]([^\n\r]+)/);return m?String(m[1]||"").trim():"";}
-function aoChatTextPart(message){return String(message||"").replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
-function aoChatIsSharedStateMessage(message){return String(message||"").startsWith("[[AO_CHAT_SHARED_STATE]]");}
+function aoChatIsImageMessage(message){return aoChatStripAdminTag(message).includes("[[AO_CHAT_IMAGE]]");}
+function aoChatImagePath(message){const m=aoChatStripAdminTag(message).match(/\[\[AO_CHAT_IMAGE\]\]([^\n\r]+)/);return m?String(m[1]||"").trim():"";}
+function aoChatTextPart(message){return aoChatStripAdminTag(message).replace(/\n?\[\[AO_CHAT_IMAGE\]\][^\n\r]*/g,"").trim();}
+function aoChatIsSharedStateMessage(message){return aoChatStripAdminTag(message).startsWith("[[AO_CHAT_SHARED_STATE]]");}
 function aoChatPublicImageUrl(path){if(!path)return "";return SUPABASE_URL+"/storage/v1/object/public/"+AO_CHAT_IMAGE_BUCKET+"/"+String(path).split("/").map(encodeURIComponent).join("/");}
 async function aoChatCompressImage(file){
  if(!(file instanceof File))throw new Error("Invalid image file.");
@@ -7923,8 +7932,8 @@ async function aoChatDeleteMessage(id,imagePath){
      "/rest/v1/chat_messages?id=eq."+encodeURIComponent(messageId)+
      "&branch=eq."+encodeURIComponent(branch)+
      "&scanner_email=eq."+encodeURIComponent(email)+
-     "&sender_email=eq."+encodeURIComponent(email)+
-     "&sender_type=eq.SCANNER",
+     "&sender_email=eq."+encodeURIComponent(aoChatEmail())+
+     "&sender_type=eq.SCANNER"+aoChatAdminMessageFilter(aoChatSelectedAdminEmail()),
      {method:"DELETE",headers:{Prefer:"return=representation"}}
    );
    if(!Array.isArray(deleted)||!deleted.length){
@@ -8051,7 +8060,7 @@ async function aoChatEditMessage(id,originalText,imagePath){
      }
 
      const message=(editedImagePath?text+"\n[[AO_CHAT_IMAGE]]"+editedImagePath:text);
-     await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER",{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message})});
+     await sbRequest("/rest/v1/chat_messages?id=eq."+encodeURIComponent(String(id))+"&sender_email=eq."+encodeURIComponent(aoChatEmail())+"&sender_type=eq.SCANNER"+aoChatAdminMessageFilter(aoChatSelectedAdminEmail()),{method:"PATCH",headers:{Prefer:"return=minimal","Content-Type":"application/json"},body:JSON.stringify({message:aoChatTagAdminMessage(message,aoChatSelectedAdminEmail())})});
      aoChatStatus("");
      aoChatEditing=false;
      await aoChatLoad();
@@ -8071,16 +8080,17 @@ async function aoChatEditMessage(id,originalText,imagePath){
 }
 async function aoChatLoad(){
  if(aoChatEditing)return;
- const branch=aoChatBranch(),email=aoChatEmail(),box=document.getElementById("aoChatMessages");
+ const branch=aoChatBranch(),email=aoChatEmail(),admin=aoChatSelectedAdminEmail(),box=document.getElementById("aoChatMessages");
  if(!box||!branch||!email)return;
  aoChatSetupSearch();
+ if(!admin){box.innerHTML='<div class="ao-chat-empty">Choose an admin to open a private conversation.</div>';return;}
  try{
-  const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+"&order=created_at.asc&limit=500");
-  const list=(Array.isArray(rows)?rows:[]).filter(r=>!aoChatIsSharedStateMessage(r?.message)),read=aoChatRead();
+  const rows=await sbRequest("/rest/v1/chat_messages?select=id,branch,scanner_email,sender_email,sender_type,message,created_at&branch=eq."+encodeURIComponent(branch)+"&scanner_email=eq."+encodeURIComponent(email)+aoChatAdminMessageFilter(admin)+"&order=created_at.asc&limit=500");
+  const list=(Array.isArray(rows)?rows:[]).filter(r=>aoChatAdminMessageEmail(r?.message)===admin&&!aoChatIsSharedStateMessage(r?.message)),read=aoChatRead();
   const incoming=list.filter(r=>String(r.sender_type||"").toUpperCase()==="DASHBOARD"),unread=incoming.filter(r=>new Date(r.created_at).getTime()>read);
   if(!aoChatOpen)aoChatBadge(unread.length);
   const old=box.scrollTop,bottom=(box.scrollHeight-box.clientHeight-old)<60;
-  if(!list.length)box.innerHTML='<div class="ao-chat-empty">No messages yet. Send a message to Admin.</div>';
+  if(!list.length)box.innerHTML='<div class="ao-chat-empty">No messages in this admin conversation yet.</div>';
   else{
    let firstUnreadId=unread.length?unread[0].id:null;
    box.innerHTML=list.map(r=>{
@@ -8108,16 +8118,97 @@ async function aoChatLoad(){
   }
   aoChatRenderSearch();
   if(aoChatOpen){const last=incoming.length?new Date(incoming[incoming.length-1].created_at).getTime():0;if(last)aoChatMark(last);aoChatBadge(0);}
-  const sub=document.getElementById("aoChatSub");if(sub)sub.textContent=branch+" · "+email;
+  const sub=document.getElementById("aoChatSub");if(sub)sub.textContent=branch+" · Admin: "+admin;
  }catch(e){console.warn("Scanner chat load failed:",e);aoChatStatus(e?.message||"Chat temporarily unavailable.");}
 }
-function aoChatToggle(){aoChatOpen=!aoChatOpen;const p=document.getElementById("aoChatPanel");if(!p)return;p.classList.toggle("open",aoChatOpen);p.setAttribute("aria-hidden",String(!aoChatOpen));if(aoChatOpen){aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}else aoChatLoad();}
-async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),pendingImage=aoChatPendingImage,branch=aoChatBranch(),email=aoChatEmail();if(!text&&!pendingImage)return;if(pendingImage&&!text){aoChatStatus("Please add a text message before sending a picture.");input?.focus();return;}if(!branch||!email){aoChatStatus("Please log in first.");return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");let uploadedImagePath="";try{let message=text;if(pendingImage){aoChatStatus("Uploading image…");uploadedImagePath=await aoChatUploadImage(pendingImage,text);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}aoChatStatus("Sending...");await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:message})});input.value="";aoChatClearPendingImage();aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);try{if(uploadedImagePath){await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+uploadedImagePath,{method:"DELETE",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});}}catch(cleanupError){console.warn("Scanner chat image cleanup failed:",cleanupError);}aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
-document.addEventListener("DOMContentLoaded",()=>{const input=document.getElementById("aoChatInput");if(input)input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();aoChatSend();}});setTimeout(()=>{if(aoChatEmail()&&aoChatBranch())aoChatLoad();},1500);if(!aoChatTimer)aoChatTimer=setInterval(()=>{if(!aoChatEditing&&aoChatEmail()&&aoChatBranch())aoChatLoad();},3000);});
+function aoChatSetPanelOpen(open){
+ const panel=document.getElementById("aoChatPanel");
+ if(!panel)return;
+ aoChatOpen=!!open;
+ panel.classList.toggle("open",aoChatOpen);
+ panel.setAttribute("aria-hidden",String(!aoChatOpen));
+ if(aoChatOpen){aoChatBadge(0);aoChatLoad();setTimeout(()=>document.getElementById("aoChatInput")?.focus(),50);}
+}
+function aoChatToggle(){
+ if(aoChatOpen){aoChatSetPanelOpen(false);return;}
+ if(!aoChatSelectedAdminEmail()){aoChatOpenAdminPicker(false);return;}
+ aoChatSetPanelOpen(true);
+}
+async function aoChatOpenAdminPicker(forceSwitch){
+ const branch=aoChatBranch(),scannerEmail=aoChatEmail();
+ if(!branch||!scannerEmail){aoChatStatus("Please log in first.");return;}
+ if(aoChatEditing){aoChatStatus("Finish editing the current message before switching admins.");return;}
+ if(forceSwitch&&(String(document.getElementById("aoChatInput")?.value||"").trim()||aoChatPendingImage)){
+   aoChatStatus("Send your draft or remove the attached image before switching admins.");return;
+ }
+ if(document.getElementById("aoChatAdminPicker"))return;
+ aoChatEnsureAdminPickerStyles();
+ const overlay=document.createElement("div");
+ overlay.id="aoChatAdminPicker";overlay.className="ao-chat-admin-picker";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
+ overlay.innerHTML='<div class="ao-chat-admin-picker-card"><div class="ao-chat-admin-picker-head"><div><div class="ao-chat-admin-picker-title">Choose an Admin</div><div class="ao-chat-admin-picker-sub">Messages and checked-image status are kept in separate admin conversations.</div></div><button type="button" class="ao-chat-admin-picker-close" aria-label="Close">×</button></div><div id="aoChatAdminPickerList" class="ao-chat-admin-picker-list"><div class="ao-chat-admin-picker-loading">Loading active administrators…</div></div><div class="ao-chat-admin-picker-foot">Select an administrator to open that private conversation.</div></div>';
+ document.body.appendChild(overlay);
+ const close=()=>overlay.remove();
+ overlay.querySelector(".ao-chat-admin-picker-close")?.addEventListener("click",close);
+ overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
+ const list=overlay.querySelector("#aoChatAdminPickerList");
+ try{
+   const rows=await sbRequest("/rest/v1/app_allowed_users?select=email,is_admin,active&order=email.asc");
+   const truthy=v=>v===true||["true","1","yes"].includes(String(v==null?"":v).trim().toLowerCase());
+   const admins=[...new Set((Array.isArray(rows)?rows:[]).filter(r=>truthy(r?.is_admin)).filter(r=>r?.active===undefined||r?.active===null||truthy(r.active)).map(r=>String(r?.email||"").trim().toLowerCase()).filter(e=>e&&e!==scannerEmail))].sort();
+   if(!admins.length){list.innerHTML='<div class="ao-chat-admin-picker-empty">No active administrators were found.</div>';return;}
+   const current=aoChatSelectedAdminEmail();
+   list.innerHTML=admins.map(email=>{
+     const label=(typeof window.aoAdminDisplayNameFor==="function")?window.aoAdminDisplayNameFor(email):email;
+     return '<button type="button" class="ao-chat-admin-option '+(email===current?'selected':'')+'" data-admin-email="'+aoChatEsc(email)+'"><span class="ao-chat-admin-option-avatar">'+aoChatEsc(String(label||email).trim().charAt(0).toUpperCase()||"A")+'</span><span class="ao-chat-admin-option-copy"><strong>'+aoChatEsc(label||email)+'</strong><span>'+aoChatEsc(email)+'</span></span><span class="ao-chat-admin-option-arrow">'+(email===current?'SELECTED':'›')+'</span></button>';
+   }).join("");
+   list.querySelectorAll("[data-admin-email]").forEach(button=>button.addEventListener("click",()=>{
+     const admin=String(button.getAttribute("data-admin-email")||"").trim().toLowerCase();
+     if(!admin)return;
+     aoChatSetSelectedAdmin(admin);
+     close();
+     aoChatStatus("");
+     aoChatSetPanelOpen(true);
+   }));
+ }catch(error){
+   console.error("Scanner admin chat picker failed:",error);
+   if(list)list.innerHTML='<div class="ao-chat-admin-picker-empty">Unable to load administrators. Check your connection and try again.</div>';
+ }
+}
+function aoChatEnsureAdminPickerStyles(){
+ if(document.getElementById("aoChatAdminPickerStyles"))return;
+ const style=document.createElement("style");style.id="aoChatAdminPickerStyles";
+ style.textContent=`
+ .ao-chat-head-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
+ .ao-chat-admin-switch{min-height:30px;padding:5px 9px;border:1px solid rgba(255,255,255,.35);border-radius:9px;background:rgba(255,255,255,.12);color:#fff;font-family:inherit;font-size:10px;font-weight:800;line-height:1.2;cursor:pointer;white-space:nowrap}
+ .ao-chat-admin-switch:hover{background:rgba(255,255,255,.22)}
+ .ao-chat-admin-picker{position:fixed;inset:0;z-index:100200;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,11,27,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:aoChatPickerFade .16s ease}
+ .ao-chat-admin-picker-card{width:min(440px,100%);max-height:min(680px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(151,193,244,.45);border-radius:22px;background:linear-gradient(160deg,#fafdff,#edf5ff);box-shadow:0 28px 85px rgba(0,0,0,.42);color:#12253e}
+ .ao-chat-admin-picker-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 20px 15px;background:linear-gradient(135deg,#123d70,#2856a5);color:#fff}
+ .ao-chat-admin-picker-title{font-size:18px;font-weight:950;letter-spacing:-.3px}
+ .ao-chat-admin-picker-sub{margin-top:5px;max-width:330px;font-size:11px;line-height:1.5;color:#d2e7ff}
+ .ao-chat-admin-picker-close{width:34px;height:34px;flex:0 0 34px;border:1px solid rgba(255,255,255,.24);border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font-size:23px;cursor:pointer}
+ .ao-chat-admin-picker-list{overflow:auto;padding:11px;display:flex;flex-direction:column;gap:8px}
+ .ao-chat-admin-option{display:flex;align-items:center;gap:12px;width:100%;min-height:66px;padding:11px 13px;border:1px solid #d7e5f4;border-radius:15px;background:#fff;color:#213955;text-align:left;cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+ .ao-chat-admin-option:hover,.ao-chat-admin-option.selected{transform:translateY(-1px);border-color:#4da7ed;box-shadow:0 7px 18px rgba(32,107,190,.12)}
+ .ao-chat-admin-option.selected{background:linear-gradient(135deg,#f0f8ff,#e7f1ff)}
+ .ao-chat-admin-option-avatar{width:39px;height:39px;flex:0 0 39px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:linear-gradient(145deg,#38bdf8,#3658bb);color:#fff;font-size:16px;font-weight:950}
+ .ao-chat-admin-option-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+ .ao-chat-admin-option-copy strong{font-size:12px;font-weight:900;overflow-wrap:anywhere}
+ .ao-chat-admin-option-copy span{font-size:10px;color:#68809a;overflow-wrap:anywhere}
+ .ao-chat-admin-option-arrow{font-size:10px;font-weight:900;color:#2670bd;white-space:nowrap}
+ .ao-chat-admin-picker-loading,.ao-chat-admin-picker-empty{padding:24px 16px;text-align:center;font-size:12px;color:#6b8199;line-height:1.5}
+ .ao-chat-admin-picker-foot{padding:11px 17px 14px;border-top:1px solid #dce8f4;color:#71849a;font-size:10px;text-align:center}
+ @keyframes aoChatPickerFade{from{opacity:0}to{opacity:1}}
+ @media(max-width:420px){.ao-chat-admin-picker{padding:10px}.ao-chat-admin-picker-card{max-height:calc(100vh - 20px)}.ao-chat-admin-picker-head{padding:17px 15px 13px}.ao-chat-admin-picker-title{font-size:16px}}
+ `;
+ document.head.appendChild(style);
+}
+async function aoChatSend(){if(aoChatSending)return;const input=document.getElementById("aoChatInput"),text=String(input?.value||"").trim(),pendingImage=aoChatPendingImage,branch=aoChatBranch(),email=aoChatEmail(),admin=aoChatSelectedAdminEmail();if(!text&&!pendingImage)return;if(pendingImage&&!text){aoChatStatus("Please add a text message before sending a picture.");input?.focus();return;}if(!branch||!email){aoChatStatus("Please log in first.");return;}if(!admin){aoChatStatus("Choose an admin before sending a message.");aoChatOpenAdminPicker(false);return;}aoChatSending=true;const btn=document.getElementById("aoChatSend");if(btn)btn.disabled=true;aoChatStatus("Sending...");let uploadedImagePath="";try{let message=text;if(pendingImage){aoChatStatus("Uploading image…");uploadedImagePath=await aoChatUploadImage(pendingImage,text);message+=(message?"\n":"")+"[[AO_CHAT_IMAGE]]"+uploadedImagePath;}aoChatStatus("Sending...");await sbRequest("/rest/v1/chat_messages",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({branch:branch,scanner_email:email,sender_email:email,sender_type:"SCANNER",message:aoChatTagAdminMessage(message,admin)})});input.value="";aoChatClearPendingImage();aoChatStatus("");await aoChatLoad();}catch(e){console.error("Scanner chat send failed:",e);try{if(uploadedImagePath){await fetch(SUPABASE_URL+"/storage/v1/object/"+AO_CHAT_IMAGE_BUCKET+"/"+uploadedImagePath,{method:"DELETE",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}});}}catch(cleanupError){console.warn("Scanner chat image cleanup failed:",cleanupError);}aoChatStatus(e?.message||"Message could not be sent.");}finally{aoChatSending=false;if(btn)btn.disabled=false;}}
+document.addEventListener("DOMContentLoaded",()=>{aoChatEnsureAdminPickerStyles();const input=document.getElementById("aoChatInput");if(input)input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();aoChatSend();}});setTimeout(()=>{if(aoChatEmail()&&aoChatBranch()&&aoChatSelectedAdminEmail())aoChatLoad();},1500);if(!aoChatTimer)aoChatTimer=setInterval(()=>{if(!aoChatEditing&&aoChatEmail()&&aoChatBranch()&&aoChatSelectedAdminEmail())aoChatLoad();},3000);});
 </script>
 <!-- PRIVATE BRANCH <-> ADMIN CHAT -->
 <button id="aoChatFab" class="ao-chat-fab" type="button" onclick="aoChatToggle()" aria-label="Open chat">💬<span id="aoChatBadge" class="ao-chat-badge" style="display:none">0</span></button>
-<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Private conversation</div></div><button class="ao-chat-close" type="button" onclick="aoChatToggle()">✕</button></div><div class="ao-chat-search"><input id="aoChatSearchInput" class="ao-chat-search-input" type="search" maxlength="100" autocomplete="off" placeholder="Search conversation..."><span id="aoChatSearchCount" class="ao-chat-search-count"></span><button id="aoChatSearchClear" class="ao-chat-search-clear" type="button" aria-label="Clear search" title="Clear search">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><button id="aoVideoCallBtn" class="ao-video-call-btn" type="button" aria-label="Video call" title="Video call">📹</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message Admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
+<div id="aoChatPanel" class="ao-chat-panel" aria-hidden="true"><div class="ao-chat-head"><div><div class="ao-chat-title">Chat with Admin</div><div id="aoChatSub" class="ao-chat-sub">Choose an admin for a private conversation</div></div><div class="ao-chat-head-actions"><button id="aoChatSwitchAdmin" class="ao-chat-admin-switch" type="button" onclick="aoChatOpenAdminPicker(true)" title="Switch admin">⇄ Admin</button><button class="ao-chat-close" type="button" onclick="aoChatToggle()" aria-label="Close chat">✕</button></div></div><div class="ao-chat-search"><input id="aoChatSearchInput" class="ao-chat-search-input" type="search" maxlength="100" autocomplete="off" placeholder="Search conversation..."><span id="aoChatSearchCount" class="ao-chat-search-count"></span><button id="aoChatSearchClear" class="ao-chat-search-clear" type="button" aria-label="Clear search" title="Clear search">✕</button></div><div id="aoChatMessages" class="ao-chat-messages"><div class="ao-chat-empty">Loading conversation...</div></div><div id="aoChatImagePreview" class="ao-chat-image-preview" hidden><img id="aoChatImageThumb" class="ao-chat-image-thumb" alt="Selected image"><span id="aoChatImageName">Image selected</span><button id="aoChatImageRemove" class="ao-chat-image-remove" type="button" aria-label="Remove image" title="Remove image">×</button></div><div class="ao-chat-compose"><input id="aoChatImageInput" type="file" accept="image/*" hidden><input id="aoChatCaptureInput" type="file" accept="image/*" capture="environment" hidden><button id="aoChatAttach" class="ao-chat-attach" type="button" aria-label="Attach image" title="Attach image">📎</button><button id="aoChatEmoji" class="ao-chat-emoji" type="button" aria-label="Emoji" title="Emoji">😊</button><button id="aoVideoCallBtn" class="ao-video-call-btn" type="button" aria-label="Video call" title="Video call">📹</button><input id="aoChatInput" class="ao-chat-input" maxlength="500" autocomplete="off" placeholder="Message selected admin..."><button id="aoChatSend" class="ao-chat-send" type="button" onclick="aoChatSend()">➤</button></div><div id="aoChatStatus" class="ao-chat-status"></div></div>
 
 <script id="aoChatDocumentScannerScript">
 (function(){
@@ -9668,7 +9759,7 @@ async function confirmPullOutRequest(){
   }
   .ao-video-stage{
     min-height:0;
-    height:calc(100dvh - 155px);
+    height:calc(100vh - 155px);
   }
   .ao-video-local-wrap{width:34%;top:10px;left:10px}
   .ao-video-controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
