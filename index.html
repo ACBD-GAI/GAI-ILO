@@ -9770,7 +9770,8 @@ async function confirmPullOutRequest(){
   position:fixed;
   top:82px;
   right:18px;
-  z-index:27000;
+  /* Keep busy/offline call notices above the scanner chat panel (z-index:99989). */
+  z-index:100100 !important;
   width:min(380px,calc(100vw - 36px));
   display:grid;
   gap:10px;
