@@ -8203,7 +8203,7 @@ async function aoChatOpenAdminPicker(forceSwitch){
  aoChatEnsureAdminPickerStyles();
  const overlay=document.createElement("div");
  overlay.id="aoChatAdminPicker";overlay.className="ao-chat-admin-picker";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
- overlay.innerHTML='<div class="ao-chat-admin-picker-card"><div class="ao-chat-admin-picker-head"><div><div class="ao-chat-admin-picker-title">Choose an Admin</div><div class="ao-chat-admin-picker-sub">Messages and checked-image status are kept in separate admin conversations.</div></div><button type="button" class="ao-chat-admin-picker-close" aria-label="Close">×</button></div><div id="aoChatAdminPickerList" class="ao-chat-admin-picker-list"><div class="ao-chat-admin-picker-loading">Loading active administrators…</div></div><div class="ao-chat-admin-picker-foot">Select an administrator to open that private conversation.</div></div>';
+ overlay.innerHTML='<div class="ao-chat-admin-picker-card"><div class="ao-chat-admin-picker-head"><div><div class="ao-chat-admin-picker-title">Choose an Admin</div></div><button type="button" class="ao-chat-admin-picker-close" aria-label="Close">×</button></div><div id="aoChatAdminPickerList" class="ao-chat-admin-picker-list"><div class="ao-chat-admin-picker-loading">Loading active administrators…</div></div><div class="ao-chat-admin-picker-foot">Select an administrator to open that private conversation.</div></div>';
  document.body.appendChild(overlay);
  const close=()=>overlay.remove();
  overlay.querySelector(".ao-chat-admin-picker-close")?.addEventListener("click",close);
