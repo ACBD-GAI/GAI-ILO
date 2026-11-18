@@ -3667,6 +3667,13 @@ body::before{
 .si-camera-detected-value{display:block;margin:5px 0;color:#1e3a8a;font-size:25px;font-weight:950;letter-spacing:1.5px;overflow-wrap:anywhere}
 .si-camera-detected-actions{display:flex;gap:8px;margin-top:9px}
 .si-camera-detected-actions button{flex:1;min-width:0;min-height:42px;font-size:10px}
+.si-camera-alternatives{margin:9px 0 2px;padding:9px;border:1px solid #dbeafe;border-radius:10px;background:#fff;text-align:left}
+.si-camera-alternatives[hidden]{display:none !important}
+.si-camera-alternatives-label{margin-bottom:7px;color:#64748b;font-size:9px;font-weight:900;letter-spacing:.35px;line-height:1.35}
+.si-camera-alternatives-list{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.si-camera-alternative{min-height:35px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#334155;font-size:13px;font-weight:900;letter-spacing:1px;cursor:pointer}
+.si-camera-alternative.is-selected{border-color:#2563eb;background:#dbeafe;color:#1e3a8a;box-shadow:inset 0 0 0 1px #2563eb}
+.si-camera-alternative-hint{display:block;margin-top:6px;color:#64748b;font-size:9px;line-height:1.35;text-align:center}
 @media(max-width:600px){
   .si-entry-dialog{padding:18px;border-radius:19px}
   .si-camera-stage{width:min(100%,320px);max-width:320px;aspect-ratio:1 / 1;max-height:none}
@@ -3952,8 +3959,12 @@ style="display:none;">
           </div>
           <button id="siReadNowBtn" type="button" class="si-camera-read-btn" onclick="scanSiNumberNow()" disabled>PREPARING READER…</button>
           <div id="siDetectedWrap" class="si-camera-detected" hidden>
-            <div class="si-camera-detected-label">DETECTED SI NUMBER</div>
+            <div id="siDetectedLabel" class="si-camera-detected-label">DETECTED SI NUMBER — VERIFY EVERY DIGIT</div>
             <strong id="siDetectedValue" class="si-camera-detected-value"></strong>
+            <div id="siDetectedAlternatives" class="si-camera-alternatives" hidden>
+              <div class="si-camera-alternatives-label">OTHER POSSIBLE READINGS — TAP THE CORRECT ONE</div>
+              <div id="siDetectedAlternativesList" class="si-camera-alternatives-list"></div>
+            </div>
             <div class="si-camera-detected-actions">
               <button type="button" class="si-entry-back" onclick="scanSiNumberNow()">SCAN AGAIN</button>
               <button type="button" class="si-entry-submit" onclick="useDetectedSiNumber()">USE THIS NUMBER</button>
@@ -12695,8 +12706,59 @@ function aoVideoCreatePeer(){
     siLastOcrConfidence = 0;
     var wrap = byId("siDetectedWrap");
     var value = byId("siDetectedValue");
+    var label = byId("siDetectedLabel");
+    var alternatives = byId("siDetectedAlternatives");
+    var alternativesList = byId("siDetectedAlternativesList");
     if(wrap) wrap.hidden = true;
     if(value) value.textContent = "";
+    if(label) label.textContent = "DETECTED SI NUMBER — VERIFY EVERY DIGIT";
+    if(alternatives) alternatives.hidden = true;
+    if(alternativesList) alternativesList.textContent = "";
+  }
+
+  function selectSiOcrAlternative(value){
+    var clean = String(value || "").replace(/\D/g,"");
+    if(!/^\d{3,24}$/.test(clean)) return;
+    siDetectedCandidate = clean;
+    var display = byId("siDetectedValue");
+    if(display) display.textContent = clean;
+    var list = byId("siDetectedAlternativesList");
+    if(list){
+      Array.prototype.forEach.call(list.querySelectorAll(".si-camera-alternative"),function(button){
+        button.classList.toggle("is-selected",button.getAttribute("data-si-candidate") === clean);
+        button.setAttribute("aria-pressed",button.getAttribute("data-si-candidate") === clean ? "true" : "false");
+      });
+    }
+  }
+
+  function renderSiOcrAlternatives(options,selected){
+    var wrap = byId("siDetectedAlternatives");
+    var list = byId("siDetectedAlternativesList");
+    if(!wrap || !list) return;
+    list.textContent = "";
+    var unique = [];
+    (options || []).forEach(function(option){
+      var candidate = String(option && option.candidate || "");
+      if(/^\d{3,24}$/.test(candidate) && unique.indexOf(candidate) === -1) unique.push(candidate);
+    });
+    unique = unique.slice(0,4);
+    if(unique.length <= 1){wrap.hidden = true;return;}
+    unique.forEach(function(candidate){
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "si-camera-alternative";
+      button.textContent = candidate;
+      button.setAttribute("data-si-candidate",candidate);
+      button.setAttribute("aria-pressed",candidate === selected ? "true" : "false");
+      if(candidate === selected) button.classList.add("is-selected");
+      button.addEventListener("click",function(){selectSiOcrAlternative(candidate);});
+      list.appendChild(button);
+    });
+    var hint = document.createElement("span");
+    hint.className = "si-camera-alternative-hint";
+    hint.textContent = "Choose the reading that exactly matches the printed SI number.";
+    list.appendChild(hint);
+    wrap.hidden = false;
   }
 
   function stopSiCameraScan(){
@@ -12760,12 +12822,38 @@ function aoVideoCreatePeer(){
     return canvas;
   }
 
-  function makeSiOcrCanvases(){
+  function captureSiFrameCrop(){
+    /* Take ONE immutable still frame at the instant READ SI NO. is pressed.
+       Every OCR enhancement pass below is derived from this same captured frame,
+       never from a later/live camera frame. */
     var crop = getSiRectangleSourceCrop();
     if(!crop) return null;
 
+    var video = crop.video;
+    var frameCanvas = createSiOcrCanvas(video.videoWidth,video.videoHeight);
+    var frameContext = frameCanvas.getContext("2d",{willReadFrequently:true});
+    if(!frameContext) return null;
+    frameContext.drawImage(video,0,0,video.videoWidth,video.videoHeight);
+
+    /* Freeze the visible preview while the still image is being read. The camera
+       track stays active; the video is resumed after OCR so the user can retry. */
+    try{ video.pause(); }catch(pauseError){}
+
+    return {
+      source:frameCanvas,
+      sx:crop.sx,
+      sy:crop.sy,
+      sw:crop.sw,
+      sh:crop.sh
+    };
+  }
+
+  function makeSiOcrCanvases(){
+    var crop = captureSiFrameCrop();
+    if(!crop) return null;
+
     /* Use a larger source image for small printed digits. The crop still follows
-       the exact visible green rectangle and never changes the camera frame. */
+       the exact visible green rectangle and comes from the single frozen snapshot. */
     var targetWidth = Math.max(1800,Math.min(2400,Math.round(crop.sw * 3)));
     var scale = targetWidth / crop.sw;
     var outWidth = targetWidth;
@@ -12776,7 +12864,7 @@ function aoVideoCreatePeer(){
     sourceContext.fillRect(0,0,outWidth,outHeight);
     sourceContext.imageSmoothingEnabled = true;
     sourceContext.imageSmoothingQuality = "high";
-    sourceContext.drawImage(crop.video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outWidth,outHeight);
+    sourceContext.drawImage(crop.source,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outWidth,outHeight);
 
     var image = sourceContext.getImageData(0,0,outWidth,outHeight);
     var pixels = image.data;
@@ -12928,7 +13016,21 @@ function aoVideoCreatePeer(){
     }
     otsuContext.putImageData(otsuImage,0,0);
 
-    return {enhanced:enhancedCanvas,adaptive:adaptiveCanvas,otsu:otsuCanvas,brightness:average};
+    /* Inverted grayscale is a rescue image for faded, reversed, or unusually
+       low-contrast print. It is still derived from the exact same captured frame. */
+    var invertedCanvas = createSiOcrCanvas(outWidth,outHeight);
+    var invertedContext = invertedCanvas.getContext("2d",{willReadFrequently:true});
+    var invertedImage = invertedContext.createImageData(outWidth,outHeight);
+    for(var ii=0,ip=0;ii<total;ii++,ip+=4){
+      var iv = 255-enhanced[ii];
+      invertedImage.data[ip] = iv;
+      invertedImage.data[ip+1] = iv;
+      invertedImage.data[ip+2] = iv;
+      invertedImage.data[ip+3] = 255;
+    }
+    invertedContext.putImageData(invertedImage,0,0);
+
+    return {enhanced:enhancedCanvas,adaptive:adaptiveCanvas,otsu:otsuCanvas,inverted:invertedCanvas,brightness:average};
   }
 
   function getSiCandidate(text){
@@ -12936,6 +13038,52 @@ function aoVideoCreatePeer(){
        SI numbers remain variable length; no fixed five-digit assumption. */
     var digits = String(text || "").replace(/[^0-9]/g,"");
     return /^\d{3,24}$/.test(digits) ? digits : "";
+  }
+
+  function buildSiDigitConsensus(attempts){
+    /* Compare OCR outputs only when they report the same number of digits.
+       Each digit gets a confidence-weighted vote; ambiguous positions are not
+       guessed. A consensus is offered only when every position has a clear
+       majority, and it still requires the user's visual confirmation. */
+    var lengths = Object.create(null);
+    (attempts || []).forEach(function(item){
+      if(!item.candidate) return;
+      var key = String(item.candidate.length);
+      if(!lengths[key]) lengths[key] = [];
+      lengths[key].push(item);
+    });
+    var groups = Object.keys(lengths).map(function(key){
+      var items = lengths[key];
+      var average = items.reduce(function(sum,item){return sum + Number(item.confidence || 0);},0)/items.length;
+      return {items:items,length:Number(key),average:average};
+    }).sort(function(a,b){return b.items.length-a.items.length || b.average-a.average;});
+    var group = groups[0];
+    if(!group || group.items.length < 3) return null;
+
+    var result = "";
+    var weakestShare = 1;
+    var weakestVotes = group.items.length;
+    var minVotes = Math.ceil(group.items.length*0.60);
+    for(var position=0;position<group.length;position++){
+      var votes = Object.create(null);
+      var totals = Object.create(null);
+      group.items.forEach(function(item){
+        var digit = item.candidate.charAt(position);
+        var weight = Math.max(0.25,Math.min(1,Number(item.confidence || 0)/100));
+        votes[digit] = (votes[digit] || 0)+1;
+        totals[digit] = (totals[digit] || 0)+weight;
+      });
+      var rankedDigits = Object.keys(votes).map(function(digit){
+        return {digit:digit,count:votes[digit],weight:totals[digit]};
+      }).sort(function(a,b){return b.count-a.count || b.weight-a.weight;});
+      var top = rankedDigits[0];
+      var share = top ? top.count/group.items.length : 0;
+      if(!top || top.count < minVotes || share < 0.60) return null;
+      result += top.digit;
+      weakestShare = Math.min(weakestShare,share);
+      weakestVotes = Math.min(weakestVotes,top.count);
+    }
+    return {candidate:result,support:weakestVotes,share:weakestShare,average:group.average};
   }
 
   async function scanSiNumberNow(){
@@ -12959,14 +13107,18 @@ function aoVideoCreatePeer(){
     var detectedWrap = byId("siDetectedWrap");
     if(button){button.disabled = true;button.textContent = "SMART READING…";}
     if(detectedWrap) detectedWrap.hidden = true;
-    if(status) status.textContent = "Enhancing brightness, sharpening digits, and checking more than one image version…";
+    if(status) status.textContent = "Capturing one still image from the green scan area…";
 
     try{
       var canvases = makeSiOcrCanvases();
-      if(!canvases) throw new Error("Could not read the green scan area. Adjust the camera and try again.");
+      if(!canvases) throw new Error("Could not capture the green scan area. Adjust the camera and try again.");
+      if(status) status.textContent = "Photo captured. Reading that still image with brightness, contrast, and digit checks…";
 
       var attempts = [];
-      async function readVersion(canvas,label){
+      async function readVersion(canvas,label,pageMode){
+        if(pageMode != null){
+          await siOcrWorker.setParameters({tessedit_pageseg_mode:pageMode});
+        }
         var result = await siOcrWorker.recognize(canvas);
         if(generation !== siScanGeneration) return;
         var data = result && result.data ? result.data : {};
@@ -12974,24 +13126,45 @@ function aoVideoCreatePeer(){
         var confidence = Number(data.confidence || 0);
         attempts.push({candidate:candidate,confidence:confidence,label:label,text:data.text||""});
       }
+      function hasRepeatedCandidate(){
+        var seen = Object.create(null);
+        for(var n=0;n<attempts.length;n++){
+          var candidate = attempts[n].candidate;
+          if(candidate && (seen[candidate] = (seen[candidate] || 0)+1) >= 2) return true;
+        }
+        return false;
+      }
 
-      /* First pass: normalized brightness and sharpened grayscale. */
-      await readVersion(canvases.enhanced,"enhanced");
+      /* First compare the normal enhanced image and the local-shadow correction. */
+      await readVersion(canvases.enhanced,"enhanced grayscale",7);
       if(generation !== siScanGeneration) return;
-
-      /* Second pass: local thresholding, which can recover digits in shadows,
-         dim paper, uneven lighting, or low-contrast printing. */
-      await readVersion(canvases.adaptive,"adaptive");
+      await readVersion(canvases.adaptive,"adaptive lighting",7);
       if(generation !== siScanGeneration) return;
 
       var firstCandidates = attempts.filter(function(item){return !!item.candidate;});
       var firstAgree = firstCandidates.length >= 2 && firstCandidates[0].candidate === firstCandidates[1].candidate;
-      var firstStrong = firstCandidates.length === 1 && firstCandidates[0].confidence >= 78;
+      var firstStrong = firstCandidates.length === 1 && firstCandidates[0].confidence >= 88;
       if(!firstAgree && !firstStrong){
-        if(status) status.textContent = "Checking a third high-contrast version to avoid missing or mixing digits…";
-        await readVersion(canvases.otsu,"otsu");
+        if(status) status.textContent = "The first reads are not clear. Trying additional contrast and digit-recognition modes…";
+        await readVersion(canvases.otsu,"high-contrast threshold",7);
         if(generation !== siScanGeneration) return;
+
+        /* Treat the SI as one printed number, then as a raw text line. These
+           segmentation modes can recover a faint or tightly spaced digit. */
+        if(!hasRepeatedCandidate()){
+          await readVersion(canvases.enhanced,"single-number mode",8);
+          if(generation !== siScanGeneration) return;
+          await readVersion(canvases.adaptive,"raw-line mode",13);
+          if(generation !== siScanGeneration) return;
+        }
+        /* Inversion is a final rescue for faint or unusual print only. */
+        if(!hasRepeatedCandidate()){
+          await readVersion(canvases.inverted,"inverted contrast",7);
+          if(generation !== siScanGeneration) return;
+        }
       }
+      /* Restore the default single-line mode for the next scan. */
+      await siOcrWorker.setParameters({tessedit_pageseg_mode:7});
 
       var grouped = Object.create(null);
       attempts.forEach(function(item){
@@ -13005,55 +13178,88 @@ function aoVideoCreatePeer(){
       var ranked = Object.keys(grouped).map(function(key){
         var group = grouped[key];
         group.average = group.total/group.count;
-        group.score = group.count*100 + group.average + group.max*0.15;
+        group.score = group.count*110 + group.average + group.max*0.15;
         return group;
       }).sort(function(a,b){return b.score-a.score;});
 
       var best = ranked[0] || null;
       var second = ranked[1] || null;
+      var consensus = buildSiDigitConsensus(attempts);
+      var suggested = consensus ? consensus.candidate : (best ? best.candidate : "");
       var accepted = false;
       var verifiedBy = "";
-      if(best){
+      if(consensus){
+        accepted = true;
+        verifiedBy = "digit-consensus";
+      }else if(best){
         if(best.count >= 2){
           accepted = true;
           verifiedBy = "cross-checked";
-        }else if(attempts.length === 2 && best.max >= 78 && !second){
-          accepted = true;
-          verifiedBy = "high-confidence";
-        }else if(attempts.length >= 3 && best.max >= 88 && (!second || second.max < 45)){
+        }else if(best.max >= 88 && (!second || second.max < 45)){
           accepted = true;
           verifiedBy = "high-confidence";
         }
       }
 
-      if(!accepted){
+      if(!suggested){
         clearDetected();
-        if(status){
-          status.textContent = ranked.length
-            ? "The image versions read different digits. Hold the phone steady, make the number fill the green box, improve the light, then tap READ SI NO. again."
-            : "No complete SI number detected. Move closer, brighten the paper, fit every digit inside the green box, and scan again.";
-        }
+        if(status) status.textContent = "No complete SI number detected. Move closer, reduce glare, fit every digit inside the green box, and scan again.";
         return;
       }
 
-      siDetectedCandidate = best.candidate;
-      siLastOcrConfidence = best.average;
+      /* Even when OCR cannot confidently decide, show the readings it actually
+         produced so the user can select the one that matches the printed number. */
+      siDetectedCandidate = suggested;
+      siLastOcrConfidence = consensus ? consensus.average : (best ? best.average : 0);
       var detectedValue = byId("siDetectedValue");
-      if(detectedValue) detectedValue.textContent = best.candidate;
+      var detectedLabel = byId("siDetectedLabel");
+      if(detectedValue) detectedValue.textContent = suggested;
+      if(detectedLabel){
+        detectedLabel.textContent = consensus
+          ? "SMART DIGIT-BY-DIGIT ESTIMATE — VERIFY EVERY DIGIT"
+          : (accepted ? "DETECTED SI NUMBER — VERIFY EVERY DIGIT" : "POSSIBLE SI READINGS — SELECT THE CORRECT ONE");
+      }
+      var alternatives = [];
+      if(consensus) alternatives.push({candidate:consensus.candidate});
+      ranked.forEach(function(item){alternatives.push({candidate:item.candidate});});
+      renderSiOcrAlternatives(alternatives,suggested);
       if(detectedWrap) detectedWrap.hidden = false;
       if(status){
-        status.textContent = verifiedBy === "cross-checked"
-          ? "Smart read confirmed by " + best.count + " image checks. Verify every digit, then tap USE THIS NUMBER."
-          : "Smart read completed with high confidence. Please verify every digit before using this number.";
+        if(verifiedBy === "digit-consensus"){
+          status.textContent = "Digits were compared position by position across " + attempts.length + " image checks. Please verify the full SI number before using it.";
+        }else if(verifiedBy === "cross-checked"){
+          status.textContent = "The same number appeared in " + best.count + " image checks. Verify every digit before using it.";
+        }else if(verifiedBy === "high-confidence"){
+          status.textContent = "One reading looks clearer than the others. Check every digit before using it.";
+        }else{
+          status.textContent = "The image checks disagree. Choose the correct reading below, or scan again with the number closer and sharper.";
+        }
       }
+
     }catch(error){
       console.error("SI OCR ERROR:",error);
       if(status) status.textContent = error?.message || "Unable to read the SI number. Improve the light, adjust the camera, and try again.";
     }finally{
+      try{if(siOcrWorker) await siOcrWorker.setParameters({tessedit_pageseg_mode:7});}catch(parameterResetError){}
       siOcrBusy = false;
-      if(generation === siScanGeneration && button){
-        button.disabled = !siOcrWorker;
-        button.textContent = "READ SI NO. AGAIN";
+      if(generation === siScanGeneration){
+        /* Resume the live preview only after all OCR versions have been read.
+           The captured still remains the source for this entire recognition run. */
+        var previewVideo = byId("siCameraVideo");
+        if(previewVideo && siStream && previewVideo.srcObject === siStream && previewVideo.paused){
+          try{
+            var resumePromise = previewVideo.play();
+            if(resumePromise && typeof resumePromise.catch === "function") resumePromise.catch(function(error){
+              console.debug("SI preview resume was blocked:",error);
+            });
+          }catch(resumeError){
+            console.debug("SI preview could not resume automatically:",resumeError);
+          }
+        }
+        if(button){
+          button.disabled = !siOcrWorker;
+          button.textContent = "READ SI NO. AGAIN";
+        }
       }
     }
   }
