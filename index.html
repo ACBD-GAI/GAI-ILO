@@ -3963,7 +3963,7 @@ style="display:none;">
             <strong id="siDetectedValue" class="si-camera-detected-value"></strong>
             <div class="si-camera-detected-actions">
               <button type="button" class="si-entry-back" onclick="scanSiNumberNow()">SCAN AGAIN</button>
-              <button type="button" class="si-entry-submit" onclick="useDetectedSiNumber()">USE THIS NUMBER</button>
+              <button id="siUseDetectedBtn" type="button" class="si-entry-submit" onclick="useDetectedSiNumber()" disabled>USE THIS NUMBER</button>
             </div>
           </div>
           <div class="si-entry-actions">
@@ -12561,6 +12561,7 @@ function aoVideoCreatePeer(){
   var siOcrBusy = false;
   var siScanGeneration = 0;
   var siDetectedCandidate = "";
+  var siDetectedReliable = false;
   var siLastOcrConfidence = 0;
   var siOcrCanvas = null;
   var siOcrContext = null;
@@ -12699,13 +12700,16 @@ function aoVideoCreatePeer(){
 
   function clearDetected(){
     siDetectedCandidate = "";
+    siDetectedReliable = false;
     siLastOcrConfidence = 0;
     var wrap = byId("siDetectedWrap");
     var value = byId("siDetectedValue");
     var label = byId("siDetectedLabel");
+    var useButton = byId("siUseDetectedBtn");
     if(wrap) wrap.hidden = true;
     if(value) value.textContent = "";
     if(label) label.textContent = "HIGHEST-CONFIDENCE READING — VERIFY EVERY DIGIT";
+    if(useButton) useButton.disabled = true;
   }
 
   function stopSiCameraScan(){
@@ -12727,6 +12731,11 @@ function aoVideoCreatePeer(){
 
   function acceptDetectedSiNumber(){
     if(!siDetectedCandidate) return;
+    if(!siDetectedReliable){
+      var status = byId("siCameraStatus");
+      if(status) status.textContent = "The pen marks or unclear digits prevented a reliable full-number match. Please scan again with the number closer and clearer, or type the SI number manually. The suggested reading was not accepted.";
+      return;
+    }
     var value = siDetectedCandidate;
     setSiNoValue(value);
     closeSiEntryDialog();
@@ -13225,6 +13234,198 @@ function aoVideoCreatePeer(){
     return {adaptive:adaptiveCanvas,otsu:otsuCanvas,otsuThreshold:otsuThreshold};
   }
 
+  function makeSiPenAwareCanvases(canvases){
+    /*
+       Pen-aware recognition: read the original colour crop through each RGB
+       channel separately. Black printed digits stay dark in every channel,
+       while blue/red/green pen ink becomes lighter in at least one channel.
+       The MAX-RGB view is an additional colour-ink suppression candidate.
+       These are alternate OCR views only; the source image is never changed.
+    */
+    if(!canvases) return [];
+    var sourceCanvas = canvases.natural || canvases.enhanced;
+    if(!sourceCanvas) return [];
+    var width = sourceCanvas.width, height = sourceCanvas.height;
+    var sourceContext = sourceCanvas.getContext("2d",{willReadFrequently:true});
+    if(!sourceContext) return [];
+    var source = sourceContext.getImageData(0,0,width,height).data;
+    var total = width * height;
+    var specs = [
+      {name:"red-channel",index:0},
+      {name:"green-channel",index:1},
+      {name:"blue-channel",index:2},
+      {name:"colour-ink-suppressed",index:3}
+    ];
+    var outputs = [];
+
+    specs.forEach(function(spec){
+      var values = new Uint8Array(total);
+      var histogram = new Uint32Array(256);
+      for(var i=0,p=0;i<source.length;i+=4,p++){
+        var v = spec.index === 3
+          ? Math.max(source[i],source[i+1],source[i+2])
+          : source[i+spec.index];
+        values[p] = v;
+        histogram[v]++;
+      }
+      function percentile(target){
+        var count=0;
+        for(var level=0;level<256;level++){
+          count += histogram[level];
+          if(count >= target) return level;
+        }
+        return 255;
+      }
+      var low = percentile(Math.max(1,Math.floor(total*0.01)));
+      var high = percentile(Math.max(1,Math.floor(total*0.995)));
+      if(high-low < 28){low=Math.max(0,low-10);high=Math.min(255,high+10);}
+      var canvas = createSiOcrCanvas(width,height);
+      var context = canvas.getContext("2d",{willReadFrequently:true});
+      if(!context) return;
+      var image = context.createImageData(width,height);
+      for(var n=0;n<total;n++){
+        var adjusted = Math.max(0,Math.min(255,Math.round((values[n]-low)*255/Math.max(1,high-low))));
+        var q=n*4;
+        image.data[q]=adjusted;
+        image.data[q+1]=adjusted;
+        image.data[q+2]=adjusted;
+        image.data[q+3]=255;
+      }
+      context.putImageData(image,0,0);
+      outputs.push({canvas:canvas,label:spec.name});
+    });
+    return outputs;
+  }
+
+  function makeSiLineReducedCanvas(canvases){
+    /*
+       Conservative geometric rescue for long, thin pen strokes (including
+       dark/black strokes that RGB separation cannot remove). A Hough-style
+       line search finds only long, substantially continuous marks. The line
+       is erased in THIS rescue copy only; all untouched colour and grayscale
+       views remain available so a digit stroke is not lost from every pass.
+       Short digit strokes are intentionally below the length threshold.
+    */
+    if(!canvases || !canvases.enhanced) return null;
+    var sourceCanvas=canvases.enhanced;
+    var sourceWidth=sourceCanvas.width,sourceHeight=sourceCanvas.height;
+    var maxWorkWidth=680;
+    var scale=Math.min(1,maxWorkWidth/sourceWidth);
+    var workWidth=Math.max(1,Math.round(sourceWidth*scale));
+    var workHeight=Math.max(1,Math.round(sourceHeight*scale));
+    var workCanvas=createSiOcrCanvas(workWidth,workHeight);
+    var workContext=workCanvas.getContext("2d",{willReadFrequently:true});
+    if(!workContext) return null;
+    workContext.drawImage(sourceCanvas,0,0,workWidth,workHeight);
+    var rgba=workContext.getImageData(0,0,workWidth,workHeight).data;
+    var total=workWidth*workHeight;
+    var gray=new Uint8Array(total),histogram=new Uint32Array(256);
+    for(var i=0,p=0;i<rgba.length;i+=4,p++){
+      var value=Math.round(rgba[i]*0.299+rgba[i+1]*0.587+rgba[i+2]*0.114);
+      gray[p]=value;histogram[value]++;
+    }
+    var totalSum=0;
+    for(var h=0;h<256;h++) totalSum+=h*histogram[h];
+    var bgWeight=0,bgSum=0,bestVariance=-1,threshold=110;
+    for(var level=0;level<256;level++){
+      bgWeight+=histogram[level];
+      if(!bgWeight) continue;
+      var fgWeight=total-bgWeight;
+      if(!fgWeight) break;
+      bgSum+=level*histogram[level];
+      var meanBg=bgSum/bgWeight;
+      var meanFg=(totalSum-bgSum)/fgWeight;
+      var variance=bgWeight*fgWeight*Math.pow(meanBg-meanFg,2);
+      if(variance>bestVariance){bestVariance=variance;threshold=level;}
+    }
+    threshold=Math.max(45,Math.min(175,threshold));
+    var dark=[];
+    for(var y=0;y<workHeight;y++){
+      var row=y*workWidth;
+      for(var x=0;x<workWidth;x++){
+        if(gray[row+x] < threshold) dark.push({x:x,y:y});
+      }
+    }
+    if(dark.length<80) return null;
+
+    var diagonal=Math.ceil(Math.sqrt(workWidth*workWidth+workHeight*workHeight));
+    var rhoSize=diagonal*2+3;
+    var candidates=[];
+    var minVotes=Math.max(42,Math.round(Math.min(workWidth,workHeight)*0.48));
+    for(var degrees=-75;degrees<=75;degrees+=5){
+      var radians=degrees*Math.PI/180;
+      var cosine=Math.cos(radians),sine=Math.sin(radians);
+      var accumulator=new Uint16Array(rhoSize);
+      for(var d=0;d<dark.length;d++){
+        var point=dark[d];
+        var rho=Math.round(point.x*cosine+point.y*sine)+diagonal;
+        if(rho>=0 && rho<rhoSize && accumulator[rho]<65535) accumulator[rho]++;
+      }
+      var peakIndex=-1,peakVotes=0;
+      for(var a=0;a<accumulator.length;a++){
+        if(accumulator[a]>peakVotes){peakVotes=accumulator[a];peakIndex=a;}
+      }
+      if(peakIndex<0 || peakVotes<minVotes) continue;
+      var peakRho=peakIndex-diagonal;
+      var minT=Infinity,maxT=-Infinity;
+      var projected=[];
+      for(var d2=0;d2<dark.length;d2++){
+        var pt=dark[d2];
+        var distance=Math.abs(pt.x*cosine+pt.y*sine-peakRho);
+        if(distance<=1.65){
+          var t=-pt.x*sine+pt.y*cosine;
+          minT=Math.min(minT,t);maxT=Math.max(maxT,t);
+          projected.push(t);
+        }
+      }
+      var span=maxT-minT;
+      var minimumSpan=Math.max(workWidth*0.14,workHeight*0.62,68);
+      if(span<minimumSpan) continue;
+      var bins=new Uint8Array(Math.max(1,Math.ceil(span)+1));
+      var occupied=0;
+      for(var tIndex=0;tIndex<projected.length;tIndex++){
+        var bin=Math.max(0,Math.min(bins.length-1,Math.round(projected[tIndex]-minT)));
+        if(!bins[bin]){bins[bin]=1;occupied++;}
+      }
+      var continuity=occupied/Math.max(1,bins.length);
+      if(continuity<0.38) continue;
+      var duplicate=candidates.some(function(existing){
+        return Math.abs(existing.degrees-degrees)<=5 &&
+          Math.abs(existing.rho-peakRho)<=4;
+      });
+      if(!duplicate){
+        candidates.push({degrees:degrees,rho:peakRho,minT:minT,maxT:maxT,votes:peakVotes,continuity:continuity});
+      }
+    }
+    if(!candidates.length) return null;
+    candidates.sort(function(a,b){return b.votes-a.votes;});
+    candidates=candidates.slice(0,3);
+
+    var output=createSiOcrCanvas(sourceWidth,sourceHeight);
+    var outputContext=output.getContext("2d");
+    if(!outputContext) return null;
+    outputContext.drawImage(sourceCanvas,0,0);
+    var upScale=sourceWidth/workWidth;
+    candidates.forEach(function(line){
+      var theta=line.degrees*Math.PI/180;
+      var cosine=Math.cos(theta),sine=Math.sin(theta);
+      var x1=line.rho*cosine-line.minT*sine;
+      var y1=line.rho*sine+line.minT*cosine;
+      var x2=line.rho*cosine-line.maxT*sine;
+      var y2=line.rho*sine+line.maxT*cosine;
+      outputContext.save();
+      outputContext.strokeStyle="#fff";
+      outputContext.lineWidth=Math.max(3.2,upScale*3.8);
+      outputContext.lineCap="round";
+      outputContext.beginPath();
+      outputContext.moveTo(x1*upScale,y1*upScale);
+      outputContext.lineTo(x2*upScale,y2*upScale);
+      outputContext.stroke();
+      outputContext.restore();
+    });
+    return output;
+  }
+
   function summarizeSiReadings(attempts){
     /* Never invent a number by voting digit-by-digit. The selected value must
        be a complete number actually returned by OCR. A consensus requires at
@@ -13243,6 +13444,11 @@ function aoVideoCreatePeer(){
     var groups=Object.keys(counts).map(function(key){
       var group=counts[key];
       group.averageConfidence=group.confidenceTotal/group.count;
+      group.families=[];
+      group.items.forEach(function(item){
+        var family=item.family || "base";
+        if(group.families.indexOf(family)<0) group.families.push(family);
+      });
       return group;
     });
     groups.sort(function(a,b){
@@ -13250,13 +13456,14 @@ function aoVideoCreatePeer(){
     });
     var best=groups[0];
     var agreement=Math.round(best.count/valid.length*100);
-    var consensus=best.count>=3 && best.count>valid.length/2;
+    var consensus=best.count>=4 && best.count>valid.length/2 && best.families.length>=2;
     return {
       candidate:best.candidate,
       confidence:best.averageConfidence,
       agreement:agreement,
       consensus:consensus,
       exactAgreement:best.count,
+      matchingMethods:best.families.length,
       reads:valid.length,
       validReads:valid.length,
       length:best.candidate.length
@@ -13363,23 +13570,27 @@ function aoVideoCreatePeer(){
     var detectedWrap=byId("siDetectedWrap");
     if(button){button.disabled=true;button.textContent="CAPTURING…";}
     if(detectedWrap) detectedWrap.hidden=true;
+    siDetectedReliable=false;
+    var useButton=byId("siUseDetectedBtn");
+    if(useButton) useButton.disabled=true;
 
     try{
       if(status) status.textContent="Checking that the camera preview is live…";
       await ensureSiCameraFrame(video);
       if(generation!==siScanGeneration) return;
-      if(status) status.textContent="Capturing SI number and preparing multiple reading views…";
+      if(status) status.textContent="Capturing the SI number and separating possible pen marks…";
       var canvases=makeSiOcrCanvases();
       if(!canvases) throw new Error("Could not capture the green scan area. Adjust the camera and try again.");
+
       var tightCanvases=makeSiTightCanvases(canvases);
       var thresholds=makeSiThresholdCanvases(canvases);
+      var penCanvases=makeSiPenAwareCanvases(canvases);
+      var lineReducedCanvas=makeSiLineReducedCanvas(canvases);
       var attempts=[];
 
-      async function readOnce(canvas,label,pageMode){
+      async function readOnce(canvas,label,pageMode,family){
         if(!canvas || generation!==siScanGeneration) return null;
         try{
-          /* Different page-segmentation modes help when digits touch, separate,
-             or are printed as one long line. The numeric whitelist stays active. */
           await siOcrWorker.setParameters({tessedit_pageseg_mode:String(pageMode)});
           if(generation!==siScanGeneration) return null;
           var result=await siOcrWorker.recognize(canvas);
@@ -13390,7 +13601,8 @@ function aoVideoCreatePeer(){
             candidate:parsed.candidate,
             confidence:Number(parsed.confidence||data.confidence||0),
             label:label,
-            pageMode:pageMode
+            pageMode:pageMode,
+            family:family || "base"
           };
           attempts.push(item);
           return item;
@@ -13400,66 +13612,87 @@ function aoVideoCreatePeer(){
         }
       }
 
-      if(button) button.textContent="READING 1/3…";
-      if(status) status.textContent="Reading the contrast-balanced image…";
-      await readOnce(canvases.enhanced,"contrast-balanced",7);
+      /* Original views preserve the printed digit shapes without colour filtering. */
+      if(button) button.textContent="READING ORIGINAL…";
+      if(status) status.textContent="Reading the original contrast-balanced number…";
+      await readOnce(canvases.enhanced,"contrast-balanced",7,"base");
       if(generation!==siScanGeneration) return;
-
-      if(button) button.textContent="READING 2/5…";
-      if(status) status.textContent="Reading a tighter, lightly corrected crop…";
-      if(tightCanvases) await readOnce(tightCanvases.gray,"tight-grayscale",7);
-      if(generation!==siScanGeneration) return;
-
-      if(button) button.textContent="READING 3/5…";
-      if(status) status.textContent="Checking the tightly cropped digit shapes…";
-      if(tightCanvases) await readOnce(tightCanvases.otsu,"tight-otsu",8);
-      if(generation!==siScanGeneration) return;
-
-      if(button) button.textContent="READING 4/5…";
-      if(status) status.textContent="Checking a locally thresholded view of the digits…";
-      if(thresholds) await readOnce(thresholds.adaptive,"adaptive-threshold",7);
-      if(generation!==siScanGeneration) return;
-
-      if(button) button.textContent="READING 5/5…";
-      if(status) status.textContent="Checking a shadow-corrected view…";
+      if(tightCanvases){
+        if(status) status.textContent="Checking a tighter grayscale crop…";
+        await readOnce(tightCanvases.gray,"tight-grayscale",7,"base");
+        if(generation!==siScanGeneration) return;
+        if(status) status.textContent="Checking the tightly cropped digit edges…";
+        await readOnce(tightCanvases.otsu,"tight-otsu",8,"threshold");
+        if(generation!==siScanGeneration) return;
+      }
+      if(thresholds){
+        if(status) status.textContent="Checking local contrast around faint printed digits…";
+        await readOnce(thresholds.adaptive,"adaptive-threshold",7,"threshold");
+        if(generation!==siScanGeneration) return;
+      }
       var shadowCanvas=makeSiShadowCanvas(canvases);
-      if(shadowCanvas) await readOnce(shadowCanvas,"shadow-corrected",13);
-      if(generation!==siScanGeneration) return;
+      if(shadowCanvas){
+        if(status) status.textContent="Checking a shadow-corrected view…";
+        await readOnce(shadowCanvas,"shadow-corrected",13,"shadow");
+        if(generation!==siScanGeneration) return;
+      }
+
+      /*
+         Colour-separated views: blue pen fades in the blue channel, red pen
+         fades in the red channel, green pen fades in the green channel. The
+         max-RGB view suppresses saturated coloured ink while retaining neutral
+         black print. They are candidate views, never destructive edits.
+      */
+      for(var pc=0;pc<penCanvases.length;pc++){
+        if(button) button.textContent="CHECKING PEN MARKS "+(pc+1)+"/"+penCanvases.length+"…";
+        if(status) status.textContent="Separating coloured pen strokes from the printed digits…";
+        await readOnce(penCanvases[pc].canvas,penCanvases[pc].label,7,"colour");
+        if(generation!==siScanGeneration) return;
+      }
+
+      /* Additional, conservative rescue view for long dark strokes. */
+      if(lineReducedCanvas){
+        if(status) status.textContent="Checking whether a long pen stroke crosses the number…";
+        await readOnce(lineReducedCanvas,"long-stroke-reduced",7,"line");
+        if(generation!==siScanGeneration) return;
+      }
 
       var preliminary=summarizeSiReadings(attempts);
-      var needsRescue=!preliminary || !preliminary.consensus || preliminary.confidence<68 || preliminary.validReads<3;
+      var needsRescue=!preliminary || !preliminary.consensus || preliminary.confidence<68 || preliminary.validReads<4;
       if(needsRescue){
-        if(status) status.textContent="The first readings differ. Comparing additional threshold and text-line readings…";
+        if(status) status.textContent="Some readings still disagree. Comparing additional digit-shape readings…";
         if(button) button.textContent="CHECKING UNCLEAR DIGITS…";
-        if(thresholds) await readOnce(thresholds.otsu,"global-threshold",8);
+        if(thresholds) await readOnce(thresholds.otsu,"global-threshold",8,"threshold");
         if(generation!==siScanGeneration) return;
-        await readOnce(canvases.enhanced,"alternate-text-line",8);
+        await readOnce(canvases.enhanced,"alternate-text-line",13,"base");
         if(generation!==siScanGeneration) return;
       }
 
       var best=summarizeSiReadings(attempts);
       if(!best){
         clearDetected();
-        if(status) status.textContent="No complete SI number could be read. Move closer, steady the camera, and keep the entire printed number inside the green box.";
+        if(status) status.textContent="No complete SI number could be read. Move closer, steady the camera, and keep every digit inside the green box.";
         return;
       }
 
       siDetectedCandidate=best.candidate;
+      siDetectedReliable=!!best.consensus;
       siLastOcrConfidence=best.agreement;
       var detectedValue=byId("siDetectedValue");
       var detectedLabel=byId("siDetectedLabel");
       if(detectedValue) detectedValue.textContent=best.candidate;
       if(detectedLabel){
         detectedLabel.textContent=best.consensus
-          ? "REPEATED FULL-NUMBER MATCH — VERIFY BEFORE USING"
-          : "UNCERTAIN OCR READING — VERIFY EVERY DIGIT";
+          ? "CROSS-METHOD FULL-NUMBER MATCH — VERIFY BEFORE USING"
+          : "UNCERTAIN — PEN MARK OR DIGIT SHAPE MAY BE OBSCURED";
       }
       if(detectedWrap) detectedWrap.hidden=false;
+      if(useButton) useButton.disabled=!best.consensus;
       if(status){
         if(best.consensus){
-          status.textContent=best.exactAgreement+" of "+best.validReads+" complete OCR readings returned the same full SI number. This is a repeated match, not a guarantee; verify the printed digits.";
+          status.textContent=best.exactAgreement+" of "+best.validReads+" complete OCR readings agree, using "+best.matchingMethods+" different processing methods. This is a strong match, but still compare it with the printed SI number.";
         }else{
-          status.textContent="OCR did not produce a reliable majority (best full-number match: "+best.exactAgreement+" of "+best.validReads+"). The displayed value is only the most repeated actual reading. Scan again or type the SI number if any digit is unclear.";
+          status.textContent="The OCR readings do not agree across enough independent processing methods ("+best.exactAgreement+" of "+best.validReads+" matched). This suggested number is NOT enabled for automatic use. Scan again or type the SI number manually.";
         }
       }
     }catch(error){
@@ -13468,12 +13701,10 @@ function aoVideoCreatePeer(){
     }finally{
       siOcrBusy=false;
       if(generation===siScanGeneration){
-        /* Leave the same SI camera session ready for another reading. */
         var previewVideo=byId("siCameraVideo");
         if(previewVideo&&siStream&&previewVideo.srcObject===siStream){
-          try{
-            await ensureSiCameraFrame(previewVideo);
-          }catch(resumeError){
+          try{await ensureSiCameraFrame(previewVideo);}
+          catch(resumeError){
             console.debug("SI preview did not return to a live frame:",resumeError);
             if(status) status.textContent=""+(status.textContent||"")+" Camera preview needs to be reopened before another reading.";
           }
