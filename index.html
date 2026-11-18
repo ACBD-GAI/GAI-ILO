@@ -3623,7 +3623,8 @@ body::before{
 .si-camera-target{
   position:absolute;
   left:50%;top:50%;
-  width:88%;
+  /* Starts at half the square preview width; the slider below can widen it. */
+  width:44%;
   aspect-ratio:2.8 / 1;
   transform:translate(-50%,-50%);
   border:3px solid #22c55e;
@@ -3632,6 +3633,14 @@ body::before{
   box-shadow:0 0 0 999px rgba(2,6,23,.38), inset 0 0 0 1px rgba(255,255,255,.35);
   pointer-events:none;
 }
+.si-camera-size-control{
+  width:min(100%,360px);margin:9px auto 0;padding:9px 11px;
+  border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;
+}
+.si-camera-size-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px;color:#475569;font-size:11px;font-weight:800}
+.si-camera-size-value{color:#15803d;font-weight:900;font-variant-numeric:tabular-nums}
+.si-camera-size-control input[type=range]{display:block;width:100%;height:22px;margin:0;padding:0;accent-color:#16a34a;cursor:pointer}
+.si-camera-size-help{margin-top:2px;color:#94a3b8;font-size:9px;line-height:1.35}
 .si-camera-target::after{
   content:"";
   position:absolute;
@@ -3661,7 +3670,7 @@ body::before{
 @media(max-width:600px){
   .si-entry-dialog{padding:18px;border-radius:19px}
   .si-camera-stage{width:min(100%,320px);max-width:320px;aspect-ratio:1 / 1;max-height:none}
-  .si-camera-target{width:88%;aspect-ratio:2.8 / 1}
+  .si-camera-target{width:44%;aspect-ratio:2.8 / 1}
   .si-entry-trigger{min-height:58px;margin-top:14px}
   .si-entry-main strong{font-size:13px}
   .si-entry-actions{gap:7px}
@@ -3928,6 +3937,15 @@ style="display:none;">
           <div id="siCameraStage" class="si-camera-stage">
             <video id="siCameraVideo" autoplay muted playsinline></video>
             <div id="siCameraTarget" class="si-camera-target" aria-hidden="true"></div>
+          </div>
+          <div class="si-camera-size-control">
+            <div class="si-camera-size-heading">
+              <label for="siScanWidth">GREEN SCAN WIDTH</label>
+              <output id="siScanWidthValue" class="si-camera-size-value" for="siScanWidth">44%</output>
+            </div>
+            <input id="siScanWidth" type="range" min="35" max="88" step="1" value="44"
+                   aria-label="Adjust the horizontal width of the green SI scanning rectangle">
+            <div class="si-camera-size-help">Slide left to make the green box narrower, or right to fit longer SI numbers.</div>
           </div>
           <div id="siCameraStatus" class="si-camera-status" role="status" aria-live="polite">
             Opening rear camera…
@@ -12935,6 +12953,24 @@ function aoVideoCreatePeer(){
   window.scanSiNumberNow = scanSiNumberNow;
   window.useDetectedSiNumber = acceptDetectedSiNumber;
   window.setSiNoValue = setSiNoValue;
+
+  /* Keep the green OCR rectangle adjustable without changing the square camera frame.
+     The OCR crop is calculated from the rectangle's actual on-screen bounds, so it
+     automatically follows this width setting. */
+  var siScanWidth = byId("siScanWidth");
+  var siScanWidthValue = byId("siScanWidthValue");
+  var siCameraTarget = byId("siCameraTarget");
+  function updateSiScanWidth(value){
+    var width = Math.max(35,Math.min(88,Number(value) || 44));
+    if(siCameraTarget) siCameraTarget.style.width = width + "%";
+    if(siScanWidthValue) siScanWidthValue.textContent = width + "%";
+  }
+  if(siScanWidth){
+    updateSiScanWidth(siScanWidth.value);
+    siScanWidth.addEventListener("input",function(){
+      updateSiScanWidth(siScanWidth.value);
+    });
+  }
 
   var overlay = byId("siEntryOverlay");
   if(overlay){
