@@ -3615,11 +3615,25 @@ body::before{
 }
 .si-camera-stage video{
   display:block;
+  position:relative;
+  z-index:1;
   width:100%;
   height:100%;
   object-fit:cover;
   object-position:50% 50%;
 }
+/* The enhanced capture remains visible over the live camera until the next scan. */
+.si-camera-captured-preview{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  display:block;
+  width:100%;
+  height:100%;
+  background:#0b1220;
+  object-fit:contain;
+}
+.si-camera-captured-preview[hidden]{display:none !important}
 .si-camera-target{
   position:absolute;
   left:50%;top:50%;
@@ -3943,6 +3957,7 @@ style="display:none;">
           </p>
           <div id="siCameraStage" class="si-camera-stage">
             <video id="siCameraVideo" autoplay muted playsinline></video>
+            <canvas id="siCapturedPreview" class="si-camera-captured-preview" hidden aria-label="Enhanced SI number photo"></canvas>
             <div id="siCameraTarget" class="si-camera-target" aria-hidden="true"></div>
           </div>
           <div class="si-camera-size-control">
@@ -12712,7 +12727,64 @@ function aoVideoCreatePeer(){
     if(useButton) useButton.disabled = true;
   }
 
+  function showSiLivePreview(){
+    var preview=byId("siCapturedPreview");
+    var video=byId("siCameraVideo");
+    var target=byId("siCameraTarget");
+    if(preview){
+      preview.hidden=true;
+      var previewContext=preview.getContext("2d");
+      if(previewContext) previewContext.clearRect(0,0,preview.width,preview.height);
+    }
+    if(video) video.style.visibility="visible";
+    if(target) target.style.display="";
+  }
+
+  function showSiCapturedPreview(sourceCanvas){
+    var preview=byId("siCapturedPreview");
+    var stage=byId("siCameraStage");
+    var video=byId("siCameraVideo");
+    var target=byId("siCameraTarget");
+    if(!preview || !sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return;
+
+    /* Render the exact enhanced crop used by OCR as a large, undistorted still.
+       The square camera frame acts as a holder; the rectangular SI photo keeps
+       its natural proportions and is not stretched to fill the square. */
+    var side=Math.max(720,Math.min(1200,Math.round((stage ? stage.clientWidth : 360)*2.5)));
+    preview.width=side;
+    preview.height=side;
+    var ctx=preview.getContext("2d",{willReadFrequently:false});
+    if(!ctx) return;
+    ctx.fillStyle="#0b1220";
+    ctx.fillRect(0,0,side,side);
+
+    var pad=side*0.055;
+    var maxWidth=side-pad*2;
+    var maxHeight=side*0.58;
+    var scale=Math.min(maxWidth/sourceCanvas.width,maxHeight/sourceCanvas.height);
+    var drawWidth=Math.max(1,sourceCanvas.width*scale);
+    var drawHeight=Math.max(1,sourceCanvas.height*scale);
+    var drawX=(side-drawWidth)/2;
+    var drawY=(side-drawHeight)/2;
+
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,.35)";
+    ctx.shadowBlur=side*0.018;
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(drawX-2,drawY-2,drawWidth+4,drawHeight+4);
+    ctx.restore();
+    ctx.drawImage(sourceCanvas,drawX,drawY,drawWidth,drawHeight);
+    ctx.strokeStyle="#22c55e";
+    ctx.lineWidth=Math.max(3,side*0.006);
+    ctx.strokeRect(drawX,drawY,drawWidth,drawHeight);
+
+    preview.hidden=false;
+    if(video) video.style.visibility="hidden";
+    if(target) target.style.display="none";
+  }
+
   function stopSiCameraScan(){
+    showSiLivePreview();
     siScanGeneration++;
     siCameraStarting = false;
     siOcrBusy = false;
@@ -13006,6 +13078,47 @@ function aoVideoCreatePeer(){
       illuminationRange:illuminationRange,
       shadow:null
     };
+  }
+
+  function makeSiClarityCanvas(sourceCanvas){
+    if(!sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return null;
+    var width=sourceCanvas.width,height=sourceCanvas.height;
+    var sourceContext=sourceCanvas.getContext("2d",{willReadFrequently:true});
+    if(!sourceContext) return sourceCanvas;
+    var source=sourceContext.getImageData(0,0,width,height);
+    var output=createSiOcrCanvas(width,height);
+    var outputContext=output.getContext("2d",{willReadFrequently:true});
+    if(!outputContext) return sourceCanvas;
+    var result=outputContext.createImageData(width,height);
+    var src=source.data,dst=result.data;
+
+    /* A mild unsharp mask clarifies printed edges without thresholding the
+       characters or erasing thin strokes. This is deliberately conservative
+       to avoid turning paper texture into fake digit edges. */
+    for(var y=0;y<height;y++){
+      for(var x=0;x<width;x++){
+        var index=(y*width+x)*4;
+        var center=src[index];
+        var total=0,count=0;
+        for(var oy=-1;oy<=1;oy++){
+          for(var ox=-1;ox<=1;ox++){
+            if(ox===0 && oy===0) continue;
+            var nx=x+ox,ny=y+oy;
+            if(nx<0 || ny<0 || nx>=width || ny>=height) continue;
+            total+=src[(ny*width+nx)*4];
+            count++;
+          }
+        }
+        var localAverage=count ? total/count : center;
+        var sharpened=Math.max(0,Math.min(255,Math.round(center+(center-localAverage)*0.45)));
+        dst[index]=sharpened;
+        dst[index+1]=sharpened;
+        dst[index+2]=sharpened;
+        dst[index+3]=255;
+      }
+    }
+    outputContext.putImageData(result,0,0);
+    return output;
   }
 
   function makeSiShadowCanvas(canvases){
@@ -13563,6 +13676,8 @@ function aoVideoCreatePeer(){
       return;
     }
 
+    /* A new read request is the only event that removes the previous still. */
+    showSiLivePreview();
     siOcrBusy=true;
     var generation=siScanGeneration;
     var button=byId("siReadNowBtn");
@@ -13581,6 +13696,12 @@ function aoVideoCreatePeer(){
       if(status) status.textContent="Capturing the SI number and separating possible pen marks…";
       var canvases=makeSiOcrCanvases();
       if(!canvases) throw new Error("Could not capture the green scan area. Adjust the camera and try again.");
+
+      /* Prepare a clearer, gently sharpened version before OCR begins. Show
+         this same enhanced photo on screen and keep it there after recognition. */
+      var clarityCanvas=makeSiClarityCanvas(canvases.enhanced) || canvases.enhanced;
+      showSiCapturedPreview(clarityCanvas);
+      if(status) status.textContent="Enhanced SI photo captured. Analyzing the clearer image… The photo will remain visible until the next scan.";
 
       var tightCanvases=makeSiTightCanvases(canvases);
       var thresholds=makeSiThresholdCanvases(canvases);
@@ -13612,9 +13733,14 @@ function aoVideoCreatePeer(){
         }
       }
 
-      /* Original views preserve the printed digit shapes without colour filtering. */
-      if(button) button.textContent="READING ORIGINAL…";
-      if(status) status.textContent="Reading the original contrast-balanced number…";
+      /* Start with the clarity-enhanced photo visible to the user and OCR. */
+      if(button) button.textContent="READING CLEAR PHOTO…";
+      if(status) status.textContent="Reading the clearer, sharpened SI photo…";
+      await readOnce(clarityCanvas,"clarity-sharpened",7,"base");
+      if(generation!==siScanGeneration) return;
+
+      /* Original contrast-balanced view is retained as an independent check. */
+      if(status) status.textContent="Comparing with the original contrast-balanced image…";
       await readOnce(canvases.enhanced,"contrast-balanced",7,"base");
       if(generation!==siScanGeneration) return;
       if(tightCanvases){
