@@ -3636,6 +3636,7 @@ body::before{
 .si-camera-captured-preview[hidden]{display:none !important}
 .si-camera-target{
   position:absolute;
+  z-index:4; /* Keep the green guide above both live video and the held photo. */
   left:50%;top:50%;
   /* Starts at half the square preview width; the slider below can widen it. */
   width:44%;
@@ -12745,12 +12746,16 @@ function aoVideoCreatePeer(){
     var stage=byId("siCameraStage");
     var video=byId("siCameraVideo");
     var target=byId("siCameraTarget");
-    if(!preview || !sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return;
+    if(!preview || !stage || !target || !sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return;
 
-    /* Render the exact enhanced crop used by OCR as a large, undistorted still.
-       The square camera frame acts as a holder; the rectangular SI photo keeps
-       its natural proportions and is not stretched to fill the square. */
-    var side=Math.max(720,Math.min(1200,Math.round((stage ? stage.clientWidth : 360)*2.5)));
+    /* Keep the captured SI crop in the SAME position and dimensions as the
+       green guide. The live video is hidden, but the green guide itself stays
+       visible above the held photo while OCR runs and after it finishes. */
+    var stageRect=stage.getBoundingClientRect();
+    var targetRect=target.getBoundingClientRect();
+    if(!stageRect.width || !stageRect.height || !targetRect.width || !targetRect.height) return;
+
+    var side=Math.max(720,Math.min(1200,Math.round(stageRect.width*2.5)));
     preview.width=side;
     preview.height=side;
     var ctx=preview.getContext("2d",{willReadFrequently:false});
@@ -12758,29 +12763,32 @@ function aoVideoCreatePeer(){
     ctx.fillStyle="#0b1220";
     ctx.fillRect(0,0,side,side);
 
-    var pad=side*0.055;
-    var maxWidth=side-pad*2;
-    var maxHeight=side*0.58;
-    var scale=Math.min(maxWidth/sourceCanvas.width,maxHeight/sourceCanvas.height);
-    var drawWidth=Math.max(1,sourceCanvas.width*scale);
-    var drawHeight=Math.max(1,sourceCanvas.height*scale);
-    var drawX=(side-drawWidth)/2;
-    var drawY=(side-drawHeight)/2;
+    /* Map the visible green target from CSS pixels into the still canvas.
+       This keeps the photo aligned beneath the original green rectangle even
+       when the user changes the scan-width slider. */
+    var scaleX=side/stageRect.width;
+    var scaleY=side/stageRect.height;
+    var drawX=(targetRect.left-stageRect.left)*scaleX;
+    var drawY=(targetRect.top-stageRect.top)*scaleY;
+    var drawWidth=targetRect.width*scaleX;
+    var drawHeight=targetRect.height*scaleY;
+    var inset=Math.max(2,Math.round(3*scaleX));
 
-    ctx.save();
-    ctx.shadowColor="rgba(0,0,0,.35)";
-    ctx.shadowBlur=side*0.018;
     ctx.fillStyle="#ffffff";
-    ctx.fillRect(drawX-2,drawY-2,drawWidth+4,drawHeight+4);
-    ctx.restore();
-    ctx.drawImage(sourceCanvas,drawX,drawY,drawWidth,drawHeight);
-    ctx.strokeStyle="#22c55e";
-    ctx.lineWidth=Math.max(3,side*0.006);
-    ctx.strokeRect(drawX,drawY,drawWidth,drawHeight);
+    ctx.fillRect(drawX,drawY,drawWidth,drawHeight);
+    ctx.drawImage(
+      sourceCanvas,
+      drawX+inset,
+      drawY+inset,
+      Math.max(1,drawWidth-inset*2),
+      Math.max(1,drawHeight-inset*2)
+    );
 
     preview.hidden=false;
     if(video) video.style.visibility="hidden";
-    if(target) target.style.display="none";
+    /* Do NOT hide the target: the green border and its centre line are the
+       permanent guide, including while the captured photo is being displayed. */
+    target.style.display="";
   }
 
   function stopSiCameraScan(){
