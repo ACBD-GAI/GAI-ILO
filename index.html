@@ -3597,19 +3597,18 @@ body::before{
 .si-entry-submit{color:#fff !important;background:linear-gradient(135deg,#60a5fa,#2563eb) !important;box-shadow:0 7px 17px rgba(37,99,235,.18) !important}
 .si-entry-message{min-height:17px;margin-top:8px;color:#dc2626;font-size:11px;font-weight:700}
 .si-camera-instruction{margin:0 0 12px;color:#64748b;font-size:11px;line-height:1.5}
-/* Camera preview with a compact SQUARE SI-number aiming guide. */
+/* SI camera layout: SQUARE outer camera preview + WIDE RECTANGULAR green OCR window inside. */
 .si-camera-instruction{
   margin:0 0 12px;color:#64748b;font-size:11px;line-height:1.5;text-align:center;
 }
 .si-camera-stage{
   position:relative;
-  width:100%;
-  max-width:420px;
-  aspect-ratio:4 / 3;
-  max-height:330px;
+  width:min(100%,360px);
+  aspect-ratio:1 / 1;
+  max-height:none;
   margin:0 auto;
   overflow:hidden;
-  border-radius:16px;
+  border-radius:18px;
   background:#0b1220;
   border:1px solid #334155;
   box-shadow:0 12px 28px rgba(15,23,42,.18);
@@ -3624,19 +3623,19 @@ body::before{
 .si-camera-target{
   position:absolute;
   left:50%;top:50%;
-  width:min(70%,230px);
-  aspect-ratio:1 / 1;
+  width:88%;
+  aspect-ratio:2.8 / 1;
   transform:translate(-50%,-50%);
   border:3px solid #22c55e;
-  border-radius:12px;
+  border-radius:10px;
   background:transparent;
-  box-shadow:0 0 0 999px rgba(2,6,23,.34), inset 0 0 0 1px rgba(255,255,255,.35);
+  box-shadow:0 0 0 999px rgba(2,6,23,.38), inset 0 0 0 1px rgba(255,255,255,.35);
   pointer-events:none;
 }
 .si-camera-target::after{
   content:"";
   position:absolute;
-  left:10%;right:10%;top:50%;
+  left:3%;right:3%;top:50%;
   border-top:1px dashed rgba(255,255,255,.9);
   transform:translateY(-50%);
 }
@@ -3661,8 +3660,8 @@ body::before{
 .si-camera-detected-actions button{flex:1;min-width:0;min-height:42px;font-size:10px}
 @media(max-width:600px){
   .si-entry-dialog{padding:18px;border-radius:19px}
-  .si-camera-stage{width:100%;max-width:360px;aspect-ratio:4 / 3;max-height:290px}
-  .si-camera-target{width:min(72%,220px)}
+  .si-camera-stage{width:min(100%,320px);max-width:320px;aspect-ratio:1 / 1;max-height:none}
+  .si-camera-target{width:88%;aspect-ratio:2.8 / 1}
   .si-entry-trigger{min-height:58px;margin-top:14px}
   .si-entry-main strong{font-size:13px}
   .si-entry-actions{gap:7px}
@@ -3924,7 +3923,7 @@ style="display:none;">
 
         <div id="siCameraSection" class="si-entry-section" hidden>
           <p class="si-camera-instruction">
-            Place the COMPLETE SI number inside the small square. Keep all digits visible and align them with the center guide. Move the document closer or farther until the number fits.
+            The OUTER camera preview is square. Fit the COMPLETE SI number inside the WIDE GREEN RECTANGLE in the middle. Keep every digit visible from first to last; do not include the branch name or nearby rows.
           </p>
           <div id="siCameraStage" class="si-camera-stage">
             <video id="siCameraVideo" autoplay muted playsinline></video>
@@ -12520,7 +12519,7 @@ function aoVideoCreatePeer(){
 
 <script>
 /* =========================================================
-   SI NUMBER ENTRY POPUP + SQUARE-FRAME OCR
+   SI NUMBER ENTRY POPUP + SQUARE CAMERA / RECTANGULAR OCR WINDOW
    This module ONLY enters a value into the original #siNo field.
    OCR runs only when READ SI NO. is tapped; no continuous OCR loop,
    no SI search, no inventory lookup, and no save action.
@@ -12706,7 +12705,7 @@ function aoVideoCreatePeer(){
     closeSiEntryDialog();
   }
 
-  function getSquareSourceCrop(){
+  function getSiRectangleSourceCrop(){
     var video = byId("siCameraVideo");
     var stage = byId("siCameraStage");
     var target = byId("siCameraTarget");
@@ -12716,8 +12715,8 @@ function aoVideoCreatePeer(){
     var targetRect = target.getBoundingClientRect();
     if(!stageRect.width || !stageRect.height || !targetRect.width || !targetRect.height) return null;
 
-    /* Convert the visible square guide into source-video pixels, accounting
-       for CSS object-fit:cover and its centered crop. */
+    /* Convert the visible GREEN RECTANGLE into source-video pixels, accounting
+       for the square preview's object-fit:cover and its centered crop. */
     var scale = Math.max(stageRect.width / video.videoWidth, stageRect.height / video.videoHeight);
     var renderedWidth = video.videoWidth * scale;
     var renderedHeight = video.videoHeight * scale;
@@ -12737,17 +12736,16 @@ function aoVideoCreatePeer(){
   }
 
   function makeSiOcrCanvas(){
-    var crop = getSquareSourceCrop();
+    var crop = getSiRectangleSourceCrop();
     if(!crop) return null;
 
-    /* User centers the digits on the dashed guide. OCR takes only a horizontal
-       band through the center of the square, not the surrounding document. */
-    var bandY = crop.sy + crop.sh * 0.31;
-    var bandHeight = crop.sh * 0.38;
-    var targetWidth = 1100;
+    /* OCR reads the exact wide green rectangle, not a guessed band inside it.
+       This keeps the camera preview square while the recognition area stays
+       horizontal and wide enough for long SI numbers. */
+    var targetWidth = 1400;
     var scale = targetWidth / crop.sw;
     var outWidth = targetWidth;
-    var outHeight = Math.max(160,Math.round(bandHeight * scale));
+    var outHeight = Math.max(120,Math.round(crop.sh * scale));
 
     if(!siOcrCanvas){
       siOcrCanvas = document.createElement("canvas");
@@ -12761,13 +12759,13 @@ function aoVideoCreatePeer(){
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.filter = "grayscale(1) contrast(1.45) brightness(1.06)";
-    ctx.drawImage(crop.video,crop.sx,bandY,crop.sw,bandHeight,0,0,outWidth,outHeight);
+    ctx.drawImage(crop.video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outWidth,outHeight);
     ctx.filter = "none";
     return siOcrCanvas;
   }
 
   function getSiCandidate(text){
-    /* The square contains the SI digits only. Merge OCR groups so a split such
+    /* The green rectangle contains the SI digits only. Merge OCR groups so a split such
        as "45 658" does not lose leading or trailing digits. Variable lengths
        are accepted; no five-digit assumption is used. */
     var digits = String(text || "").replace(/[^0-9]/g,"");
@@ -12812,7 +12810,7 @@ function aoVideoCreatePeer(){
         if(status){
           status.textContent = candidate
             ? "The number is not clear enough yet. Hold steady, move closer, and tap READ SI NO. again."
-            : "No complete SI number detected. Fit every digit inside the square and tap READ SI NO. again.";
+            : "No complete SI number detected. Fit every digit inside the green rectangle and tap READ SI NO. again.";
         }
         return;
       }
@@ -12858,7 +12856,7 @@ function aoVideoCreatePeer(){
     var readerReady = ensureSiOcrWorker().then(function(){
       if(generation !== siScanGeneration) return;
       setReadButton(true,"READ SI NO.");
-      if(status) status.textContent = "Aim the SI digits inside the square. Tap READ SI NO. when ready.";
+      if(status) status.textContent = "Keep the complete SI number inside the wide green rectangle. Tap READ SI NO. when ready.";
     }).catch(function(error){
       console.error("SI OCR INITIALIZATION ERROR:",error);
       if(generation === siScanGeneration){
@@ -12907,7 +12905,7 @@ function aoVideoCreatePeer(){
         console.debug("SI camera focus constraints not supported:",focusError);
       }
 
-      if(status && !siOcrWorker && !siOcrInitError) status.textContent = "Camera ready. Preparing the reader… Keep the SI digits inside the square.";
+      if(status && !siOcrWorker && !siOcrInitError) status.textContent = "Camera ready. Preparing the reader… Keep the complete SI number inside the green rectangle.";
     }catch(error){
       console.error("SI CAMERA ERROR:",error);
       stopSiCameraScan();
