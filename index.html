@@ -3597,18 +3597,38 @@ body::before{
 .si-entry-submit{color:#fff !important;background:linear-gradient(135deg,#60a5fa,#2563eb) !important;box-shadow:0 7px 17px rgba(37,99,235,.18) !important}
 .si-entry-message{min-height:17px;margin-top:8px;color:#dc2626;font-size:11px;font-weight:700}
 .si-camera-instruction{margin:0 0 12px;color:#64748b;font-size:11px;line-height:1.5}
+/* The SI camera is deliberately a small, wide viewfinder. Everything
+   visible inside this rectangle is the ONLY area sent to OCR. */
 .si-camera-stage{
-  position:relative;width:100%;max-width:100%;margin:0 auto;overflow:hidden;
-  border-radius:14px;background:#0f172a;border:1px solid #cbd5e1;
+  position:relative;
+  width:100%;
+  max-width:430px;
+  aspect-ratio:3.15 / 1;
+  min-height:94px;
+  max-height:140px;
+  margin:0 auto;
+  overflow:hidden;
+  border-radius:13px;
+  background:#0b1220;
+  border:2px solid #60a5fa;
+  box-shadow:0 0 0 4px rgba(96,165,250,.10),0 12px 28px rgba(15,23,42,.16);
 }
-.si-camera-stage video{display:block;width:100%;height:100%;object-fit:fill}
+.si-camera-stage video{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center center;
+}
 .si-camera-target{
-  position:absolute;top:72%;right:2.5%;width:47%;height:20%;display:flex;
-  align-items:flex-start;justify-content:flex-end;padding:3px;
-  border:2px dashed #38bdf8;border-radius:7px;background:rgba(56,189,248,.08);
-  box-shadow:0 0 0 9999px rgba(15,23,42,.08);pointer-events:none;
+  position:absolute;
+  inset:0;
+  border:3px solid #22c55e;
+  border-radius:10px;
+  background:transparent;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);
+  pointer-events:none;
 }
-.si-camera-target span{padding:3px 6px;border-radius:5px;color:#fff;background:#0284c7;font-size:8px;font-weight:900;letter-spacing:.5px}
 .si-camera-status{
   min-height:34px;margin-top:10px;padding:9px 10px;color:#475569;
   background:#f1f5f9;border-radius:10px;font-size:11px;font-weight:700;line-height:1.45;
@@ -3869,19 +3889,19 @@ style="display:none;">
                  autocomplete="off" maxlength="24" placeholder="Type SI number here">
           <div class="si-entry-actions">
             <button type="button" class="si-entry-back" onclick="showSiEntryChoices()">BACK</button>
-            <button type="button" class="si-entry-submit" onclick="submitSiManual()">SEARCH SI</button>
+            <button type="button" class="si-entry-submit" onclick="submitSiManual()">ENTER SI NO.</button>
           </div>
           <div id="siManualMessage" class="si-entry-message" aria-live="polite"></div>
         </div>
 
         <div id="siCameraSection" class="si-entry-section" hidden>
           <p class="si-camera-instruction">
-            Keep the document upright. Move it until the printed SI number at the bottom-right
-            is inside the guide. The number will be read automatically.
+            Bring the printed SI number close to the camera and place the digits inside this small rectangle.
+            Keep the digits straight and hold steady. The number will be entered automatically.
           </p>
           <div id="siCameraStage" class="si-camera-stage">
             <video id="siCameraVideo" autoplay muted playsinline></video>
-            <div class="si-camera-target" aria-hidden="true"><span>SI NUMBER</span></div>
+            <div class="si-camera-target" aria-hidden="true"></div>
           </div>
           <div id="siCameraStatus" class="si-camera-status" role="status" aria-live="polite">
             Starting camera…
@@ -12464,10 +12484,9 @@ function aoVideoCreatePeer(){
 
 <script>
 /* =========================================================
-   SI NUMBER ENTRY POPUP + AUTOMATIC DOCUMENT OCR
-   The recognized number is written into the original #siNo field.
-   Existing Search SI, inventory scan, and tag functions keep
-   their current data/API paths.
+   SI NUMBER ENTRY POPUP + SMALL-FRAME OCR
+   This module ONLY enters a value into the original #siNo field.
+   It deliberately does not invoke any search or inventory/API function.
 ========================================================= */
 (function(){
   "use strict";
@@ -12498,11 +12517,12 @@ function aoVideoCreatePeer(){
   }
 
   function setSiNoValue(value){
-    var clean = String(value || "").trim();
+    var clean = String(value || "").replace(/\s+/g,"").trim();
     var input = byId("siNo");
     if(input){
       input.value = clean;
       input.dispatchEvent(new Event("input",{bubbles:true}));
+      input.dispatchEvent(new Event("change",{bubbles:true}));
     }
     var label = byId("siNoEntryValue");
     if(label){
@@ -12540,25 +12560,29 @@ function aoVideoCreatePeer(){
     var message = byId("siManualMessage");
     if(message) message.textContent = "";
     if(input){
-      input.value = (byId("siNo")?.value || "");
+      input.value = byId("siNo")?.value || "";
       window.setTimeout(function(){ input.focus(); },50);
     }
   }
 
-  async function submitSiManual(){
+  function submitSiManual(){
     var input = byId("siManualInput");
     var message = byId("siManualMessage");
-    var value = String(input?.value || "").trim();
+    var value = String(input?.value || "").replace(/\s+/g,"").trim();
     if(!value){
       if(message) message.textContent = "Please type the SI number.";
       input?.focus();
       return;
     }
+    if(!/^\d{1,24}$/.test(value)){
+      if(message) message.textContent = "Enter the SI number using digits only.";
+      input?.focus();
+      return;
+    }
+
+    /* Entry only: set the existing value and close. No searching or saving. */
     setSiNoValue(value);
     closeSiEntryDialog();
-    if(typeof window.searchSI === "function"){
-      await window.searchSI();
-    }
   }
 
   function loadTesseract(){
@@ -12571,7 +12595,7 @@ function aoVideoCreatePeer(){
       script.async = true;
       script.onload = function(){
         if(window.Tesseract) resolve(window.Tesseract);
-        else reject(new Error("The number reader could not be initialized."));
+        else reject(new Error("The SI number reader could not be initialized."));
       };
       script.onerror = function(){
         siOcrScriptPromise = null;
@@ -12586,65 +12610,137 @@ function aoVideoCreatePeer(){
     if(siOcrWorker) return siOcrWorker;
     var Tesseract = await loadTesseract();
     var status = byId("siCameraStatus");
-    if(status) status.textContent = "Loading number reader for first use…";
+    if(status) status.textContent = "Loading the SI number reader for first use…";
     siOcrWorker = await Tesseract.createWorker("eng",1);
     await siOcrWorker.setParameters({
       tessedit_char_whitelist:"0123456789",
-      tessedit_pageseg_mode:6
+      tessedit_pageseg_mode:7,
+      classify_bln_numeric_mode:1,
+      user_defined_dpi:300,
+      preserve_interword_spaces:"0"
     });
     return siOcrWorker;
   }
 
   function resizeSiCameraStage(){
-    var video = byId("siCameraVideo");
     var stage = byId("siCameraStage");
-    if(!video || !stage || !video.videoWidth || !video.videoHeight) return;
-
-    var ratio = video.videoWidth / video.videoHeight;
-    var parent = stage.parentElement;
-    var maxWidth = Math.max(220,(parent?.clientWidth || (window.innerWidth - 70)));
-    var maxHeight = Math.max(240,window.innerHeight * 0.58);
-    var height = Math.min(maxHeight,maxWidth / ratio);
-    var width = height * ratio;
-    stage.style.width = Math.floor(width) + "px";
-    stage.style.height = Math.floor(height) + "px";
+    if(!stage) return;
+    /* The CSS aspect-ratio keeps a consistent wide SI-only scan window. */
+    stage.style.height = "";
   }
 
-  function makeSiOcrCanvas(){
+  function getVisibleVideoCrop(){
     var video = byId("siCameraVideo");
-    if(!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
+    var stage = byId("siCameraStage");
+    if(!video || !stage || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
 
-    /* The SI field is normally at the lower-right of the laboratory copy.
-       OCR reads this camera-frame area directly; it does not need a red box. */
-    var sx = Math.floor(video.videoWidth * 0.50);
-    var sy = Math.floor(video.videoHeight * 0.72);
-    var sw = Math.floor(video.videoWidth * 0.48);
-    var sh = Math.floor(video.videoHeight * 0.20);
+    /* Match object-fit:cover exactly, so OCR uses only the pixels visible
+       inside the small green SI-number rectangle shown to the user. */
+    var stageWidth = stage.clientWidth || 320;
+    var stageHeight = stage.clientHeight || Math.round(stageWidth / 3.15);
+    var stageAspect = stageWidth / stageHeight;
+    var videoAspect = video.videoWidth / video.videoHeight;
+    var sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
 
-    var scale = Math.min(4,Math.max(1.8,1450 / Math.max(sw,1)));
-    var canvas = document.createElement("canvas");
-    canvas.width = Math.max(1,Math.floor(sw * scale));
-    canvas.height = Math.max(1,Math.floor(sh * scale));
-    var context = canvas.getContext("2d",{willReadFrequently:true});
-    context.filter = "grayscale(100%) contrast(135%)";
-    context.drawImage(video,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
-    context.filter = "none";
-    return canvas;
+    if(videoAspect > stageAspect){
+      sw = Math.round(video.videoHeight * stageAspect);
+      sx = Math.round((video.videoWidth - sw) / 2);
+    }else{
+      sh = Math.round(video.videoWidth / stageAspect);
+      sy = Math.round((video.videoHeight - sh) / 2);
+    }
+
+    return {video:video,sx:sx,sy:sy,sw:sw,sh:sh};
+  }
+
+  function makeSiOcrCanvases(){
+    var crop = getVisibleVideoCrop();
+    if(!crop) return null;
+
+    /* Upscale the viewfinder region so the printed numerals occupy more
+       OCR pixels. Add a white margin to keep the outer camera frame out. */
+    var targetWidth = 1800;
+    var scale = Math.max(1.5,Math.min(5,targetWidth / crop.sw));
+    var width = Math.max(1,Math.round(crop.sw * scale));
+    var height = Math.max(1,Math.round(crop.sh * scale));
+    var margin = Math.max(35,Math.round(width * 0.035));
+
+    var sourceCanvas = document.createElement("canvas");
+    sourceCanvas.width = width;
+    sourceCanvas.height = height;
+    var sourceContext = sourceCanvas.getContext("2d",{willReadFrequently:true});
+    sourceContext.imageSmoothingEnabled = true;
+    sourceContext.imageSmoothingQuality = "high";
+    sourceContext.drawImage(crop.video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,width,height);
+
+    var image = sourceContext.getImageData(0,0,width,height);
+    var pixels = image.data;
+    var histogram = new Uint32Array(256);
+    var grayValues = new Uint8Array(width * height);
+
+    /* Convert to grayscale and gently increase contrast, retaining detail
+       from the ink strokes instead of aggressively crushing shadows. */
+    for(var i=0,j=0;i<pixels.length;i+=4,j++){
+      var gray = Math.round(0.299*pixels[i] + 0.587*pixels[i+1] + 0.114*pixels[i+2]);
+      gray = Math.max(0,Math.min(255,Math.round((gray - 128) * 1.42 + 137)));
+      grayValues[j] = gray;
+      histogram[gray]++;
+      pixels[i] = pixels[i+1] = pixels[i+2] = gray;
+      pixels[i+3] = 255;
+    }
+    sourceContext.putImageData(image,0,0);
+
+    /* Otsu threshold: a second high-contrast version helps with printed
+       black digits on a light form under uneven room lighting. */
+    var total = grayValues.length;
+    var sum = 0;
+    for(var h=0;h<256;h++) sum += h * histogram[h];
+    var sumBackground = 0, weightBackground = 0, bestVariance = -1, threshold = 150;
+    for(var t=0;t<256;t++){
+      weightBackground += histogram[t];
+      if(!weightBackground) continue;
+      var weightForeground = total - weightBackground;
+      if(!weightForeground) break;
+      sumBackground += t * histogram[t];
+      var meanBackground = sumBackground / weightBackground;
+      var meanForeground = (sum - sumBackground) / weightForeground;
+      var variance = weightBackground * weightForeground * Math.pow(meanBackground - meanForeground,2);
+      if(variance > bestVariance){ bestVariance = variance; threshold = t; }
+    }
+
+    var binaryCanvas = document.createElement("canvas");
+    binaryCanvas.width = width;
+    binaryCanvas.height = height;
+    var binaryContext = binaryCanvas.getContext("2d");
+    var binaryImage = binaryContext.createImageData(width,height);
+    for(var k=0,q=0;k<grayValues.length;k++,q+=4){
+      var value = grayValues[k] > threshold ? 255 : 0;
+      binaryImage.data[q] = binaryImage.data[q+1] = binaryImage.data[q+2] = value;
+      binaryImage.data[q+3] = 255;
+    }
+    binaryContext.putImageData(binaryImage,0,0);
+
+    function addMargin(inputCanvas){
+      var padded = document.createElement("canvas");
+      padded.width = inputCanvas.width + margin * 2;
+      padded.height = inputCanvas.height + margin * 2;
+      var ctx = padded.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0,0,padded.width,padded.height);
+      ctx.drawImage(inputCanvas,margin,margin);
+      return padded;
+    }
+
+    return {gray:addMargin(sourceCanvas),binary:addMargin(binaryCanvas)};
   }
 
   function getSiCandidate(text){
-    var normalized = String(text || "").replace(/[Oo]/g,"0");
-    var matches = normalized.match(/\d{4,8}/g) || [];
-
-    /* Prefer a 5-digit SI number, as in the supplied laboratory-copy example. */
-    var fiveDigit = matches.find(function(value){ return value.length === 5; });
-    if(fiveDigit) return fiveDigit;
-    if(matches.length === 1) return matches[0];
-
-    /* OCR can occasionally split one printed number with a space/newline. */
-    var compact = normalized.replace(/[^0-9]/g,"");
-    if(compact.length >= 4 && compact.length <= 8) return compact;
-    return "";
+    var normalized = String(text || "").replace(/[OoQD]/g,"0").replace(/[Il|]/g,"1");
+    var matches = normalized.match(/\d{3,12}/g) || [];
+    if(!matches.length) return "";
+    /* The scan window contains only the SI number; use the longest digit run. */
+    matches.sort(function(a,b){ return b.length - a.length; });
+    return matches[0];
   }
 
   function stopSiCameraScan(){
@@ -12667,7 +12763,6 @@ function aoVideoCreatePeer(){
       });
       siStream = null;
     }
-
     siLastCandidate = "";
     siCandidateCount = 0;
   }
@@ -12676,17 +12771,15 @@ function aoVideoCreatePeer(){
     if(!siOcrActive) return;
     siOcrActive = false;
     stopSiCameraScan();
+    /* Entry only: populate #siNo and close. Never run the Search SI action. */
     setSiNoValue(value);
     closeSiEntryDialog();
-    if(typeof window.searchSI === "function"){
-      window.setTimeout(function(){ window.searchSI(); },120);
-    }
   }
 
   async function runSiOcrLoop(generation){
     if(!siOcrActive || generation !== siScanGeneration) return;
     if(siOcrBusy){
-      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },500);
+      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },350);
       return;
     }
 
@@ -12694,13 +12787,26 @@ function aoVideoCreatePeer(){
     if(video && video.readyState >= 2){
       siOcrBusy = true;
       try{
-        var canvas = makeSiOcrCanvas();
-        if(canvas){
-          var result = await siOcrWorker.recognize(canvas);
-          if(!siOcrActive || generation !== siScanGeneration) return;
+        var canvases = makeSiOcrCanvases();
+        if(canvases){
+          var result = await siOcrWorker.recognize(canvases.gray);
           var candidate = getSiCandidate(result?.data?.text || "");
-          var status = byId("siCameraStatus");
+          var confidence = Number(result?.data?.confidence || 0);
 
+          /* Retry with the thresholded image when the first pass does not
+             confidently read a plausible number. */
+          if(!candidate || confidence < 35){
+            var second = await siOcrWorker.recognize(canvases.binary);
+            var secondCandidate = getSiCandidate(second?.data?.text || "");
+            var secondConfidence = Number(second?.data?.confidence || 0);
+            if(secondCandidate && (!candidate || secondConfidence > confidence)){
+              candidate = secondCandidate;
+              confidence = secondConfidence;
+            }
+          }
+
+          if(!siOcrActive || generation !== siScanGeneration) return;
+          var status = byId("siCameraStatus");
           if(candidate){
             if(candidate === siLastCandidate){
               siCandidateCount++;
@@ -12708,13 +12814,10 @@ function aoVideoCreatePeer(){
               siLastCandidate = candidate;
               siCandidateCount = 1;
             }
-
             if(status){
-              status.textContent = "Detected " + candidate + " — confirming…";
+              status.textContent = "Reading SI No. " + candidate + " — confirming " + siCandidateCount + "/3…";
             }
-
-            /* Require the same number in consecutive passes to reduce false reads. */
-            if(siCandidateCount >= 2){
+            if(siCandidateCount >= 3){
               acceptSiCandidate(candidate);
               return;
             }
@@ -12722,7 +12825,7 @@ function aoVideoCreatePeer(){
             siLastCandidate = "";
             siCandidateCount = 0;
             if(status){
-              status.textContent = "Looking for the printed SI digits. Keep the number inside the blue guide and hold steady.";
+              status.textContent = "Keep only the SI digits inside the green rectangle. Move closer until the digits are large and sharp.";
             }
           }
         }
@@ -12738,7 +12841,7 @@ function aoVideoCreatePeer(){
     }
 
     if(siOcrActive && generation === siScanGeneration){
-      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },500);
+      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },350);
     }
   }
 
@@ -12764,7 +12867,8 @@ function aoVideoCreatePeer(){
         video:{
           facingMode:{ideal:"environment"},
           width:{ideal:1920},
-          height:{ideal:1080}
+          height:{ideal:1080},
+          frameRate:{ideal:30,max:30}
         }
       });
 
@@ -12776,13 +12880,9 @@ function aoVideoCreatePeer(){
 
       video.srcObject = siStream;
       await video.play();
-
       if(video.readyState < 2){
         await new Promise(function(resolve){
-          if(video.readyState >= 2){
-            resolve();
-            return;
-          }
+          if(video.readyState >= 2){ resolve(); return; }
           video.addEventListener("loadeddata",resolve,{once:true});
           window.setTimeout(resolve,5000);
         });
@@ -12790,15 +12890,25 @@ function aoVideoCreatePeer(){
       if(!video.videoWidth || !video.videoHeight){
         throw new Error("The camera preview did not become ready. Try again or choose Type SI No.");
       }
+
+      /* Ask supported mobile cameras to keep the close-up SI print in focus. */
+      try{
+        var track = siStream.getVideoTracks()[0];
+        var caps = track && track.getCapabilities ? track.getCapabilities() : {};
+        var advanced = [];
+        if(caps.focusMode && caps.focusMode.includes("continuous")) advanced.push({focusMode:"continuous"});
+        if(caps.exposureMode && caps.exposureMode.includes("continuous")) advanced.push({exposureMode:"continuous"});
+        if(advanced.length) await track.applyConstraints({advanced:advanced});
+      }catch(focusError){
+        console.debug("Camera continuous focus is not supported:",focusError);
+      }
+
       resizeSiCameraStage();
-      window.addEventListener("resize",resizeSiCameraStage);
-
-      if(status) status.textContent = "Camera ready. Loading the number reader…";
+      if(status) status.textContent = "Camera ready. Loading the SI number reader…";
       await ensureSiOcrWorker();
-
       if(!siOcrActive || generation !== siScanGeneration) return;
       if(status){
-        status.textContent = "Hold steady. Keep the printed SI number inside the blue guide.";
+        status.textContent = "Place the printed SI number inside the green rectangle. Move closer and hold steady.";
       }
       siCameraStarting = false;
       runSiOcrLoop(generation);
@@ -12807,7 +12917,7 @@ function aoVideoCreatePeer(){
       stopSiCameraScan();
       if(status){
         status.textContent = error?.name === "NotAllowedError"
-          ? "Camera permission was denied. Allow camera access or choose Type SI No."
+          ? "Camera permission was denied. Allow camera access or choose Type SI No. instead."
           : (error?.message || "Could not start the camera. Choose Type SI No. instead.");
       }
     }finally{
