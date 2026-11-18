@@ -3597,15 +3597,15 @@ body::before{
 .si-entry-submit{color:#fff !important;background:linear-gradient(135deg,#60a5fa,#2563eb) !important;box-shadow:0 7px 17px rgba(37,99,235,.18) !important}
 .si-entry-message{min-height:17px;margin-top:8px;color:#dc2626;font-size:11px;font-weight:700}
 .si-camera-instruction{margin:0 0 12px;color:#64748b;font-size:11px;line-height:1.5}
-/* The SI camera is deliberately a small, wide viewfinder. Everything
-   visible inside this rectangle is the ONLY area sent to OCR. */
+/* Small, wide viewfinder for the COMPLETE printed branch + SI number row.
+   OCR reads only the image pixels visible inside this rectangle. */
 .si-camera-stage{
   position:relative;
   width:100%;
-  max-width:430px;
-  aspect-ratio:3.15 / 1;
-  min-height:94px;
-  max-height:140px;
+  max-width:480px;
+  aspect-ratio:4.8 / 1;
+  min-height:76px;
+  max-height:108px;
   margin:0 auto;
   overflow:hidden;
   border-radius:13px;
@@ -3896,8 +3896,7 @@ style="display:none;">
 
         <div id="siCameraSection" class="si-entry-section" hidden>
           <p class="si-camera-instruction">
-            Bring the printed SI number close to the camera and place the digits inside this small rectangle.
-            Keep the digits straight and hold steady. The number will be entered automatically.
+            Fit the COMPLETE printed row inside the green rectangle: the BRANCH NAME on the left AND the full SI NUMBER on the right. Do not crop either side. Keep the row straight, close, and in focus. The SI number will be entered automatically.
           </p>
           <div id="siCameraStage" class="si-camera-stage">
             <video id="siCameraVideo" autoplay muted playsinline></video>
@@ -12613,11 +12612,12 @@ function aoVideoCreatePeer(){
     if(status) status.textContent = "Loading the SI number reader for first use…";
     siOcrWorker = await Tesseract.createWorker("eng",1);
     await siOcrWorker.setParameters({
-      tessedit_char_whitelist:"0123456789",
+      /* Read the branch label AND the number. The branch text is used as
+         context so the OCR does not accept an unrelated partial digit run. */
+      tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
       tessedit_pageseg_mode:7,
-      classify_bln_numeric_mode:1,
       user_defined_dpi:300,
-      preserve_interword_spaces:"0"
+      preserve_interword_spaces:"1"
     });
     return siOcrWorker;
   }
@@ -12625,7 +12625,7 @@ function aoVideoCreatePeer(){
   function resizeSiCameraStage(){
     var stage = byId("siCameraStage");
     if(!stage) return;
-    /* The CSS aspect-ratio keeps a consistent wide SI-only scan window. */
+    /* The CSS aspect-ratio keeps a consistent wide branch + SI scan window. */
     stage.style.height = "";
   }
 
@@ -12634,10 +12634,10 @@ function aoVideoCreatePeer(){
     var stage = byId("siCameraStage");
     if(!video || !stage || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
 
-    /* Match object-fit:cover exactly, so OCR uses only the pixels visible
-       inside the small green SI-number rectangle shown to the user. */
+    /* Match object-fit:cover exactly, so OCR sees the full branch + SI row
+       visible inside the green rectangle and nothing outside it. */
     var stageWidth = stage.clientWidth || 320;
-    var stageHeight = stage.clientHeight || Math.round(stageWidth / 3.15);
+    var stageHeight = stage.clientHeight || Math.round(stageWidth / 4.8);
     var stageAspect = stageWidth / stageHeight;
     var videoAspect = video.videoWidth / video.videoHeight;
     var sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
@@ -12653,94 +12653,101 @@ function aoVideoCreatePeer(){
     return {video:video,sx:sx,sy:sy,sw:sw,sh:sh};
   }
 
-  function makeSiOcrCanvases(){
+  /* Reuse one canvas. This avoids allocating multiple large canvases on every
+     camera frame and keeps recognition responsive on Android phones. */
+  var siOcrCanvas = null;
+  var siOcrCanvasContext = null;
+
+  function makeSiOcrCanvas(){
     var crop = getVisibleVideoCrop();
     if(!crop) return null;
 
-    /* Upscale the viewfinder region so the printed numerals occupy more
-       OCR pixels. Add a white margin to keep the outer camera frame out. */
-    var targetWidth = 1800;
-    var scale = Math.max(1.5,Math.min(5,targetWidth / crop.sw));
+    /* One OCR pass over the whole branch + SI row. The frame is wide, so the
+       code keeps the full left-to-right line instead of cropping to digits. */
+    var targetWidth = 1600;
+    var scale = Math.min(3.2,Math.max(0.85,targetWidth / crop.sw));
     var width = Math.max(1,Math.round(crop.sw * scale));
     var height = Math.max(1,Math.round(crop.sh * scale));
-    var margin = Math.max(35,Math.round(width * 0.035));
+    var margin = 24;
 
-    var sourceCanvas = document.createElement("canvas");
-    sourceCanvas.width = width;
-    sourceCanvas.height = height;
-    var sourceContext = sourceCanvas.getContext("2d",{willReadFrequently:true});
-    sourceContext.imageSmoothingEnabled = true;
-    sourceContext.imageSmoothingQuality = "high";
-    sourceContext.drawImage(crop.video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,width,height);
+    if(!siOcrCanvas){
+      siOcrCanvas = document.createElement("canvas");
+      siOcrCanvasContext = siOcrCanvas.getContext("2d",{willReadFrequently:true});
+    }
+    siOcrCanvas.width = width + margin * 2;
+    siOcrCanvas.height = height + margin * 2;
 
-    var image = sourceContext.getImageData(0,0,width,height);
+    var ctx = siOcrCanvasContext;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0,0,siOcrCanvas.width,siOcrCanvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.filter = "grayscale(1) contrast(1.28) brightness(1.04)";
+    ctx.drawImage(crop.video,crop.sx,crop.sy,crop.sw,crop.sh,margin,margin,width,height);
+    ctx.filter = "none";
+
+    /* A light grayscale contrast adjustment is faster than creating and OCR
+       testing a second thresholded image on every frame. */
+    var image = ctx.getImageData(0,0,siOcrCanvas.width,siOcrCanvas.height);
     var pixels = image.data;
-    var histogram = new Uint32Array(256);
-    var grayValues = new Uint8Array(width * height);
-
-    /* Convert to grayscale and gently increase contrast, retaining detail
-       from the ink strokes instead of aggressively crushing shadows. */
-    for(var i=0,j=0;i<pixels.length;i+=4,j++){
+    for(var i=0;i<pixels.length;i+=4){
       var gray = Math.round(0.299*pixels[i] + 0.587*pixels[i+1] + 0.114*pixels[i+2]);
-      gray = Math.max(0,Math.min(255,Math.round((gray - 128) * 1.42 + 137)));
-      grayValues[j] = gray;
-      histogram[gray]++;
+      gray = Math.max(0,Math.min(255,Math.round((gray - 128) * 1.22 + 136)));
       pixels[i] = pixels[i+1] = pixels[i+2] = gray;
       pixels[i+3] = 255;
     }
-    sourceContext.putImageData(image,0,0);
-
-    /* Otsu threshold: a second high-contrast version helps with printed
-       black digits on a light form under uneven room lighting. */
-    var total = grayValues.length;
-    var sum = 0;
-    for(var h=0;h<256;h++) sum += h * histogram[h];
-    var sumBackground = 0, weightBackground = 0, bestVariance = -1, threshold = 150;
-    for(var t=0;t<256;t++){
-      weightBackground += histogram[t];
-      if(!weightBackground) continue;
-      var weightForeground = total - weightBackground;
-      if(!weightForeground) break;
-      sumBackground += t * histogram[t];
-      var meanBackground = sumBackground / weightBackground;
-      var meanForeground = (sum - sumBackground) / weightForeground;
-      var variance = weightBackground * weightForeground * Math.pow(meanBackground - meanForeground,2);
-      if(variance > bestVariance){ bestVariance = variance; threshold = t; }
-    }
-
-    var binaryCanvas = document.createElement("canvas");
-    binaryCanvas.width = width;
-    binaryCanvas.height = height;
-    var binaryContext = binaryCanvas.getContext("2d");
-    var binaryImage = binaryContext.createImageData(width,height);
-    for(var k=0,q=0;k<grayValues.length;k++,q+=4){
-      var value = grayValues[k] > threshold ? 255 : 0;
-      binaryImage.data[q] = binaryImage.data[q+1] = binaryImage.data[q+2] = value;
-      binaryImage.data[q+3] = 255;
-    }
-    binaryContext.putImageData(binaryImage,0,0);
-
-    function addMargin(inputCanvas){
-      var padded = document.createElement("canvas");
-      padded.width = inputCanvas.width + margin * 2;
-      padded.height = inputCanvas.height + margin * 2;
-      var ctx = padded.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0,0,padded.width,padded.height);
-      ctx.drawImage(inputCanvas,margin,margin);
-      return padded;
-    }
-
-    return {gray:addMargin(sourceCanvas),binary:addMargin(binaryCanvas)};
+    ctx.putImageData(image,0,0);
+    return siOcrCanvas;
   }
 
   function getSiCandidate(text){
-    var normalized = String(text || "").replace(/[OoQD]/g,"0").replace(/[Il|]/g,"1");
-    var matches = normalized.match(/\d{3,12}/g) || [];
-    if(!matches.length) return "";
-    /* The scan window contains only the SI number; use the longest digit run. */
-    matches.sort(function(a,b){ return b.length - a.length; });
-    return matches[0];
+    var normalized = String(text || "")
+      .toUpperCase()
+      .replace(/[\r\n]+/g," ")
+      .replace(/[()]/g,"0")
+      .replace(/[\[\]]/g,"1")
+      .replace(/[^A-Z0-9|\s.,-]/g," ")
+      .replace(/\s+/g," ")
+      .trim();
+    if(!normalized) return "";
+
+    /* SI lengths vary by branch. Do NOT force a five-digit number.
+       Read the final numeric part only after a branch-name word. If OCR
+       separates the digits into several pieces, join those pieces. */
+    var tokens = normalized.match(/[A-Z0-9|]+/g) || [];
+    var lastBranchIndex = -1;
+    for(var i=0;i<tokens.length;i++){
+      if(/[A-Z]{2,}/.test(tokens[i])) lastBranchIndex = i;
+    }
+    if(lastBranchIndex < 0) return "";
+
+    var numericText = tokens.slice(lastBranchIndex + 1).join("");
+    if(!numericText){
+      /* Some OCR versions combine e.g. TANDAG36520 into a single token. */
+      var combined = tokens[lastBranchIndex].match(/[A-Z]{2,}([0-9OQDIL|SBZGTAE]{1,24})$/);
+      if(!combined) return "";
+      numericText = combined[1];
+    }
+
+    /* A stray letter after the number is not silently accepted. Only common
+       OCR look-alikes are converted into digits. */
+    if(!/^[0-9OQDIL|SBZGTAE]{1,24}$/.test(numericText)) return "";
+    var digits = normalizeSiOcrDigits(numericText);
+    return /^\d{1,24}$/.test(digits) ? digits : "";
+  }
+
+  function normalizeSiOcrDigits(value){
+    return String(value || "")
+      .toUpperCase()
+      .replace(/[OQD]/g,"0")
+      .replace(/[IL|]/g,"1")
+      .replace(/S/g,"5")
+      .replace(/B/g,"8")
+      .replace(/Z/g,"2")
+      .replace(/G/g,"6")
+      .replace(/T/g,"7")
+      .replace(/A/g,"4")
+      .replace(/E/g,"3");
   }
 
   function stopSiCameraScan(){
@@ -12779,7 +12786,7 @@ function aoVideoCreatePeer(){
   async function runSiOcrLoop(generation){
     if(!siOcrActive || generation !== siScanGeneration) return;
     if(siOcrBusy){
-      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },350);
+      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },90);
       return;
     }
 
@@ -12787,27 +12794,17 @@ function aoVideoCreatePeer(){
     if(video && video.readyState >= 2){
       siOcrBusy = true;
       try{
-        var canvases = makeSiOcrCanvases();
-        if(canvases){
-          var result = await siOcrWorker.recognize(canvases.gray);
+        var canvas = makeSiOcrCanvas();
+        if(canvas){
+          /* One recognition pass per frame; the previous version sometimes
+             ran two OCR passes on every frame and then waited for 3 matches. */
+          var result = await siOcrWorker.recognize(canvas);
           var candidate = getSiCandidate(result?.data?.text || "");
           var confidence = Number(result?.data?.confidence || 0);
 
-          /* Retry with the thresholded image when the first pass does not
-             confidently read a plausible number. */
-          if(!candidate || confidence < 35){
-            var second = await siOcrWorker.recognize(canvases.binary);
-            var secondCandidate = getSiCandidate(second?.data?.text || "");
-            var secondConfidence = Number(second?.data?.confidence || 0);
-            if(secondCandidate && (!candidate || secondConfidence > confidence)){
-              candidate = secondCandidate;
-              confidence = secondConfidence;
-            }
-          }
-
           if(!siOcrActive || generation !== siScanGeneration) return;
           var status = byId("siCameraStatus");
-          if(candidate){
+          if(candidate && confidence >= 35){
             if(candidate === siLastCandidate){
               siCandidateCount++;
             }else{
@@ -12815,9 +12812,11 @@ function aoVideoCreatePeer(){
               siCandidateCount = 1;
             }
             if(status){
-              status.textContent = "Reading SI No. " + candidate + " — confirming " + siCandidateCount + "/3…";
+              status.textContent = "Detected SI No. " + candidate + " — verifying…";
             }
-            if(siCandidateCount >= 3){
+            /* Fast path for a clear full-row read; otherwise require the same
+               variable-length number on two consecutive frames. */
+            if(confidence >= 78 || siCandidateCount >= 2){
               acceptSiCandidate(candidate);
               return;
             }
@@ -12825,7 +12824,7 @@ function aoVideoCreatePeer(){
             siLastCandidate = "";
             siCandidateCount = 0;
             if(status){
-              status.textContent = "Keep only the SI digits inside the green rectangle. Move closer until the digits are large and sharp.";
+              status.textContent = "Fit BOTH the branch name and the complete SI number inside the green rectangle. Hold steady and keep the print sharp.";
             }
           }
         }
@@ -12833,7 +12832,7 @@ function aoVideoCreatePeer(){
         console.error("SI OCR ERROR:",error);
         var statusBox = byId("siCameraStatus");
         if(statusBox){
-          statusBox.textContent = error?.message || "Unable to read the SI number. Choose Type SI No. instead.";
+          statusBox.textContent = error?.message || "Unable to read the branch and SI number. Choose Type SI No. instead.";
         }
       }finally{
         siOcrBusy = false;
@@ -12841,7 +12840,7 @@ function aoVideoCreatePeer(){
     }
 
     if(siOcrActive && generation === siScanGeneration){
-      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },350);
+      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },100);
     }
   }
 
@@ -12908,7 +12907,7 @@ function aoVideoCreatePeer(){
       await ensureSiOcrWorker();
       if(!siOcrActive || generation !== siScanGeneration) return;
       if(status){
-        status.textContent = "Place the printed SI number inside the green rectangle. Move closer and hold steady.";
+        status.textContent = "Fit the branch name AND the complete SI number inside the green rectangle. Hold steady.";
       }
       siCameraStarting = false;
       runSiOcrLoop(generation);
