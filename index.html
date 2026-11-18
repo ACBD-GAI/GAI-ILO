@@ -3939,7 +3939,7 @@ style="display:none;">
 
         <div id="siCameraSection" class="si-entry-section" hidden>
           <p class="si-camera-instruction">
-            The OUTER camera preview is square. Fit the COMPLETE SI number inside the WIDE GREEN RECTANGLE in the middle. Keep every digit visible from first to last; do not include the branch name or nearby rows.
+            The OUTER camera preview is square. Fit the COMPLETE SI number inside the GREEN RECTANGLE. Keep every digit visible from first to last; do not include the branch name or nearby rows. Keep the paper flat and avoid a hand or phone shadow over the digits.
           </p>
           <div id="siCameraStage" class="si-camera-stage">
             <video id="siCameraVideo" autoplay muted playsinline></video>
@@ -3959,12 +3959,8 @@ style="display:none;">
           </div>
           <button id="siReadNowBtn" type="button" class="si-camera-read-btn" onclick="scanSiNumberNow()" disabled>PREPARING READER…</button>
           <div id="siDetectedWrap" class="si-camera-detected" hidden>
-            <div id="siDetectedLabel" class="si-camera-detected-label">DETECTED SI NUMBER — VERIFY EVERY DIGIT</div>
+            <div id="siDetectedLabel" class="si-camera-detected-label">HIGHEST-CONFIDENCE READING — VERIFY EVERY DIGIT</div>
             <strong id="siDetectedValue" class="si-camera-detected-value"></strong>
-            <div id="siDetectedAlternatives" class="si-camera-alternatives" hidden>
-              <div class="si-camera-alternatives-label">OTHER POSSIBLE READINGS — TAP THE CORRECT ONE</div>
-              <div id="siDetectedAlternativesList" class="si-camera-alternatives-list"></div>
-            </div>
             <div class="si-camera-detected-actions">
               <button type="button" class="si-entry-back" onclick="scanSiNumberNow()">SCAN AGAIN</button>
               <button type="button" class="si-entry-submit" onclick="useDetectedSiNumber()">USE THIS NUMBER</button>
@@ -12707,58 +12703,9 @@ function aoVideoCreatePeer(){
     var wrap = byId("siDetectedWrap");
     var value = byId("siDetectedValue");
     var label = byId("siDetectedLabel");
-    var alternatives = byId("siDetectedAlternatives");
-    var alternativesList = byId("siDetectedAlternativesList");
     if(wrap) wrap.hidden = true;
     if(value) value.textContent = "";
-    if(label) label.textContent = "DETECTED SI NUMBER — VERIFY EVERY DIGIT";
-    if(alternatives) alternatives.hidden = true;
-    if(alternativesList) alternativesList.textContent = "";
-  }
-
-  function selectSiOcrAlternative(value){
-    var clean = String(value || "").replace(/\D/g,"");
-    if(!/^\d{3,24}$/.test(clean)) return;
-    siDetectedCandidate = clean;
-    var display = byId("siDetectedValue");
-    if(display) display.textContent = clean;
-    var list = byId("siDetectedAlternativesList");
-    if(list){
-      Array.prototype.forEach.call(list.querySelectorAll(".si-camera-alternative"),function(button){
-        button.classList.toggle("is-selected",button.getAttribute("data-si-candidate") === clean);
-        button.setAttribute("aria-pressed",button.getAttribute("data-si-candidate") === clean ? "true" : "false");
-      });
-    }
-  }
-
-  function renderSiOcrAlternatives(options,selected){
-    var wrap = byId("siDetectedAlternatives");
-    var list = byId("siDetectedAlternativesList");
-    if(!wrap || !list) return;
-    list.textContent = "";
-    var unique = [];
-    (options || []).forEach(function(option){
-      var candidate = String(option && option.candidate || "");
-      if(/^\d{3,24}$/.test(candidate) && unique.indexOf(candidate) === -1) unique.push(candidate);
-    });
-    unique = unique.slice(0,4);
-    if(unique.length <= 1){wrap.hidden = true;return;}
-    unique.forEach(function(candidate){
-      var button = document.createElement("button");
-      button.type = "button";
-      button.className = "si-camera-alternative";
-      button.textContent = candidate;
-      button.setAttribute("data-si-candidate",candidate);
-      button.setAttribute("aria-pressed",candidate === selected ? "true" : "false");
-      if(candidate === selected) button.classList.add("is-selected");
-      button.addEventListener("click",function(){selectSiOcrAlternative(candidate);});
-      list.appendChild(button);
-    });
-    var hint = document.createElement("span");
-    hint.className = "si-camera-alternative-hint";
-    hint.textContent = "Choose the reading that exactly matches the printed SI number.";
-    list.appendChild(hint);
-    wrap.hidden = false;
+    if(label) label.textContent = "HIGHEST-CONFIDENCE READING — VERIFY EVERY DIGIT";
   }
 
   function stopSiCameraScan(){
@@ -12936,8 +12883,8 @@ function aoVideoCreatePeer(){
     }
     enhancedContext.putImageData(enhancedImage,0,0);
 
-    /* Local adaptive threshold handles shadows and uneven lighting. A summed-area
-       image keeps this fast even when the phone camera supplies a large crop. */
+    /* Build summed-area images once. They support both local thresholding and
+       wide-area illumination estimation without expensive per-pixel blur loops. */
     var stride = outWidth+1;
     var integral = new Uint32Array((outWidth+1)*(outHeight+1));
     var integralSq = new Float64Array((outWidth+1)*(outHeight+1));
@@ -12956,10 +12903,47 @@ function aoVideoCreatePeer(){
       }
     }
 
+    /* Shadow flattening: estimate the slowly changing paper brightness over a
+       window larger than the printed strokes, then remove that background field.
+       A dark shadow is lifted locally while the ink remains dark. This is useful
+       for phone photos where one side of the SI row is shaded. */
+    var shadowPixels = new Uint8Array(total);
+    var shadowHistogram = new Uint32Array(256);
+    var shadowRadiusX = Math.max(38,Math.min(115,Math.round(outWidth/20)));
+    var shadowRadiusY = Math.max(22,Math.min(85,Math.round(outHeight/4.5)));
+    for(var sy=0;sy<outHeight;sy++){
+      var sy1 = Math.max(0,sy-shadowRadiusY);
+      var sy2 = Math.min(outHeight,sy+shadowRadiusY+1);
+      for(var sx=0;sx<outWidth;sx++){
+        var sx1 = Math.max(0,sx-shadowRadiusX);
+        var sx2 = Math.min(outWidth,sx+shadowRadiusX+1);
+        var localArea = (sx2-sx1)*(sy2-sy1);
+        var sA=sy1*stride+sx1, sB=sy1*stride+sx2;
+        var sC=sy2*stride+sx1, sD=sy2*stride+sx2;
+        var backgroundMean = (integral[sD]-integral[sB]-integral[sC]+integral[sA])/localArea;
+        /* Paper is normalized near white; ink contrast is expanded around it. */
+        var corrected = Math.max(0,Math.min(255,Math.round(222+(enhanced[sy*outWidth+sx]-backgroundMean)*1.78)));
+        var shadowIndex = sy*outWidth+sx;
+        shadowPixels[shadowIndex] = corrected;
+        shadowHistogram[corrected]++;
+      }
+    }
+    var shadowCanvas = createSiOcrCanvas(outWidth,outHeight);
+    var shadowContext = shadowCanvas.getContext("2d",{willReadFrequently:true});
+    var shadowImage = shadowContext.createImageData(outWidth,outHeight);
+    for(var si=0,sq=0;si<total;si++,sq+=4){
+      var sp = shadowPixels[si];
+      shadowImage.data[sq]=sp; shadowImage.data[sq+1]=sp; shadowImage.data[sq+2]=sp; shadowImage.data[sq+3]=255;
+    }
+    shadowContext.putImageData(shadowImage,0,0);
+
+    /* Sauvola-style local threshold on the balanced grayscale image. This is
+       deliberately separate from global Otsu so shadowed and bright areas can
+       use different local thresholds within the same SI row. */
     var adaptiveCanvas = createSiOcrCanvas(outWidth,outHeight);
     var adaptiveContext = adaptiveCanvas.getContext("2d",{willReadFrequently:true});
     var adaptiveImage = adaptiveContext.createImageData(outWidth,outHeight);
-    var radius = Math.max(15,Math.min(35,Math.round(outWidth/58)));
+    var radius = Math.max(18,Math.min(48,Math.round(outWidth/42)));
     for(var ay=0;ay<outHeight;ay++){
       var y1 = Math.max(0,ay-radius);
       var y2 = Math.min(outHeight,ay+radius+1);
@@ -12974,7 +12958,7 @@ function aoVideoCreatePeer(){
         var mean = localSum/area;
         var variance = Math.max(0,localSq/area-mean*mean);
         var deviation = Math.sqrt(variance);
-        var threshold = mean*(1+0.20*(deviation/128-1));
+        var threshold = mean*(1+0.22*(deviation/128-1));
         var out = enhanced[ay*outWidth+ax] < threshold ? 0 : 255;
         var q = (ay*outWidth+ax)*4;
         adaptiveImage.data[q] = out;
@@ -12985,7 +12969,33 @@ function aoVideoCreatePeer(){
     }
     adaptiveContext.putImageData(adaptiveImage,0,0);
 
-    /* Otsu is a third fallback for clean, evenly lit receipts or invoices. */
+    /* Global threshold of the flattened image. This handles cases where the
+       original image has strong left-to-right or top-to-bottom shadow gradients. */
+    var shadowTotal = total;
+    var shadowWeightedTotal = 0;
+    for(var sh=0;sh<256;sh++) shadowWeightedTotal += sh*shadowHistogram[sh];
+    var shadowBackgroundWeight=0, shadowBackgroundSum=0, shadowBestVariance=-1, shadowOtsuThreshold=128;
+    for(var sht=0;sht<256;sht++){
+      shadowBackgroundWeight += shadowHistogram[sht];
+      if(!shadowBackgroundWeight) continue;
+      var shadowForegroundWeight = shadowTotal-shadowBackgroundWeight;
+      if(!shadowForegroundWeight) break;
+      shadowBackgroundSum += sht*shadowHistogram[sht];
+      var shadowMeanBackground = shadowBackgroundSum/shadowBackgroundWeight;
+      var shadowMeanForeground = (shadowWeightedTotal-shadowBackgroundSum)/shadowForegroundWeight;
+      var shadowBetween = shadowBackgroundWeight*shadowForegroundWeight*Math.pow(shadowMeanBackground-shadowMeanForeground,2);
+      if(shadowBetween>shadowBestVariance){shadowBestVariance=shadowBetween;shadowOtsuThreshold=sht;}
+    }
+    var shadowBinaryCanvas = createSiOcrCanvas(outWidth,outHeight);
+    var shadowBinaryContext = shadowBinaryCanvas.getContext("2d",{willReadFrequently:true});
+    var shadowBinaryImage = shadowBinaryContext.createImageData(outWidth,outHeight);
+    for(var sbi=0,sbo=0;sbi<total;sbi++,sbo+=4){
+      var sbv = shadowPixels[sbi] < shadowOtsuThreshold ? 0 : 255;
+      shadowBinaryImage.data[sbo]=sbv; shadowBinaryImage.data[sbo+1]=sbv; shadowBinaryImage.data[sbo+2]=sbv; shadowBinaryImage.data[sbo+3]=255;
+    }
+    shadowBinaryContext.putImageData(shadowBinaryImage,0,0);
+
+    /* Otsu is a fallback for clean, evenly lit receipts or invoices. */
     var otsuTotal = total;
     var weightedTotal = 0;
     for(var h=0;h<256;h++) weightedTotal += h*normalizedHistogram[h];
@@ -13030,60 +13040,86 @@ function aoVideoCreatePeer(){
     }
     invertedContext.putImageData(invertedImage,0,0);
 
-    return {enhanced:enhancedCanvas,adaptive:adaptiveCanvas,otsu:otsuCanvas,inverted:invertedCanvas,brightness:average};
+    return {enhanced:enhancedCanvas,shadow:shadowCanvas,shadowBinary:shadowBinaryCanvas,adaptive:adaptiveCanvas,otsu:otsuCanvas,inverted:invertedCanvas,brightness:average};
   }
 
-  function getSiCandidate(text){
-    /* Merge OCR groups so split readings such as "45 658" retain every digit.
-       SI numbers remain variable length; no fixed five-digit assumption. */
-    var digits = String(text || "").replace(/[^0-9]/g,"");
-    return /^\d{3,24}$/.test(digits) ? digits : "";
-  }
-
-  function buildSiDigitConsensus(attempts){
-    /* Compare OCR outputs only when they report the same number of digits.
-       Each digit gets a confidence-weighted vote; ambiguous positions are not
-       guessed. A consensus is offered only when every position has a clear
-       majority, and it still requires the user's visual confirmation. */
-    var lengths = Object.create(null);
-    (attempts || []).forEach(function(item){
-      if(!item.candidate) return;
-      var key = String(item.candidate.length);
-      if(!lengths[key]) lengths[key] = [];
-      lengths[key].push(item);
-    });
-    var groups = Object.keys(lengths).map(function(key){
-      var items = lengths[key];
-      var average = items.reduce(function(sum,item){return sum + Number(item.confidence || 0);},0)/items.length;
-      return {items:items,length:Number(key),average:average};
-    }).sort(function(a,b){return b.items.length-a.items.length || b.average-a.average;});
-    var group = groups[0];
-    if(!group || group.items.length < 3) return null;
-
-    var result = "";
-    var weakestShare = 1;
-    var weakestVotes = group.items.length;
-    var minVotes = Math.ceil(group.items.length*0.60);
-    for(var position=0;position<group.length;position++){
-      var votes = Object.create(null);
-      var totals = Object.create(null);
-      group.items.forEach(function(item){
-        var digit = item.candidate.charAt(position);
-        var weight = Math.max(0.25,Math.min(1,Number(item.confidence || 0)/100));
-        votes[digit] = (votes[digit] || 0)+1;
-        totals[digit] = (totals[digit] || 0)+weight;
+  function getSiCandidate(data){
+    /* The green window can contain a stray digit from a neighboring column.
+       Do not concatenate every digit in the crop. Prefer the longest complete
+       numeric word/group, joining only nearby fragments that share one line. */
+    var words = data && Array.isArray(data.words) ? data.words : [];
+    var parts = [];
+    words.forEach(function(word){
+      var digits = String(word && word.text || "").replace(/[^0-9]/g,"");
+      if(!digits) return;
+      var box = word.bbox || {};
+      var hasBox = isFinite(Number(box.x0)) && isFinite(Number(box.x1)) &&
+                   isFinite(Number(box.y0)) && isFinite(Number(box.y1));
+      parts.push({
+        digits:digits,
+        confidence:Number(word.confidence || 0),
+        bbox:hasBox ? {x0:Number(box.x0),x1:Number(box.x1),y0:Number(box.y0),y1:Number(box.y1)} : null
       });
-      var rankedDigits = Object.keys(votes).map(function(digit){
-        return {digit:digit,count:votes[digit],weight:totals[digit]};
-      }).sort(function(a,b){return b.count-a.count || b.weight-a.weight;});
-      var top = rankedDigits[0];
-      var share = top ? top.count/group.items.length : 0;
-      if(!top || top.count < minVotes || share < 0.60) return null;
-      result += top.digit;
-      weakestShare = Math.min(weakestShare,share);
-      weakestVotes = Math.min(weakestVotes,top.count);
+    });
+
+    parts.sort(function(a,b){
+      if(a.bbox && b.bbox) return (a.bbox.y0-b.bbox.y0) || (a.bbox.x0-b.bbox.x0);
+      if(a.bbox) return -1;
+      if(b.bbox) return 1;
+      return 0;
+    });
+
+    var groups=[];
+    parts.forEach(function(part){
+      var last=groups[groups.length-1];
+      var join=false;
+      if(last && last.bbox && part.bbox){
+        var lastHeight=Math.max(1,last.bbox.y1-last.bbox.y0);
+        var partHeight=Math.max(1,part.bbox.y1-part.bbox.y0);
+        var minHeight=Math.min(lastHeight,partHeight);
+        var overlap=Math.max(0,Math.min(last.bbox.y1,part.bbox.y1)-Math.max(last.bbox.y0,part.bbox.y0));
+        var sameLine=overlap >= minHeight*0.45 ||
+          Math.abs((last.bbox.y0+last.bbox.y1)/2-(part.bbox.y0+part.bbox.y1)/2) <= minHeight*0.30;
+        var gap=part.bbox.x0-last.bbox.x1;
+        var maxGap=Math.max(10,Math.min(42,minHeight*0.30));
+        join=sameLine && gap>=-3 && gap<=maxGap;
+      }
+      if(join){
+        last.digits += part.digits;
+        last.confidenceTotal += Math.max(0,part.confidence)*part.digits.length;
+        last.confidenceDigits += part.digits.length;
+        last.bbox.x1=Math.max(last.bbox.x1,part.bbox.x1);
+        last.bbox.y0=Math.min(last.bbox.y0,part.bbox.y0);
+        last.bbox.y1=Math.max(last.bbox.y1,part.bbox.y1);
+      }else{
+        groups.push({
+          digits:part.digits,
+          confidenceTotal:Math.max(0,part.confidence)*part.digits.length,
+          confidenceDigits:part.digits.length,
+          bbox:part.bbox ? {x0:part.bbox.x0,x1:part.bbox.x1,y0:part.bbox.y0,y1:part.bbox.y1} : null
+        });
+      }
+    });
+
+    var valid=groups.filter(function(group){return /^\d{3,24}$/.test(group.digits);});
+    if(valid.length){
+      valid.sort(function(a,b){
+        var aConfidence=a.confidenceDigits ? a.confidenceTotal/a.confidenceDigits : 0;
+        var bConfidence=b.confidenceDigits ? b.confidenceTotal/b.confidenceDigits : 0;
+        return b.digits.length-a.digits.length || bConfidence-aConfidence;
+      });
+      var chosen=valid[0];
+      return {
+        candidate:chosen.digits,
+        confidence:chosen.confidenceDigits ? chosen.confidenceTotal/chosen.confidenceDigits : 0
+      };
     }
-    return {candidate:result,support:weakestVotes,share:weakestShare,average:group.average};
+
+    /* Fallback for Tesseract builds that omit word boxes: select the longest
+       contiguous digit run rather than merging unrelated numbers together. */
+    var matches=String(data && data.text || "").match(/\d{3,24}/g) || [];
+    matches.sort(function(a,b){return b.length-a.length;});
+    return {candidate:matches[0] || "",confidence:Number(data && data.confidence || 0)};
   }
 
   async function scanSiNumberNow(){
@@ -13122,117 +13158,108 @@ function aoVideoCreatePeer(){
         var result = await siOcrWorker.recognize(canvas);
         if(generation !== siScanGeneration) return;
         var data = result && result.data ? result.data : {};
-        var candidate = getSiCandidate(data.text);
-        var confidence = Number(data.confidence || 0);
+        var parsed = getSiCandidate(data);
+        var candidate = parsed.candidate;
+        var confidence = parsed.confidence || Number(data.confidence || 0);
         attempts.push({candidate:candidate,confidence:confidence,label:label,text:data.text||""});
       }
-      function hasRepeatedCandidate(){
-        var seen = Object.create(null);
-        for(var n=0;n<attempts.length;n++){
-          var candidate = attempts[n].candidate;
-          if(candidate && (seen[candidate] = (seen[candidate] || 0)+1) >= 2) return true;
-        }
-        return false;
+
+      /* First run four complementary image versions. The shadow-flattened
+         images are always included rather than used only as a last resort. */
+      await readVersion(canvases.enhanced,"balanced grayscale",7);
+      if(generation !== siScanGeneration) return;
+      await readVersion(canvases.shadow,"shadow-flattened grayscale",7);
+      if(generation !== siScanGeneration) return;
+      await readVersion(canvases.shadowBinary,"shadow-corrected threshold",7);
+      if(generation !== siScanGeneration) return;
+      await readVersion(canvases.adaptive,"local adaptive threshold",7);
+      if(generation !== siScanGeneration) return;
+
+      function currentBestScore(){
+        var scores = Object.create(null);
+        attempts.forEach(function(item){
+          if(!item.candidate) return;
+          if(!scores[item.candidate]) scores[item.candidate]=[];
+          scores[item.candidate].push(item);
+        });
+        var rankedNow = Object.keys(scores).map(function(key){
+          var group=scores[key];
+          var values=group.map(function(item){return item.confidence;});
+          var avg=values.reduce(function(a,b){return a+b;},0)/values.length;
+          var max=Math.max.apply(Math,values);
+          return {candidate:key,count:group.length,average:avg,max:max,score:max*0.80+avg*0.20+Math.min(group.length-1,2)*1.5};
+        }).sort(function(a,b){return b.score-a.score || b.max-a.max || b.average-a.average;});
+        return rankedNow[0] || null;
       }
 
-      /* First compare the normal enhanced image and the local-shadow correction. */
-      await readVersion(canvases.enhanced,"enhanced grayscale",7);
-      if(generation !== siScanGeneration) return;
-      await readVersion(canvases.adaptive,"adaptive lighting",7);
-      if(generation !== siScanGeneration) return;
-
-      var firstCandidates = attempts.filter(function(item){return !!item.candidate;});
-      var firstAgree = firstCandidates.length >= 2 && firstCandidates[0].candidate === firstCandidates[1].candidate;
-      var firstStrong = firstCandidates.length === 1 && firstCandidates[0].confidence >= 88;
-      if(!firstAgree && !firstStrong){
-        if(status) status.textContent = "The first reads are not clear. Trying additional contrast and digit-recognition modes…";
+      /* If the first four readings are uncertain or disagree, try more image
+         and segmentation modes. The same captured photo is used throughout. */
+      var initialBest = currentBestScore();
+      var uniqueInitial = Object.create(null);
+      attempts.forEach(function(item){if(item.candidate) uniqueInitial[item.candidate]=true;});
+      var hasDisagreement = Object.keys(uniqueInitial).length > 1;
+      if(!initialBest || initialBest.max < 82 || hasDisagreement){
+        if(status) status.textContent = "Checking shadow removal and alternate digit shapes…";
         await readVersion(canvases.otsu,"high-contrast threshold",7);
         if(generation !== siScanGeneration) return;
-
-        /* Treat the SI as one printed number, then as a raw text line. These
-           segmentation modes can recover a faint or tightly spaced digit. */
-        if(!hasRepeatedCandidate()){
-          await readVersion(canvases.enhanced,"single-number mode",8);
-          if(generation !== siScanGeneration) return;
-          await readVersion(canvases.adaptive,"raw-line mode",13);
-          if(generation !== siScanGeneration) return;
-        }
-        /* Inversion is a final rescue for faint or unusual print only. */
-        if(!hasRepeatedCandidate()){
-          await readVersion(canvases.inverted,"inverted contrast",7);
-          if(generation !== siScanGeneration) return;
-        }
+        await readVersion(canvases.inverted,"inverted contrast",7);
+        if(generation !== siScanGeneration) return;
+        await readVersion(canvases.shadow,"single-number segmentation",8);
+        if(generation !== siScanGeneration) return;
+        await readVersion(canvases.shadowBinary,"raw-line segmentation",13);
+        if(generation !== siScanGeneration) return;
       }
-      /* Restore the default single-line mode for the next scan. */
+
       await siOcrWorker.setParameters({tessedit_pageseg_mode:7});
 
+      /* Choose the strongest FULL number reading. Do not manufacture a number
+         by voting each position independently: that method can combine digits
+         from several incorrect OCR guesses into a number never actually read. */
       var grouped = Object.create(null);
       attempts.forEach(function(item){
         if(!item.candidate) return;
-        if(!grouped[item.candidate]) grouped[item.candidate] = {candidate:item.candidate,count:0,total:0,max:0,labels:[]};
-        grouped[item.candidate].count++;
-        grouped[item.candidate].total += item.confidence;
-        grouped[item.candidate].max = Math.max(grouped[item.candidate].max,item.confidence);
-        grouped[item.candidate].labels.push(item.label);
+        if(!grouped[item.candidate]) grouped[item.candidate]={candidate:item.candidate,count:0,total:0,max:0,labels:[]};
+        var group=grouped[item.candidate];
+        group.count++;
+        group.total += item.confidence;
+        group.max = Math.max(group.max,item.confidence);
+        group.labels.push(item.label);
       });
       var ranked = Object.keys(grouped).map(function(key){
-        var group = grouped[key];
-        group.average = group.total/group.count;
-        group.score = group.count*110 + group.average + group.max*0.15;
+        var group=grouped[key];
+        group.average=group.total/group.count;
+        /* Confidence from the best full-number read is primary. Repeated
+           recognition is only a small tie-breaker, never a digit-voting override. */
+        group.score=group.max*0.80+group.average*0.20+Math.min(group.count-1,2)*1.5;
         return group;
-      }).sort(function(a,b){return b.score-a.score;});
+      }).sort(function(a,b){return b.score-a.score || b.max-a.max || b.average-a.average;});
 
-      var best = ranked[0] || null;
-      var second = ranked[1] || null;
-      var consensus = buildSiDigitConsensus(attempts);
-      var suggested = consensus ? consensus.candidate : (best ? best.candidate : "");
-      var accepted = false;
-      var verifiedBy = "";
-      if(consensus){
-        accepted = true;
-        verifiedBy = "digit-consensus";
-      }else if(best){
-        if(best.count >= 2){
-          accepted = true;
-          verifiedBy = "cross-checked";
-        }else if(best.max >= 88 && (!second || second.max < 45)){
-          accepted = true;
-          verifiedBy = "high-confidence";
-        }
-      }
-
+      var best=ranked[0] || null;
+      var suggested=best ? best.candidate : "";
       if(!suggested){
         clearDetected();
-        if(status) status.textContent = "No complete SI number detected. Move closer, reduce glare, fit every digit inside the green box, and scan again.";
+        if(status) status.textContent = "No complete SI number was detected. Reduce glare, keep the row flat, fit every digit inside the green box, and scan again.";
         return;
       }
 
-      /* Even when OCR cannot confidently decide, show the readings it actually
-         produced so the user can select the one that matches the printed number. */
-      siDetectedCandidate = suggested;
-      siLastOcrConfidence = consensus ? consensus.average : (best ? best.average : 0);
-      var detectedValue = byId("siDetectedValue");
-      var detectedLabel = byId("siDetectedLabel");
-      if(detectedValue) detectedValue.textContent = suggested;
+      siDetectedCandidate=suggested;
+      siLastOcrConfidence=best ? best.max : 0;
+      var detectedValue=byId("siDetectedValue");
+      var detectedLabel=byId("siDetectedLabel");
+      if(detectedValue) detectedValue.textContent=suggested;
       if(detectedLabel){
-        detectedLabel.textContent = consensus
-          ? "SMART DIGIT-BY-DIGIT ESTIMATE — VERIFY EVERY DIGIT"
-          : (accepted ? "DETECTED SI NUMBER — VERIFY EVERY DIGIT" : "POSSIBLE SI READINGS — SELECT THE CORRECT ONE");
+        detectedLabel.textContent = best.max >= 82
+          ? "HIGHEST-CONFIDENCE READING — VERIFY EVERY DIGIT"
+          : "BEST AVAILABLE READING — CHECK CAREFULLY";
       }
-      var alternatives = [];
-      if(consensus) alternatives.push({candidate:consensus.candidate});
-      ranked.forEach(function(item){alternatives.push({candidate:item.candidate});});
-      renderSiOcrAlternatives(alternatives,suggested);
-      if(detectedWrap) detectedWrap.hidden = false;
+      if(detectedWrap) detectedWrap.hidden=false;
       if(status){
-        if(verifiedBy === "digit-consensus"){
-          status.textContent = "Digits were compared position by position across " + attempts.length + " image checks. Please verify the full SI number before using it.";
-        }else if(verifiedBy === "cross-checked"){
-          status.textContent = "The same number appeared in " + best.count + " image checks. Verify every digit before using it.";
-        }else if(verifiedBy === "high-confidence"){
-          status.textContent = "One reading looks clearer than the others. Check every digit before using it.";
+        if(best.max >= 82){
+          status.textContent="The strongest full-number reading was selected automatically from " + attempts.length + " image checks. Please verify the printed digits before using it.";
+        }else if(best.max >= 58){
+          status.textContent="The scanner selected its strongest reading after shadow correction and contrast checks. Image clarity is moderate; verify each digit.";
         }else{
-          status.textContent = "The image checks disagree. Choose the correct reading below, or scan again with the number closer and sharper.";
+          status.textContent="The scanner selected the highest-scoring reading, but the image is still unclear. Check it carefully or retake with the paper flat and evenly lit.";
         }
       }
 
@@ -13287,7 +13314,7 @@ function aoVideoCreatePeer(){
     var readerReady = ensureSiOcrWorker().then(function(){
       if(generation !== siScanGeneration) return;
       setReadButton(true,"READ SI NO.");
-      if(status) status.textContent = "Smart SI reader ready. Keep the full number inside the green box, hold steady, then tap READ SI NO.";
+      if(status) status.textContent = "Smart SI reader ready. Keep the full row inside the green box, hold steady, and avoid shadows or glare before tapping READ SI NO.";
     }).catch(function(error){
       console.error("SI OCR INITIALIZATION ERROR:",error);
       if(generation === siScanGeneration){
