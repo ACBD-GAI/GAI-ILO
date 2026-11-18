@@ -3532,6 +3532,96 @@ body::before{
   .pullout-request-preview-row{grid-template-columns:92px 1fr;}
 }
 </style>
+
+<style>
+/* =========================================================
+   SI NUMBER BUTTON + TYPE / CAMERA POPUP
+   Additive UI only; existing scanner logic continues to use #siNo.
+========================================================= */
+.si-entry-trigger{
+  width:100%;min-height:62px;margin:18px 0 6px;padding:11px 15px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  color:#26364a !important;text-align:left;
+  background:linear-gradient(135deg,#ffffff,#f8fbff) !important;
+  border:2px solid #dbeafe !important;border-radius:14px !important;
+  box-shadow:0 7px 20px rgba(37,99,235,.07) !important;
+}
+.si-entry-trigger:hover{border-color:#93c5fd !important;transform:translateY(-1px)}
+.si-entry-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.si-entry-caption{font-size:10px;font-weight:900;letter-spacing:.7px;color:#64748b}
+.si-entry-main strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#1e3a5f}
+.si-entry-chevron{flex:0 0 auto;font-size:22px;line-height:1;color:#64748b}
+.si-entry-overlay{
+  display:none;position:fixed;inset:0;z-index:100050;align-items:center;justify-content:center;
+  padding:16px;background:rgba(15,23,42,.54);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.si-entry-overlay.open{display:flex}
+.si-entry-dialog{
+  width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:21px;
+  border:1px solid #e2e8f0;border-radius:22px;background:#fff;
+  box-shadow:0 24px 70px rgba(15,23,42,.28);animation:siEntryPop .2s ease-out;
+}
+@keyframes siEntryPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.si-entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.si-entry-title{color:#1e3a5f;font-size:18px;font-weight:900;letter-spacing:.3px}
+.si-entry-subtitle{margin-top:4px;color:#718096;font-size:12px;line-height:1.45}
+.si-entry-close{
+  flex:0 0 34px;width:34px;min-width:34px;min-height:34px;height:34px;padding:0;
+  border-radius:10px;background:#f1f5f9 !important;color:#475569 !important;
+  font-size:22px;line-height:1;box-shadow:none !important;
+}
+.si-entry-section[hidden]{display:none !important}
+.si-entry-section{display:block}
+.si-entry-option{
+  width:100%;min-height:72px;margin:8px 0;padding:13px;display:flex;align-items:center;gap:12px;
+  text-align:left;color:#1e293b !important;background:#f8fbff !important;
+  border:1px solid #dbeafe !important;border-radius:15px !important;box-shadow:none !important;
+}
+.si-entry-option:hover{background:#eff6ff !important;border-color:#93c5fd !important;transform:translateY(-1px)}
+.si-entry-option-icon{
+  width:42px;height:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:center;
+  border-radius:12px;background:#eaf2ff;font-size:20px;
+}
+.si-entry-option strong{display:block;color:#1e3a5f;font-size:13px;font-weight:900}
+.si-entry-option small{display:block;margin-top:4px;color:#718096;font-size:11px;font-weight:600}
+.si-entry-option-arrow{margin-left:auto;color:#94a3b8;font-size:25px}
+.si-entry-label{display:block;margin:2px 0 7px;color:#475569;font-size:12px;font-weight:800}
+.si-manual-input{
+  display:block;width:100%;min-height:51px;margin:0;padding:12px 14px;color:#172033;
+  background:#fff;border:2px solid #dbeafe;border-radius:12px;outline:none;font-size:16px;
+}
+.si-manual-input:focus{border-color:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.13)}
+.si-entry-actions{display:flex;gap:9px;margin-top:13px}
+.si-entry-actions button{flex:1;min-width:0;min-height:43px;font-size:11px}
+.si-entry-back{color:#475569 !important;background:#f1f5f9 !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
+.si-entry-submit{color:#fff !important;background:linear-gradient(135deg,#60a5fa,#2563eb) !important;box-shadow:0 7px 17px rgba(37,99,235,.18) !important}
+.si-entry-message{min-height:17px;margin-top:8px;color:#dc2626;font-size:11px;font-weight:700}
+.si-camera-instruction{margin:0 0 12px;color:#64748b;font-size:11px;line-height:1.5}
+.si-camera-stage{
+  position:relative;width:100%;max-width:100%;margin:0 auto;overflow:hidden;
+  border-radius:14px;background:#0f172a;border:1px solid #cbd5e1;
+}
+.si-camera-stage video{display:block;width:100%;height:100%;object-fit:fill}
+.si-camera-target{
+  position:absolute;top:72%;right:2.5%;width:47%;height:20%;display:flex;
+  align-items:flex-start;justify-content:flex-end;padding:3px;
+  border:2px dashed #38bdf8;border-radius:7px;background:rgba(56,189,248,.08);
+  box-shadow:0 0 0 9999px rgba(15,23,42,.08);pointer-events:none;
+}
+.si-camera-target span{padding:3px 6px;border-radius:5px;color:#fff;background:#0284c7;font-size:8px;font-weight:900;letter-spacing:.5px}
+.si-camera-status{
+  min-height:34px;margin-top:10px;padding:9px 10px;color:#475569;
+  background:#f1f5f9;border-radius:10px;font-size:11px;font-weight:700;line-height:1.45;
+}
+@media(max-width:600px){
+  .si-entry-dialog{padding:18px;border-radius:19px}
+  .si-entry-trigger{min-height:58px;margin-top:14px}
+  .si-entry-main strong{font-size:13px}
+  .si-entry-actions{gap:7px}
+  .si-entry-actions button{padding:9px 7px;font-size:10px}
+}
+</style>
+
 </head>
 
 <body>
@@ -3684,7 +3774,16 @@ font-size:16px;
 Scanned : 0
 </div>
 
-    <input id="siNo" class="si-input" placeholder="Enter SI No">
+    <!-- SI number control: original #siNo remains as a hidden value source for existing functions. -->
+    <button id="siNoEntryButton" type="button" class="si-entry-trigger"
+            onclick="openSiEntryDialog()" aria-haspopup="dialog" aria-controls="siEntryOverlay">
+      <span class="si-entry-main">
+        <span class="si-entry-caption">📄 SI NO.</span>
+        <strong id="siNoEntryValue">Tap to type or scan SI number</strong>
+      </span>
+      <span class="si-entry-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <input id="siNo" type="hidden" value="">
 
    <div class="button-grid">
 
@@ -3740,6 +3839,60 @@ style="display:none;">
 
 
    <div id="searchResult"></div>
+
+   <div id="siEntryOverlay" class="si-entry-overlay" aria-hidden="true">
+      <div class="si-entry-dialog" role="dialog" aria-modal="true" aria-labelledby="siEntryTitle">
+        <div class="si-entry-head">
+          <div>
+            <div id="siEntryTitle" class="si-entry-title">SI NUMBER</div>
+            <div class="si-entry-subtitle">Choose how you want to enter the SI number</div>
+          </div>
+          <button type="button" class="si-entry-close" aria-label="Close" onclick="closeSiEntryDialog()">×</button>
+        </div>
+
+        <div id="siChoiceSection" class="si-entry-section">
+          <button type="button" class="si-entry-option" onclick="showSiManualEntry()">
+            <span class="si-entry-option-icon">⌨️</span>
+            <span><strong>TYPE SI NO.</strong><small>Enter the SI number manually</small></span>
+            <span class="si-entry-option-arrow">›</span>
+          </button>
+          <button type="button" class="si-entry-option" onclick="startSiCameraScan()">
+            <span class="si-entry-option-icon">📷</span>
+            <span><strong>SCAN SI NO.</strong><small>Read the printed number using the camera</small></span>
+            <span class="si-entry-option-arrow">›</span>
+          </button>
+        </div>
+
+        <div id="siManualSection" class="si-entry-section" hidden>
+          <label class="si-entry-label" for="siManualInput">Enter SI No.</label>
+          <input id="siManualInput" class="si-manual-input" type="text" inputmode="numeric"
+                 autocomplete="off" maxlength="24" placeholder="Type SI number here">
+          <div class="si-entry-actions">
+            <button type="button" class="si-entry-back" onclick="showSiEntryChoices()">BACK</button>
+            <button type="button" class="si-entry-submit" onclick="submitSiManual()">SEARCH SI</button>
+          </div>
+          <div id="siManualMessage" class="si-entry-message" aria-live="polite"></div>
+        </div>
+
+        <div id="siCameraSection" class="si-entry-section" hidden>
+          <p class="si-camera-instruction">
+            Keep the document upright. Move it until the printed SI number at the bottom-right
+            is inside the guide. The number will be read automatically.
+          </p>
+          <div id="siCameraStage" class="si-camera-stage">
+            <video id="siCameraVideo" autoplay muted playsinline></video>
+            <div class="si-camera-target" aria-hidden="true"><span>SI NUMBER</span></div>
+          </div>
+          <div id="siCameraStatus" class="si-camera-status" role="status" aria-live="polite">
+            Starting camera…
+          </div>
+          <div class="si-entry-actions">
+            <button type="button" class="si-entry-back" onclick="stopSiCameraScan();showSiEntryChoices()">BACK</button>
+            <button type="button" class="si-entry-submit" onclick="stopSiCameraScan();showSiManualEntry()">TYPE INSTEAD</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
    
 
@@ -4913,15 +5066,9 @@ function setUIScanning(state) {
 async function toggleScan() {
   const siNo = document.getElementById("siNo").value;
   if (!siNo) {
-    const siInput = document.getElementById("siNo");
-    if(siInput){
-      siInput.focus();
-      siInput.classList.remove("si-input-attention");
-      void siInput.offsetWidth;
-      siInput.classList.add("si-input-attention");
-    }
+    if (window.openSiEntryDialog) window.openSiEntryDialog();
     showProNotification(
-      "Please enter the SI No before starting the scanner.",
+      "Please choose Type SI No. or Scan SI No. first.",
       "SI No Required",
       "📄"
     );
@@ -5881,11 +6028,7 @@ async function searchSI() {
   const out = document.getElementById("searchResult");
 
   if (!siNo) {
-    out.innerHTML = `
-      <div class="no-results">
-        ❌ ENTER SI NO.
-      </div>
-    `;
+    if (window.openSiEntryDialog) window.openSiEntryDialog();
     return;
   }
 
@@ -6051,7 +6194,7 @@ document.getElementById("scanBtn").style.cursor = "pointer";
   // Clear inputs
   document.getElementById("tagNumberInput").value = "";
 
-  document.getElementById("siNo").value = "";
+  if (window.setSiNoValue) window.setSiNoValue("");
 
 
   // Disable tag button
@@ -6068,7 +6211,7 @@ document.getElementById("scanBtn").style.cursor = "pointer";
 
 
   // Put cursor back to SI
-  document.getElementById("siNo").focus();
+  document.getElementById("siNoEntryButton")?.focus();
 
 }
 function showTagDialog(){
@@ -6098,15 +6241,9 @@ document.getElementById("siNo")
 .value.trim();
 
 if(!siNo){
-  const siInput = document.getElementById("siNo");
-  if(siInput){
-    siInput.focus();
-    siInput.classList.remove("si-input-attention");
-    void siInput.offsetWidth;
-    siInput.classList.add("si-input-attention");
-  }
+  if (window.openSiEntryDialog) window.openSiEntryDialog();
   showProNotification(
-    "Please enter the SI No before adding a tag.",
+    "Please choose Type SI No. or Scan SI No. first.",
     "SI No Required",
     "📄"
   );
@@ -12323,6 +12460,397 @@ function aoVideoCreatePeer(){
 })();
 </script>
 
+
+
+<script>
+/* =========================================================
+   SI NUMBER ENTRY POPUP + AUTOMATIC DOCUMENT OCR
+   The recognized number is written into the original #siNo field.
+   Existing Search SI, inventory scan, and tag functions keep
+   their current data/API paths.
+========================================================= */
+(function(){
+  "use strict";
+
+  var siStream = null;
+  var siOcrWorker = null;
+  var siOcrScriptPromise = null;
+  var siOcrTimer = null;
+  var siOcrActive = false;
+  var siOcrBusy = false;
+  var siLastCandidate = "";
+  var siCandidateCount = 0;
+  var siCameraStarting = false;
+  var siScanGeneration = 0;
+
+  function byId(id){ return document.getElementById(id); }
+
+  function setView(view){
+    var ids = {
+      choices:"siChoiceSection",
+      manual:"siManualSection",
+      camera:"siCameraSection"
+    };
+    Object.keys(ids).forEach(function(key){
+      var el = byId(ids[key]);
+      if(el) el.hidden = key !== view;
+    });
+  }
+
+  function setSiNoValue(value){
+    var clean = String(value || "").trim();
+    var input = byId("siNo");
+    if(input){
+      input.value = clean;
+      input.dispatchEvent(new Event("input",{bubbles:true}));
+    }
+    var label = byId("siNoEntryValue");
+    if(label){
+      label.textContent = clean ? ("SI No: " + clean) : "Tap to type or scan SI number";
+    }
+  }
+
+  function openSiEntryDialog(){
+    stopSiCameraScan();
+    setView("choices");
+    var overlay = byId("siEntryOverlay");
+    if(!overlay) return;
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden","false");
+  }
+
+  function closeSiEntryDialog(){
+    stopSiCameraScan();
+    var overlay = byId("siEntryOverlay");
+    if(overlay){
+      overlay.classList.remove("open");
+      overlay.setAttribute("aria-hidden","true");
+    }
+  }
+
+  function showSiEntryChoices(){
+    stopSiCameraScan();
+    setView("choices");
+  }
+
+  function showSiManualEntry(){
+    stopSiCameraScan();
+    setView("manual");
+    var input = byId("siManualInput");
+    var message = byId("siManualMessage");
+    if(message) message.textContent = "";
+    if(input){
+      input.value = (byId("siNo")?.value || "");
+      window.setTimeout(function(){ input.focus(); },50);
+    }
+  }
+
+  async function submitSiManual(){
+    var input = byId("siManualInput");
+    var message = byId("siManualMessage");
+    var value = String(input?.value || "").trim();
+    if(!value){
+      if(message) message.textContent = "Please type the SI number.";
+      input?.focus();
+      return;
+    }
+    setSiNoValue(value);
+    closeSiEntryDialog();
+    if(typeof window.searchSI === "function"){
+      await window.searchSI();
+    }
+  }
+
+  function loadTesseract(){
+    if(window.Tesseract) return Promise.resolve(window.Tesseract);
+    if(siOcrScriptPromise) return siOcrScriptPromise;
+
+    siOcrScriptPromise = new Promise(function(resolve,reject){
+      var script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+      script.async = true;
+      script.onload = function(){
+        if(window.Tesseract) resolve(window.Tesseract);
+        else reject(new Error("The number reader could not be initialized."));
+      };
+      script.onerror = function(){
+        siOcrScriptPromise = null;
+        reject(new Error("Could not load the SI number reader. Check your internet connection."));
+      };
+      document.head.appendChild(script);
+    });
+    return siOcrScriptPromise;
+  }
+
+  async function ensureSiOcrWorker(){
+    if(siOcrWorker) return siOcrWorker;
+    var Tesseract = await loadTesseract();
+    var status = byId("siCameraStatus");
+    if(status) status.textContent = "Loading number reader for first use…";
+    siOcrWorker = await Tesseract.createWorker("eng",1);
+    await siOcrWorker.setParameters({
+      tessedit_char_whitelist:"0123456789",
+      tessedit_pageseg_mode:6
+    });
+    return siOcrWorker;
+  }
+
+  function resizeSiCameraStage(){
+    var video = byId("siCameraVideo");
+    var stage = byId("siCameraStage");
+    if(!video || !stage || !video.videoWidth || !video.videoHeight) return;
+
+    var ratio = video.videoWidth / video.videoHeight;
+    var parent = stage.parentElement;
+    var maxWidth = Math.max(220,(parent?.clientWidth || (window.innerWidth - 70)));
+    var maxHeight = Math.max(240,window.innerHeight * 0.58);
+    var height = Math.min(maxHeight,maxWidth / ratio);
+    var width = height * ratio;
+    stage.style.width = Math.floor(width) + "px";
+    stage.style.height = Math.floor(height) + "px";
+  }
+
+  function makeSiOcrCanvas(){
+    var video = byId("siCameraVideo");
+    if(!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
+
+    /* The SI field is normally at the lower-right of the laboratory copy.
+       OCR reads this camera-frame area directly; it does not need a red box. */
+    var sx = Math.floor(video.videoWidth * 0.50);
+    var sy = Math.floor(video.videoHeight * 0.72);
+    var sw = Math.floor(video.videoWidth * 0.48);
+    var sh = Math.floor(video.videoHeight * 0.20);
+
+    var scale = Math.min(4,Math.max(1.8,1450 / Math.max(sw,1)));
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.max(1,Math.floor(sw * scale));
+    canvas.height = Math.max(1,Math.floor(sh * scale));
+    var context = canvas.getContext("2d",{willReadFrequently:true});
+    context.filter = "grayscale(100%) contrast(135%)";
+    context.drawImage(video,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+    context.filter = "none";
+    return canvas;
+  }
+
+  function getSiCandidate(text){
+    var normalized = String(text || "").replace(/[Oo]/g,"0");
+    var matches = normalized.match(/\d{4,8}/g) || [];
+
+    /* Prefer a 5-digit SI number, as in the supplied laboratory-copy example. */
+    var fiveDigit = matches.find(function(value){ return value.length === 5; });
+    if(fiveDigit) return fiveDigit;
+    if(matches.length === 1) return matches[0];
+
+    /* OCR can occasionally split one printed number with a space/newline. */
+    var compact = normalized.replace(/[^0-9]/g,"");
+    if(compact.length >= 4 && compact.length <= 8) return compact;
+    return "";
+  }
+
+  function stopSiCameraScan(){
+    siScanGeneration++;
+    siOcrActive = false;
+    siCameraStarting = false;
+    if(siOcrTimer){
+      window.clearTimeout(siOcrTimer);
+      siOcrTimer = null;
+    }
+
+    var video = byId("siCameraVideo");
+    if(video){
+      try{ video.pause(); }catch(e){}
+      video.srcObject = null;
+    }
+    if(siStream){
+      siStream.getTracks().forEach(function(track){
+        try{ track.stop(); }catch(e){}
+      });
+      siStream = null;
+    }
+
+    siLastCandidate = "";
+    siCandidateCount = 0;
+  }
+
+  function acceptSiCandidate(value){
+    if(!siOcrActive) return;
+    siOcrActive = false;
+    stopSiCameraScan();
+    setSiNoValue(value);
+    closeSiEntryDialog();
+    if(typeof window.searchSI === "function"){
+      window.setTimeout(function(){ window.searchSI(); },120);
+    }
+  }
+
+  async function runSiOcrLoop(generation){
+    if(!siOcrActive || generation !== siScanGeneration) return;
+    if(siOcrBusy){
+      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },500);
+      return;
+    }
+
+    var video = byId("siCameraVideo");
+    if(video && video.readyState >= 2){
+      siOcrBusy = true;
+      try{
+        var canvas = makeSiOcrCanvas();
+        if(canvas){
+          var result = await siOcrWorker.recognize(canvas);
+          if(!siOcrActive || generation !== siScanGeneration) return;
+          var candidate = getSiCandidate(result?.data?.text || "");
+          var status = byId("siCameraStatus");
+
+          if(candidate){
+            if(candidate === siLastCandidate){
+              siCandidateCount++;
+            }else{
+              siLastCandidate = candidate;
+              siCandidateCount = 1;
+            }
+
+            if(status){
+              status.textContent = "Detected " + candidate + " — confirming…";
+            }
+
+            /* Require the same number in consecutive passes to reduce false reads. */
+            if(siCandidateCount >= 2){
+              acceptSiCandidate(candidate);
+              return;
+            }
+          }else{
+            siLastCandidate = "";
+            siCandidateCount = 0;
+            if(status){
+              status.textContent = "Looking for the printed SI digits. Keep the number inside the blue guide and hold steady.";
+            }
+          }
+        }
+      }catch(error){
+        console.error("SI OCR ERROR:",error);
+        var statusBox = byId("siCameraStatus");
+        if(statusBox){
+          statusBox.textContent = error?.message || "Unable to read the SI number. Choose Type SI No. instead.";
+        }
+      }finally{
+        siOcrBusy = false;
+      }
+    }
+
+    if(siOcrActive && generation === siScanGeneration){
+      siOcrTimer = window.setTimeout(function(){ runSiOcrLoop(generation); },500);
+    }
+  }
+
+  async function startSiCameraScan(){
+    stopSiCameraScan();
+    var generation = siScanGeneration;
+    setView("camera");
+    var status = byId("siCameraStatus");
+    var video = byId("siCameraVideo");
+
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      if(status) status.textContent = "Camera access is not available here. Choose Type SI No. instead.";
+      return;
+    }
+    if(siCameraStarting) return;
+    siCameraStarting = true;
+    siOcrActive = true;
+
+    try{
+      if(status) status.textContent = "Opening rear camera…";
+      siStream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{
+          facingMode:{ideal:"environment"},
+          width:{ideal:1920},
+          height:{ideal:1080}
+        }
+      });
+
+      if(!siOcrActive || generation !== siScanGeneration){
+        siStream.getTracks().forEach(function(track){ track.stop(); });
+        siStream = null;
+        return;
+      }
+
+      video.srcObject = siStream;
+      await video.play();
+
+      if(video.readyState < 2){
+        await new Promise(function(resolve){
+          if(video.readyState >= 2){
+            resolve();
+            return;
+          }
+          video.addEventListener("loadeddata",resolve,{once:true});
+          window.setTimeout(resolve,5000);
+        });
+      }
+      if(!video.videoWidth || !video.videoHeight){
+        throw new Error("The camera preview did not become ready. Try again or choose Type SI No.");
+      }
+      resizeSiCameraStage();
+      window.addEventListener("resize",resizeSiCameraStage);
+
+      if(status) status.textContent = "Camera ready. Loading the number reader…";
+      await ensureSiOcrWorker();
+
+      if(!siOcrActive || generation !== siScanGeneration) return;
+      if(status){
+        status.textContent = "Hold steady. Keep the printed SI number inside the blue guide.";
+      }
+      siCameraStarting = false;
+      runSiOcrLoop(generation);
+    }catch(error){
+      console.error("SI CAMERA ERROR:",error);
+      stopSiCameraScan();
+      if(status){
+        status.textContent = error?.name === "NotAllowedError"
+          ? "Camera permission was denied. Allow camera access or choose Type SI No."
+          : (error?.message || "Could not start the camera. Choose Type SI No. instead.");
+      }
+    }finally{
+      siCameraStarting = false;
+    }
+  }
+
+  /* Public handlers used by the new SI entry controls. */
+  window.openSiEntryDialog = openSiEntryDialog;
+  window.closeSiEntryDialog = closeSiEntryDialog;
+  window.showSiEntryChoices = showSiEntryChoices;
+  window.showSiManualEntry = showSiManualEntry;
+  window.submitSiManual = submitSiManual;
+  window.startSiCameraScan = startSiCameraScan;
+  window.stopSiCameraScan = stopSiCameraScan;
+  window.setSiNoValue = setSiNoValue;
+
+  var overlay = byId("siEntryOverlay");
+  if(overlay){
+    overlay.addEventListener("click",function(event){
+      if(event.target === overlay) closeSiEntryDialog();
+    });
+  }
+
+  var manualInput = byId("siManualInput");
+  if(manualInput){
+    manualInput.addEventListener("keydown",function(event){
+      if(event.key === "Enter"){
+        event.preventDefault();
+        submitSiManual();
+      }
+    });
+  }
+
+  document.addEventListener("keydown",function(event){
+    if(event.key === "Escape" && byId("siEntryOverlay")?.classList.contains("open")){
+      closeSiEntryDialog();
+    }
+  });
+
+  window.addEventListener("pagehide",stopSiCameraScan);
+})();
+</script>
 
 </body>
 </html>
