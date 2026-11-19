@@ -3729,6 +3729,40 @@ body::before{
   border:1px solid #bfdbfe;
   background:#eff6ff;
 }
+.scanner-search-result-card{
+  position:relative;
+  margin-top:0;
+  padding:17px 18px 16px;
+  text-align:left;
+}
+.scanner-search-result-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+.scanner-search-result-number{
+  color:#718096;
+  font-size:10px;
+  font-weight:900;
+}
+.scanner-search-result-card > b{
+  display:inline-block;
+  padding-right:4px;
+  color:#172033;
+  font-size:13px;
+  line-height:1.4;
+}
+.scanner-search-result-card small{
+  display:inline-block;
+  margin-top:4px;
+  color:#51657c;
+  font-size:11px;
+  line-height:1.5;
+}
+.scanner-search-result-card small b{color:#26364a}
+
 .scanner-search-item{
   position:relative;
   padding:11px 12px;
@@ -6215,11 +6249,6 @@ async function searchSI() {
      / Add-via-Tag functions.
 ========================================================= */
 
-let scannerSearchSICache = [];
-let scannerSearchSICacheBranch = "";
-let scannerSearchSICacheAt = 0;
-let scannerSearchSILoadPromise = null;
-
 function scannerSearchEscape(value){
   return String(value ?? "").replace(/[&<>"']/g, ch => ({
     "&":"&amp;",
@@ -6309,12 +6338,11 @@ function openScannerSearchMode(mode){
   const overlay = scannerSearchOverlay();
   const isSI = mode === "si";
   const title = isSI ? "📄 Search SI No." : "🏷️ Search Tag Number";
-  const placeholder = isSI ? "Enter or select an SI No." : "Enter Tag Number";
+  const placeholder = isSI ? "Enter all or part of an SI No." : "Enter Tag Number";
   const inputId = isSI ? "scannerSearchSIInput" : "scannerSearchTagInput";
-  const listMarkup = isSI ? '<datalist id="scannerSearchSIList"></datalist>' : "";
   const note = isSI
-    ? "Searches all SI numbers recorded in this branch's Sold Out list. Start typing to see existing SI suggestions."
-    : "Searches both Sold Out and Available Stocks for this branch. This is a lookup only; it does not add or change stock.";
+    ? "Searches Sold Out records only. Type an SI No. or part of it, then press Enter. Each item will show its own Dashboard status."
+    : "Searches both Sold Out and Available Stocks. Each Sold Out item shows its own Dashboard status.";
   const runFunction = isSI ? "runScannerSearchSI()" : "runScannerSearchTag()";
 
   overlay.innerHTML = `
@@ -6322,7 +6350,7 @@ function openScannerSearchMode(mode){
       <div class="scanner-search-head">
         <div>
           <div id="scannerSearchTitle" class="scanner-search-head-title">${title}</div>
-          <div class="scanner-search-head-sub">${isSI ? "Search the branch's Sold Out records." : "Search Sold Out and Available Stocks records."}</div>
+          <div class="scanner-search-head-sub">${isSI ? "Separate Sold Out SI search." : "Sold Out and Available Stocks tag search."}</div>
         </div>
         <button type="button" class="scanner-search-close" onclick="closeScannerSearch()" aria-label="Close">×</button>
       </div>
@@ -6334,10 +6362,8 @@ function openScannerSearchMode(mode){
           type="search"
           autocomplete="off"
           placeholder="${placeholder}"
-          ${isSI ? 'list="scannerSearchSIList"' : ""}
           onkeydown="if(event.key==='Enter'){event.preventDefault();${runFunction};}"
         >
-        ${listMarkup}
         <div class="scanner-search-actions">
           <button type="button" class="btn-blue" id="scannerSearchRunBtn" onclick="${runFunction}">SEARCH</button>
           <button type="button" class="cancel-report-btn" onclick="openScannerSearchOptions()">BACK</button>
@@ -6351,84 +6377,8 @@ function openScannerSearchMode(mode){
 
   const input = document.getElementById(inputId);
   setTimeout(()=>input?.focus(),40);
-
-  if(isSI){
-    loadScannerSearchSISuggestions();
-  }
 }
 
-async function loadScannerSearchSISuggestions(){
-  const list = document.getElementById("scannerSearchSIList");
-  const note = document.getElementById("scannerSearchNote");
-  if(!list) return;
-
-  try{
-    const values = await directLoadScannerSIs();
-    const liveList = document.getElementById("scannerSearchSIList");
-    if(!liveList) return;
-
-    liveList.innerHTML = values.map(value =>
-      `<option value="${scannerSearchEscape(value)}"></option>`
-    ).join("");
-
-    const liveNote = document.getElementById("scannerSearchNote");
-    if(liveNote){
-      liveNote.textContent = values.length
-        ? values.length.toLocaleString("en-PH") + " existing SI number(s) loaded. You can also type part of an SI No. to search."
-        : "No SI numbers are recorded in this branch yet. You can still enter an SI No. to search.";
-    }
-  }catch(error){
-    console.warn("Unable to load SI suggestions:",error);
-    const liveNote = document.getElementById("scannerSearchNote");
-    if(liveNote){
-      liveNote.textContent = "SI suggestions could not be loaded. You can still type an SI No. and search.";
-    }
-  }
-}
-
-async function directLoadScannerSIs(){
-  const branch = String(BRANCH || "").trim().toUpperCase();
-  if(scannerSearchSICacheBranch === branch &&
-     Date.now() - scannerSearchSICacheAt < 5 * 60 * 1000){
-    return scannerSearchSICache.slice();
-  }
-  if(scannerSearchSILoadPromise) return scannerSearchSILoadPromise;
-
-  scannerSearchSILoadPromise = (async()=>{
-    await requireSupabaseAccess();
-    const table = branchTable(branch,"scanresults");
-    const values = new Set();
-    const pageSize = 1000;
-    let offset = 0;
-
-    // Paginate so the suggestions include all stored SI values,
-    // rather than stopping at Supabase's usual first-page limit.
-    while(offset < 50000){
-      const rows = await sbRequest(
-        "/rest/v1/" + table +
-        "?select=%22SI%20NO.%22&limit=" + pageSize + "&offset=" + offset
-      );
-      const page = Array.isArray(rows) ? rows : [];
-      page.forEach(row=>{
-        const value = String(row?.["SI NO."] ?? "").trim();
-        if(value) values.add(value);
-      });
-      if(page.length < pageSize) break;
-      offset += pageSize;
-    }
-
-    scannerSearchSICache = Array.from(values).sort((a,b)=>
-      a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})
-    );
-    scannerSearchSICacheBranch = branch;
-    scannerSearchSICacheAt = Date.now();
-    return scannerSearchSICache.slice();
-  })().finally(()=>{
-    scannerSearchSILoadPromise = null;
-  });
-
-  return scannerSearchSILoadPromise;
-}
 
 async function directScannerSearchSI(query){
   await requireSupabaseAccess();
@@ -6507,17 +6457,19 @@ async function directScannerSearchTag(query){
 
 function scannerSearchItemMarkup(item,index){
   const status = scannerSearchStatus(item.status,item.source);
-  const sourceLabel = item.source === "stocks" ? "AVAILABLE STOCKS" : "SOLD OUT";
+  const available = item.source === "stocks";
   return `
-    <div class="scanner-search-item">
-      <div class="scanner-search-item-title">${scannerSearchEscape(item.description || "No description")}</div>
-      <div class="scanner-search-item-meta">
-        <span>🏷 Tag: <b>${scannerSearchEscape(item.tag || "—")}</b></span>
-        ${item.lenstype ? `<span>Lens Type: <b>${scannerSearchEscape(item.lenstype)}</b></span>` : ""}
-        ${item.siNo ? `<span>SI No: <b>${scannerSearchEscape(item.siNo)}</b></span>` : ""}
-        ${item.date ? `<span>Date: <b>${scannerSearchEscape(scannerSearchFormatDate(item.date))}</b></span>` : ""}
-        <span>Source: <b>${sourceLabel}</b></span>
+    <div class="card scanner-search-result-card">
+      <div class="scanner-search-result-head">
+        <span class="scanner-search-result-number">#${Number(index)+1}</span>
+        <span class="scanner-search-status ${status.className}">${status.label}</span>
       </div>
+      <b>${scannerSearchEscape(item.description || "No description")}</b><br>
+      ${item.lenstype ? `<small>${scannerSearchEscape(item.lenstype)}</small><br>` : ""}
+      <small>🏷 Tag: <b>${scannerSearchEscape(item.tag || "—")}</b></small><br>
+      ${item.siNo ? `<small>📄 SI No: <b>${scannerSearchEscape(item.siNo)}</b></small><br>` : ""}
+      ${item.date ? `<small>📅 ${scannerSearchEscape(scannerSearchFormatDate(item.date))}</small><br>` : ""}
+      ${available ? `<small>📦 <b>AVAILABLE STOCKS</b></small>` : ""}
     </div>
   `;
 }
@@ -6531,52 +6483,26 @@ async function runScannerSearchSI(){
   const query = String(input.value || "").trim();
   if(!query){
     input.focus();
-    output.innerHTML = '<div class="scanner-search-empty">Please enter an SI No. to search.</div>';
+    output.innerHTML = '<div class="no-results">❌ ENTER SI NO.</div>';
     return;
   }
 
   if(button){button.disabled=true;button.textContent="SEARCHING...";}
-  output.innerHTML = '<div class="scanner-search-empty">⏳ Searching Sold Out SI numbers...</div>';
+  output.innerHTML = '<div class="card">🔎 SEARCHING SOLD OUT SI: <b>' + scannerSearchEscape(query) + '</b>...</div>';
 
   try{
     const items = await directScannerSearchSI(query);
     if(!items.length){
-      output.innerHTML = `<div class="scanner-search-empty">No Sold Out records found matching <b>${scannerSearchEscape(query)}</b> in branch <b>${scannerSearchEscape(BRANCH)}</b>.</div>`;
+      output.innerHTML = `<div class="no-results">❌ No results found<br><br>SI No: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
     }
 
-    const groups = new Map();
-    items.forEach(item=>{
-      const key = item.siNo || "(BLANK SI NO.)";
-      if(!groups.has(key)) groups.set(key,[]);
-      groups.get(key).push(item);
-    });
-
-    const itemCount = items.length;
-    output.innerHTML = `
-      <div class="scanner-search-summary">
-        <div>${itemCount.toLocaleString("en-PH")} matching item(s)<small>Branch: ${scannerSearchEscape(BRANCH)}</small></div>
-        <span>${groups.size.toLocaleString("en-PH")} SI number(s)</span>
-      </div>
-      ${Array.from(groups.entries()).map(([siNo,group])=>{
-        // Scanner's existing SI validation treats an SI as marked when
-        // at least one Sold Out row with that SI has STATUS = MARKED.
-        const marked = group.some(item=>String(item.status).trim().toUpperCase()==="MARKED");
-        const status = scannerSearchStatus(marked ? "MARKED" : "", "sold");
-        return `
-          <section class="scanner-search-group">
-            <div class="scanner-search-group-head">
-              <strong>SI NO. ${scannerSearchEscape(siNo)}</strong>
-              <span class="scanner-search-status ${status.className}">${status.label}</span>
-            </div>
-            ${group.map((item,index)=>scannerSearchItemMarkup(item,index)).join("")}
-          </section>
-        `;
-      }).join("")}
-    `;
+    // Deliberately show one status for EACH tag/item, never one shared
+    // status for the entire SI group. Dashboard STATUS is read per row.
+    output.innerHTML = items.map((item,index)=>scannerSearchItemMarkup(item,index)).join("");
   }catch(error){
     console.error("Scanner SI search failed:",error);
-    output.innerHTML = `<div class="scanner-search-empty">❌ Search failed: ${scannerSearchEscape(error?.message || error)}</div>`;
+    output.innerHTML = `<div class="card red">❌ SEARCH FAILED<br><br>${scannerSearchEscape(error?.message || error)}</div>`;
   }finally{
     const liveButton = document.getElementById("scannerSearchRunBtn");
     if(liveButton){liveButton.disabled=false;liveButton.textContent="SEARCH";}
@@ -6591,44 +6517,27 @@ async function runScannerSearchTag(){
   const query = String(input.value || "").trim();
   if(!query){
     input.focus();
-    output.innerHTML = '<div class="scanner-search-empty">Please enter a Tag Number to search.</div>';
+    output.innerHTML = '<div class="no-results">❌ ENTER TAG NUMBER.</div>';
     return;
   }
 
   const button = document.getElementById("scannerSearchRunBtn");
   if(button){button.disabled=true;button.textContent="SEARCHING...";}
-  output.innerHTML = '<div class="scanner-search-empty">⏳ Searching Sold Out and Available Stocks...</div>';
+  output.innerHTML = '<div class="card">🔎 SEARCHING SOLD OUT AND AVAILABLE STOCKS: <b>' + scannerSearchEscape(query) + '</b>...</div>';
 
   try{
     const items = await directScannerSearchTag(query);
     if(!items.length){
-      output.innerHTML = `<div class="scanner-search-empty">No Sold Out or Available Stocks records found matching tag <b>${scannerSearchEscape(query)}</b> in branch <b>${scannerSearchEscape(BRANCH)}</b>.</div>`;
+      output.innerHTML = `<div class="no-results">❌ No results found<br><br>Tag Number: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
     }
 
-    const soldCount = items.filter(item=>item.source==="sold").length;
-    const stockCount = items.filter(item=>item.source==="stocks").length;
-    output.innerHTML = `
-      <div class="scanner-search-summary">
-        <div>${items.length.toLocaleString("en-PH")} matching tag record(s)<small>Branch: ${scannerSearchEscape(BRANCH)}</small></div>
-        <span>${soldCount} Sold Out · ${stockCount} Available</span>
-      </div>
-      ${items.map((item,index)=>{
-        const status = scannerSearchStatus(item.status,item.source);
-        return `
-          <section class="scanner-search-group">
-            <div class="scanner-search-group-head">
-              <strong>${scannerSearchEscape(item.tag || "TAG")} · ${item.source==="stocks" ? "AVAILABLE STOCKS" : "SOLD OUT"}</strong>
-              <span class="scanner-search-status ${status.className}">${status.label}</span>
-            </div>
-            ${scannerSearchItemMarkup(item,index)}
-          </section>
-        `;
-      }).join("")}
-    `;
+    // Sold Out rows show MARKED/WAITING per tag number. Stock rows
+    // remain AVAILABLE and are included in this same tag search.
+    output.innerHTML = items.map((item,index)=>scannerSearchItemMarkup(item,index)).join("");
   }catch(error){
     console.error("Scanner Tag search failed:",error);
-    output.innerHTML = `<div class="scanner-search-empty">❌ Search failed: ${scannerSearchEscape(error?.message || error)}</div>`;
+    output.innerHTML = `<div class="card red">❌ SEARCH FAILED<br><br>${scannerSearchEscape(error?.message || error)}</div>`;
   }finally{
     const liveButton = document.getElementById("scannerSearchRunBtn");
     if(liveButton){liveButton.disabled=false;liveButton.textContent="SEARCH";}
