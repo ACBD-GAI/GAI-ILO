@@ -3762,6 +3762,34 @@ body::before{
 .scanner-si-picker-item:hover{background:#f4f8ff;transform:none;}
 .scanner-si-picker-item strong{display:block;font-size:12px;font-weight:900;}
 .scanner-si-picker-item small{display:block;margin-top:3px;color:#64748b;font-size:9px;font-weight:650;}
+/* A SI picker row turns green ONLY when every Sold Out item under
+   that SI No. has STATUS = MARKED. */
+.scanner-si-picker-item.all-marked{
+  color:#ffffff !important;
+  background:#15803d !important;
+  border-bottom-color:rgba(255,255,255,.20) !important;
+}
+.scanner-si-picker-item.all-marked:hover{
+  background:#166534 !important;
+}
+.scanner-si-picker-item.all-marked strong,
+.scanner-si-picker-item.all-marked small{
+  color:#ffffff !important;
+}
+.scanner-si-picker-item.all-marked .scanner-si-picker-marked-label{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-left:auto;
+  padding:5px 8px;
+  border:1px solid rgba(255,255,255,.48);
+  border-radius:999px;
+  color:#ffffff !important;
+  background:rgba(255,255,255,.13);
+  font-size:9px;
+  font-weight:900;
+  white-space:nowrap;
+}
 .scanner-si-picker-empty{padding:24px 14px;color:#64748b;font-size:11px;text-align:center;}
 @media(max-width:520px){
   #scannerSIPickerOverlay{padding:9px;}
@@ -3945,6 +3973,33 @@ body::before{
   line-height:1.5;
 }
 .scanner-search-result-card small b{color:#26364a}
+
+/* Search SI: individually marked Sold Out items keep a clean white card. */
+.scanner-search-result-card.is-marked{
+  border:1px solid #86c99a !important;
+  background:#ffffff !important;
+  box-shadow:0 10px 24px rgba(21,128,61,.09) !important;
+}
+.scanner-search-result-card.is-marked::before{
+  background:linear-gradient(180deg,#86c99a,#22c55e) !important;
+}
+.scanner-search-result-card.is-marked .scanner-search-result-number{
+  color:#15803d !important;
+}
+.scanner-search-result-card.is-marked > b{
+  color:#172033 !important;
+}
+.scanner-search-result-card.is-marked small{
+  color:#51657c !important;
+}
+.scanner-search-result-card.is-marked small b{
+  color:#26364a !important;
+}
+.scanner-search-result-card.is-marked .scanner-search-status.marked{
+  color:#ffffff !important;
+  border:1px solid #15803d !important;
+  background:#15803d !important;
+}
 
 .scanner-search-item{
   position:relative;
@@ -6686,17 +6741,28 @@ async function loadScannerSoldSIOptions(){
   await requireSupabaseAccess();
   const rows = await scannerSearchFetchAll(
     "/rest/v1/" + branchTable(branch,"scanresults") +
-    "?select=%22SI%20NO.%22,%22DATE%20AND%20TIME%22&%22SI%20NO.%22=not.is.null&order=%22DATE%20AND%20TIME%22.desc.nullslast"
+    "?select=%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS&%22SI%20NO.%22=not.is.null&order=%22DATE%20AND%20TIME%22.desc.nullslast"
   );
 
   const grouped = new Map();
   rows.forEach(row=>{
     const si = String(row?.["SI NO."] ?? "").trim();
     if(!si) return;
-    const record = grouped.get(si) || {si,dates:[],count:0};
+    const record = grouped.get(si) || {si,dates:[],count:0,markedCount:0,allMarked:true};
     const date = String(row?.["DATE AND TIME"] ?? "").trim();
     if(date) record.dates.push(date);
     record.count++;
+
+    // SI-level green styling is allowed only when EVERY item in this
+    // SI group is marked in the Dashboard. One waiting item keeps the
+    // complete SI picker row in its normal white style.
+    const isMarked = String(row?.STATUS ?? "").trim().toUpperCase() === "MARKED";
+    if(isMarked){
+      record.markedCount++;
+    }else{
+      record.allMarked = false;
+    }
+
     grouped.set(si,record);
   });
 
@@ -6704,7 +6770,12 @@ async function loadScannerSoldSIOptions(){
     const uniqueDates = [...new Set(record.dates)].sort((a,b)=>
       scannerSearchDateKey(a).localeCompare(scannerSearchDateKey(b))
     );
-    return {...record,dates:uniqueDates,latestDate:uniqueDates[uniqueDates.length-1] || ""};
+    return {
+      ...record,
+      dates:uniqueDates,
+      latestDate:uniqueDates[uniqueDates.length-1] || "",
+      allMarked:record.count > 0 && record.allMarked && record.markedCount === record.count
+    };
   }).sort((a,b)=>a.si.localeCompare(b.si,undefined,{numeric:true,sensitivity:"base"}));
 
   renderScannerSIPickerList();
@@ -6747,9 +6818,14 @@ function renderScannerSIPickerList(resetPage=false){
       const dateLabel = record.latestDate
         ? "Latest Sold Out date: " + scannerSIPickerDateLabel(record.latestDate)
         : "No date recorded";
+      const allMarkedClass = record.allMarked ? " all-marked" : "";
+      const allMarkedLabel = record.allMarked
+        ? '<span class="scanner-si-picker-marked-label">✓ ALL MARKED</span>'
+        : "";
       return `
-        <button type="button" class="scanner-si-picker-item" data-si="${scannerSearchEscape(record.si)}" onclick="chooseScannerSIPickerSI(this.dataset.si)">
+        <button type="button" class="scanner-si-picker-item${allMarkedClass}" data-si="${scannerSearchEscape(record.si)}" onclick="chooseScannerSIPickerSI(this.dataset.si)">
           <span><strong>${scannerSearchEscape(record.si)}</strong><small>${scannerSearchEscape(dateLabel)}</small></span>
+          ${allMarkedLabel}
           <small>${record.count.toLocaleString("en-PH")} item(s)　›</small>
         </button>
       `;
@@ -6808,9 +6884,12 @@ async function directScannerSearchSI(query){
     "/rest/v1/" + branchTable(BRANCH,"scanresults") +
     "?%22SI%20NO.%22=eq." + encodeURIComponent(value) +
     "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS" +
-    "&order=NTAGN.asc.nullslast"
+    "&order=%22DATE%20AND%20TIME%22.desc.nullslast"
   );
 
+  // Newest Sold Out entry first. Sort by the FULL timestamp
+  // (date and time), not just the calendar date. Rows without a
+  // usable timestamp stay after dated records.
   return rows.map(row=>({
     source:"sold",
     branch:String(row.BR || BRANCH),
@@ -6820,7 +6899,21 @@ async function directScannerSearchSI(query){
     siNo:String(row["SI NO."] || ""),
     date:String(row["DATE AND TIME"] || ""),
     status:String(row.STATUS || "")
-  }));
+  })).sort((a,b)=>{
+    const aTime = Date.parse(a.date);
+    const bTime = Date.parse(b.date);
+    const aValid = Number.isFinite(aTime);
+    const bValid = Number.isFinite(bTime);
+
+    if(aValid !== bValid) return aValid ? -1 : 1;
+    if(aValid && aTime !== bTime) return bTime - aTime;
+
+    return a.tag.localeCompare(
+      b.tag,
+      undefined,
+      {numeric:true,sensitivity:"base"}
+    );
+  });
 }
 
 async function directScannerSearchTag(query){
@@ -6874,11 +6967,15 @@ async function directScannerSearchTag(query){
   );
 }
 
-function scannerSearchItemMarkup(item,index){
+function scannerSearchItemMarkup(item,index,highlightMarked=false){
   const status = scannerSearchStatus(item.status,item.source);
   const available = item.source === "stocks";
+  const isMarked =
+    highlightMarked &&
+    !available &&
+    String(item.status || "").trim().toUpperCase() === "MARKED";
   return `
-    <div class="card scanner-search-result-card">
+    <div class="card scanner-search-result-card${isMarked ? " is-marked" : ""}">
       <div class="scanner-search-result-head">
         <span class="scanner-search-result-number">#${Number(index)+1}</span>
         <span class="scanner-search-status ${status.className}">${status.label}</span>
@@ -6918,7 +7015,7 @@ async function runScannerSearchSI(){
 
     // Deliberately show one status for EACH tag/item, never one shared
     // status for the entire SI group. Dashboard STATUS is read per row.
-    output.innerHTML = items.map((item,index)=>scannerSearchItemMarkup(item,index)).join("");
+    output.innerHTML = items.map((item,index)=>scannerSearchItemMarkup(item,index,true)).join("");
   }catch(error){
     console.error("Scanner SI search failed:",error);
     output.innerHTML = `<div class="card red">❌ SEARCH FAILED<br><br>${scannerSearchEscape(error?.message || error)}</div>`;
