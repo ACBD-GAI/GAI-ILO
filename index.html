@@ -3600,6 +3600,49 @@ body::before{
   overflow:auto;
   padding:18px;
 }
+#scannerSearchOverlay .scanner-search-mode-modal{
+  height:min(88vh,900px);
+  max-height:88vh;
+}
+.scanner-search-mode-modal .scanner-search-body{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+}
+.scanner-search-select{
+  width:100%;
+  min-height:44px;
+  margin:0 0 11px;
+  padding:10px 12px;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  outline:none;
+  background:#fff;
+  color:#172033;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  box-shadow:0 4px 12px rgba(50,70,100,.05);
+}
+.scanner-search-select:focus{
+  border-color:#60a5fa;
+  box-shadow:0 0 0 4px rgba(96,165,250,.13);
+}
+.scanner-search-mode-modal .scanner-search-results{
+  flex:1 1 auto;
+  min-height:180px;
+  height:0;
+  max-height:none;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.scanner-search-results > .scanner-search-result-card{
+  flex:0 0 auto;
+}
 .scanner-search-options{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -3801,7 +3844,9 @@ body::before{
   .scanner-search-body{padding:14px}
   .scanner-search-options{grid-template-columns:1fr}
   .scanner-search-option{min-height:76px}
-  .scanner-search-results{max-height:52vh}
+  #scannerSearchOverlay .scanner-search-mode-modal{height:92vh;max-height:92vh}
+  .scanner-search-mode-modal .scanner-search-body{padding:14px}
+  .scanner-search-mode-modal .scanner-search-results{min-height:160px}
 }
 </style>
 
@@ -6338,15 +6383,15 @@ function openScannerSearchMode(mode){
   const overlay = scannerSearchOverlay();
   const isSI = mode === "si";
   const title = isSI ? "📄 Search SI No." : "🏷️ Search Tag Number";
-  const placeholder = isSI ? "Enter all or part of an SI No." : "Enter Tag Number";
+  const placeholder = isSI ? "Enter exact SI No." : "Enter exact Tag Number";
   const inputId = isSI ? "scannerSearchSIInput" : "scannerSearchTagInput";
   const note = isSI
-    ? "Searches Sold Out records only. Type an SI No. or part of it, then press Enter. Each item will show its own Dashboard status."
-    : "Searches both Sold Out and Available Stocks. Each Sold Out item shows its own Dashboard status.";
+    ? "Choose an SI No. from the Sold Out list above, or type the complete SI No. Each Sold Out item shows its own Dashboard status."
+    : "Searches Sold Out and Available Stocks by the complete Tag Number only. Each Sold Out item shows its own Dashboard status.";
   const runFunction = isSI ? "runScannerSearchSI()" : "runScannerSearchTag()";
 
   overlay.innerHTML = `
-    <div class="scanner-search-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSearchTitle">
+    <div class="scanner-search-modal scanner-search-mode-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSearchTitle">
       <div class="scanner-search-head">
         <div>
           <div id="scannerSearchTitle" class="scanner-search-head-title">${title}</div>
@@ -6355,7 +6400,13 @@ function openScannerSearchMode(mode){
         <button type="button" class="scanner-search-close" onclick="closeScannerSearch()" aria-label="Close">×</button>
       </div>
       <div class="scanner-search-body">
-        <label class="scanner-search-input-label" for="${inputId}">${isSI ? "SI NUMBER" : "TAG NUMBER"}</label>
+        ${isSI ? `
+          <label class="scanner-search-input-label" for="scannerSearchSISelect">SOLD OUT SI NUMBERS</label>
+          <select id="scannerSearchSISelect" class="scanner-search-select" onchange="selectScannerSearchSI(this.value)">
+            <option value="">Loading existing SI numbers...</option>
+          </select>
+        ` : ""}
+        <label class="scanner-search-input-label" for="${inputId}">${isSI ? "SI NUMBER (EXACT)" : "TAG NUMBER (EXACT)"}</label>
         <input
           id="${inputId}"
           class="scanner-search-input"
@@ -6376,7 +6427,65 @@ function openScannerSearchMode(mode){
   overlay.style.display = "flex";
 
   const input = document.getElementById(inputId);
+  if(isSI){
+    loadScannerSoldSIOptions().catch(error=>{
+      console.error("Unable to load Sold Out SI list:",error);
+      const select = document.getElementById("scannerSearchSISelect");
+      if(select){
+        select.innerHTML = '<option value="">Unable to load SI numbers</option>';
+        select.disabled = false;
+      }
+    });
+  }
   setTimeout(()=>input?.focus(),40);
+}
+
+async function scannerSearchFetchAll(basePath, pageSize=1000){
+  const all = [];
+  let offset = 0;
+  while(true){
+    const rows = await sbRequest(
+      basePath + "&limit=" + pageSize + "&offset=" + offset
+    );
+    const page = Array.isArray(rows) ? rows : [];
+    all.push(...page);
+    if(page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+async function loadScannerSoldSIOptions(){
+  const select = document.getElementById("scannerSearchSISelect");
+  if(!select) return;
+  const branch = String(BRANCH || "").trim().toUpperCase();
+  if(!branch) throw new Error("No branch selected.");
+
+  // Refresh the dropdown each time Search SI is opened so newly added
+  // Sold Out SI numbers appear without requiring an app reload.
+  select.disabled = true;
+  select.innerHTML = '<option value="">Loading existing SI numbers...</option>';
+  await requireSupabaseAccess();
+  const rows = await scannerSearchFetchAll(
+    "/rest/v1/" + branchTable(branch,"scanresults") +
+    "?select=%22SI%20NO.%22&%22SI%20NO.%22=not.is.null&order=NTAGN.asc.nullslast"
+  );
+  const values = [...new Set(rows
+    .map(row=>String(row?.["SI NO."] ?? "").trim())
+    .filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+
+  select.innerHTML = '<option value="">Select an existing SI No. (' + values.length.toLocaleString("en-PH") + ')</option>' +
+    values.map(value=>'<option value="' + scannerSearchEscape(value) + '">' + scannerSearchEscape(value) + '</option>').join("");
+  select.disabled = false;
+}
+
+function selectScannerSearchSI(value){
+  const si = String(value || "").trim();
+  if(!si) return;
+  const input = document.getElementById("scannerSearchSIInput");
+  if(input) input.value = si;
+  runScannerSearchSI();
 }
 
 
@@ -6385,14 +6494,15 @@ async function directScannerSearchSI(query){
   const value = String(query || "").trim();
   if(!value) return [];
 
-  const rows = await sbRequest(
+  // Exact equality prevents SI 1234 from also returning SI 12345.
+  const rows = await scannerSearchFetchAll(
     "/rest/v1/" + branchTable(BRANCH,"scanresults") +
-    "?%22SI%20NO.%22=ilike." + encodeURIComponent("*" + value + "*") +
+    "?%22SI%20NO.%22=eq." + encodeURIComponent(value) +
     "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS" +
-    "&limit=2000"
+    "&order=NTAGN.asc.nullslast"
   );
 
-  return (Array.isArray(rows) ? rows : []).map(row=>({
+  return rows.map(row=>({
     source:"sold",
     branch:String(row.BR || BRANCH),
     lenstype:String(row.LENSTYPE || ""),
@@ -6406,28 +6516,28 @@ async function directScannerSearchSI(query){
 
 async function directScannerSearchTag(query){
   await requireSupabaseAccess();
-  const value = String(query || "").trim();
+  const value = String(query || "").trim().toUpperCase();
   if(!value) return [];
 
-  const pattern = encodeURIComponent("*" + value + "*");
   const branch = String(BRANCH || "").trim().toUpperCase();
 
+  // Exact tag equality prevents a shorter tag from matching a longer tag.
   const [soldRows, stockRows] = await Promise.all([
-    sbRequest(
+    scannerSearchFetchAll(
       "/rest/v1/" + branchTable(branch,"scanresults") +
-      "?NTAGN=ilike." + pattern +
+      "?NTAGN=eq." + encodeURIComponent(value) +
       "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS" +
-      "&limit=500"
+      "&order=NTAGN.asc.nullslast"
     ),
-    sbRequest(
+    scannerSearchFetchAll(
       "/rest/v1/" + branchTable(branch,"stocks") +
-      "?NTAGN=ilike." + pattern +
+      "?NTAGN=eq." + encodeURIComponent(value) +
       "&select=BR,LENSTYPE,DESCRIPTION,NTAGN" +
-      "&limit=500"
+      "&order=NTAGN.asc.nullslast"
     )
   ]);
 
-  const sold = (Array.isArray(soldRows) ? soldRows : []).map(row=>({
+  const sold = soldRows.map(row=>({
     source:"sold",
     branch:String(row.BR || branch),
     lenstype:String(row.LENSTYPE || ""),
@@ -6438,7 +6548,7 @@ async function directScannerSearchTag(query){
     status:String(row.STATUS || "")
   }));
 
-  const available = (Array.isArray(stockRows) ? stockRows : []).map(row=>({
+  const available = stockRows.map(row=>({
     source:"stocks",
     branch:String(row.BR || branch),
     lenstype:String(row.LENSTYPE || ""),
@@ -6488,12 +6598,12 @@ async function runScannerSearchSI(){
   }
 
   if(button){button.disabled=true;button.textContent="SEARCHING...";}
-  output.innerHTML = '<div class="card">🔎 SEARCHING SOLD OUT SI: <b>' + scannerSearchEscape(query) + '</b>...</div>';
+  output.innerHTML = '<div class="card">🔎 SEARCHING EXACT SOLD OUT SI: <b>' + scannerSearchEscape(query) + '</b>...</div>';
 
   try{
     const items = await directScannerSearchSI(query);
     if(!items.length){
-      output.innerHTML = `<div class="no-results">❌ No results found<br><br>SI No: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
+      output.innerHTML = `<div class="no-results">❌ No results found<br><br>Exact SI No: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
     }
 
@@ -6523,12 +6633,12 @@ async function runScannerSearchTag(){
 
   const button = document.getElementById("scannerSearchRunBtn");
   if(button){button.disabled=true;button.textContent="SEARCHING...";}
-  output.innerHTML = '<div class="card">🔎 SEARCHING SOLD OUT AND AVAILABLE STOCKS: <b>' + scannerSearchEscape(query) + '</b>...</div>';
+  output.innerHTML = '<div class="card">🔎 SEARCHING EXACT TAG IN SOLD OUT AND AVAILABLE STOCKS: <b>' + scannerSearchEscape(query) + '</b>...</div>';
 
   try{
     const items = await directScannerSearchTag(query);
     if(!items.length){
-      output.innerHTML = `<div class="no-results">❌ No results found<br><br>Tag Number: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
+      output.innerHTML = `<div class="no-results">❌ No results found<br><br>Exact Tag Number: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
     }
 
