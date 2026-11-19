@@ -3532,6 +3532,245 @@ body::before{
   .pullout-request-preview-row{grid-template-columns:92px 1fr;}
 }
 </style>
+
+<style>
+/* =========================================================
+   ADDITIVE SCANNER SEARCH POPUPS
+   Separate from the SI entry field and existing Add-to-Sold flow.
+========================================================= */
+#scannerSearchOverlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:50010;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(15,23,42,.58);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+}
+#scannerSearchOverlay .scanner-search-modal{
+  width:min(650px,100%);
+  max-height:min(88vh,900px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding:0;
+  border:1px solid #dbeafe;
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 28px 80px rgba(15,23,42,.25);
+}
+.scanner-search-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:17px 19px;
+  border-bottom:1px solid #e5edf7;
+  background:linear-gradient(135deg,#eff6ff,#faf5ff);
+}
+.scanner-search-head-title{
+  color:#172033;
+  font-size:17px;
+  font-weight:900;
+}
+.scanner-search-head-sub{
+  margin-top:3px;
+  color:#718096;
+  font-size:11px;
+  line-height:1.4;
+}
+.scanner-search-close{
+  width:34px;
+  min-width:34px;
+  min-height:34px;
+  height:34px;
+  padding:0;
+  border:1px solid #dbeafe;
+  border-radius:10px;
+  color:#475569;
+  background:#fff;
+  font-size:20px;
+  box-shadow:none;
+}
+.scanner-search-body{
+  min-height:0;
+  overflow:auto;
+  padding:18px;
+}
+.scanner-search-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.scanner-search-option{
+  min-height:104px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:7px;
+  padding:17px;
+  border:1px solid #cfe0ff;
+  border-radius:16px;
+  color:#1d4ed8;
+  background:linear-gradient(145deg,#eff6ff,#fff);
+  text-align:left;
+  box-shadow:0 7px 18px rgba(37,99,235,.07);
+}
+.scanner-search-option:nth-child(2){
+  border-color:#ddd6fe;
+  color:#6d28d9;
+  background:linear-gradient(145deg,#f5f3ff,#fff);
+}
+.scanner-search-option strong{font-size:14px;font-weight:900}
+.scanner-search-option small{font-size:10px;font-weight:650;line-height:1.4;color:#718096}
+.scanner-search-input-label{
+  display:block;
+  margin:0 0 6px;
+  color:#475569;
+  font-size:11px;
+  font-weight:850;
+}
+.scanner-search-input{
+  width:100%;
+  min-height:47px;
+  margin:0;
+  padding:11px 13px;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  background:#fff;
+  color:#172033;
+  font-size:14px;
+}
+.scanner-search-actions{
+  display:flex;
+  gap:8px;
+  margin-top:11px;
+}
+.scanner-search-actions button{flex:1}
+.scanner-search-note{
+  margin-top:8px;
+  color:#718096;
+  font-size:10px;
+  line-height:1.45;
+}
+.scanner-search-results{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:48vh;
+  overflow:auto;
+  margin-top:15px;
+  padding:2px 3px 3px 0;
+}
+.scanner-search-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 12px;
+  border:1px solid #dbeafe;
+  border-radius:12px;
+  background:#f8fbff;
+  color:#334155;
+  font-size:11px;
+  font-weight:800;
+}
+.scanner-search-summary small{display:block;margin-top:3px;color:#718096;font-size:10px;font-weight:600}
+.scanner-search-group{
+  overflow:hidden;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:#fff;
+}
+.scanner-search-group-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 12px;
+  border-bottom:1px solid #e8eef5;
+  background:#f8fbff;
+}
+.scanner-search-group-head strong{
+  color:#1e293b;
+  font-size:12px;
+  font-weight:900;
+  overflow-wrap:anywhere;
+}
+.scanner-search-status{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  min-height:24px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
+.scanner-search-status.waiting{
+  color:#a16207;
+  border:1px solid #fde68a;
+  background:#fffbeb;
+}
+.scanner-search-status.marked{
+  color:#15803d;
+  border:1px solid #bbf7d0;
+  background:#f0fdf4;
+}
+.scanner-search-status.available{
+  color:#1d4ed8;
+  border:1px solid #bfdbfe;
+  background:#eff6ff;
+}
+.scanner-search-item{
+  position:relative;
+  padding:11px 12px;
+  border-bottom:1px solid #eef2f7;
+}
+.scanner-search-item:last-child{border-bottom:0}
+.scanner-search-item-title{
+  padding-right:4px;
+  color:#26364a;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.4;
+}
+.scanner-search-item-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px 13px;
+  margin-top:6px;
+  color:#64748b;
+  font-size:10px;
+  line-height:1.5;
+}
+.scanner-search-item-meta b{color:#334155}
+.scanner-search-empty{
+  padding:22px 14px;
+  border:1px dashed #cbd5e1;
+  border-radius:13px;
+  color:#64748b;
+  background:#f8fafc;
+  font-size:12px;
+  text-align:center;
+}
+@media(max-width:520px){
+  #scannerSearchOverlay{padding:10px}
+  #scannerSearchOverlay .scanner-search-modal{max-height:92vh;border-radius:18px}
+  .scanner-search-body{padding:14px}
+  .scanner-search-options{grid-template-columns:1fr}
+  .scanner-search-option{min-height:76px}
+  .scanner-search-results{max-height:52vh}
+}
+</style>
+
 </head>
 
 <body>
@@ -3716,8 +3955,8 @@ style="display:none;">
 ↗ REQUEST FOR PULL OUT
 </button>
 
-<button class="btn-blue" onclick="searchSI()">
-🔍 SEARCH SI
+<button class="btn-blue" type="button" onclick="openScannerSearchOptions()">
+🔎 SEARCH
 </button>
 
 <button
@@ -5964,6 +6203,447 @@ async function searchSI() {
 
   }
 }
+
+
+/* =========================================================
+   ADDITIVE SEARCH OPTIONS
+   - The main #siNo field remains the SI entry for scanning /
+     adding an item to Sold Out.
+   - Search SI searches the branch Sold Out (scanresults) table.
+   - Search Tag searches both Sold Out and Available Stocks.
+   - This block does not replace the existing scan / save / audit
+     / Add-via-Tag functions.
+========================================================= */
+
+let scannerSearchSICache = [];
+let scannerSearchSICacheBranch = "";
+let scannerSearchSICacheAt = 0;
+let scannerSearchSILoadPromise = null;
+
+function scannerSearchEscape(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[ch]));
+}
+
+function scannerSearchFormatDate(value){
+  if(!value) return "No Date";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("en-PH",{
+    timeZone:"Asia/Manila",
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit",
+    hour:"2-digit",
+    minute:"2-digit",
+    hour12:true
+  });
+}
+
+function scannerSearchStatus(status, source){
+  if(source === "stocks"){
+    return {label:"AVAILABLE", className:"available"};
+  }
+  const marked = String(status || "").trim().toUpperCase() === "MARKED";
+  return marked
+    ? {label:"✓ MARKED", className:"marked"}
+    : {label:"WAITING", className:"waiting"};
+}
+
+function scannerSearchOverlay(){
+  let overlay = document.getElementById("scannerSearchOverlay");
+  if(overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "scannerSearchOverlay";
+  overlay.addEventListener("click",event=>{
+    if(event.target === overlay) closeScannerSearch();
+  });
+  document.body.appendChild(overlay);
+
+  return overlay;
+}
+
+function closeScannerSearch(){
+  const overlay = document.getElementById("scannerSearchOverlay");
+  if(overlay){
+    overlay.style.display = "none";
+    overlay.innerHTML = "";
+  }
+}
+
+function openScannerSearchOptions(){
+  const overlay = scannerSearchOverlay();
+  overlay.innerHTML = `
+    <div class="scanner-search-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSearchTitle">
+      <div class="scanner-search-head">
+        <div>
+          <div id="scannerSearchTitle" class="scanner-search-head-title">🔎 Inventory Search</div>
+          <div class="scanner-search-head-sub">Choose what you want to search. Your SI entry field remains for new Sold Out entries.</div>
+        </div>
+        <button type="button" class="scanner-search-close" onclick="closeScannerSearch()" aria-label="Close">×</button>
+      </div>
+      <div class="scanner-search-body">
+        <div class="scanner-search-options">
+          <button type="button" class="scanner-search-option" onclick="openScannerSearchMode('si')">
+            <strong>📄 SEARCH SI</strong>
+            <small>Find Sold Out items by SI No. and check whether the Dashboard marked them.</small>
+          </button>
+          <button type="button" class="scanner-search-option" onclick="openScannerSearchMode('tag')">
+            <strong>🏷️ SEARCH TAG NUMBER</strong>
+            <small>Find a tag in Sold Out or Available Stocks.</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  overlay.style.display = "flex";
+}
+
+function openScannerSearchMode(mode){
+  const overlay = scannerSearchOverlay();
+  const isSI = mode === "si";
+  const title = isSI ? "📄 Search SI No." : "🏷️ Search Tag Number";
+  const placeholder = isSI ? "Enter or select an SI No." : "Enter Tag Number";
+  const inputId = isSI ? "scannerSearchSIInput" : "scannerSearchTagInput";
+  const listMarkup = isSI ? '<datalist id="scannerSearchSIList"></datalist>' : "";
+  const note = isSI
+    ? "Searches all SI numbers recorded in this branch's Sold Out list. Start typing to see existing SI suggestions."
+    : "Searches both Sold Out and Available Stocks for this branch. This is a lookup only; it does not add or change stock.";
+  const runFunction = isSI ? "runScannerSearchSI()" : "runScannerSearchTag()";
+
+  overlay.innerHTML = `
+    <div class="scanner-search-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSearchTitle">
+      <div class="scanner-search-head">
+        <div>
+          <div id="scannerSearchTitle" class="scanner-search-head-title">${title}</div>
+          <div class="scanner-search-head-sub">${isSI ? "Search the branch's Sold Out records." : "Search Sold Out and Available Stocks records."}</div>
+        </div>
+        <button type="button" class="scanner-search-close" onclick="closeScannerSearch()" aria-label="Close">×</button>
+      </div>
+      <div class="scanner-search-body">
+        <label class="scanner-search-input-label" for="${inputId}">${isSI ? "SI NUMBER" : "TAG NUMBER"}</label>
+        <input
+          id="${inputId}"
+          class="scanner-search-input"
+          type="search"
+          autocomplete="off"
+          placeholder="${placeholder}"
+          ${isSI ? 'list="scannerSearchSIList"' : ""}
+          onkeydown="if(event.key==='Enter'){event.preventDefault();${runFunction};}"
+        >
+        ${listMarkup}
+        <div class="scanner-search-actions">
+          <button type="button" class="btn-blue" id="scannerSearchRunBtn" onclick="${runFunction}">SEARCH</button>
+          <button type="button" class="cancel-report-btn" onclick="openScannerSearchOptions()">BACK</button>
+        </div>
+        <div class="scanner-search-note" id="scannerSearchNote">${note}</div>
+        <div id="scannerSearchResults" class="scanner-search-results" aria-live="polite"></div>
+      </div>
+    </div>
+  `;
+  overlay.style.display = "flex";
+
+  const input = document.getElementById(inputId);
+  setTimeout(()=>input?.focus(),40);
+
+  if(isSI){
+    loadScannerSearchSISuggestions();
+  }
+}
+
+async function loadScannerSearchSISuggestions(){
+  const list = document.getElementById("scannerSearchSIList");
+  const note = document.getElementById("scannerSearchNote");
+  if(!list) return;
+
+  try{
+    const values = await directLoadScannerSIs();
+    const liveList = document.getElementById("scannerSearchSIList");
+    if(!liveList) return;
+
+    liveList.innerHTML = values.map(value =>
+      `<option value="${scannerSearchEscape(value)}"></option>`
+    ).join("");
+
+    const liveNote = document.getElementById("scannerSearchNote");
+    if(liveNote){
+      liveNote.textContent = values.length
+        ? values.length.toLocaleString("en-PH") + " existing SI number(s) loaded. You can also type part of an SI No. to search."
+        : "No SI numbers are recorded in this branch yet. You can still enter an SI No. to search.";
+    }
+  }catch(error){
+    console.warn("Unable to load SI suggestions:",error);
+    const liveNote = document.getElementById("scannerSearchNote");
+    if(liveNote){
+      liveNote.textContent = "SI suggestions could not be loaded. You can still type an SI No. and search.";
+    }
+  }
+}
+
+async function directLoadScannerSIs(){
+  const branch = String(BRANCH || "").trim().toUpperCase();
+  if(scannerSearchSICacheBranch === branch &&
+     Date.now() - scannerSearchSICacheAt < 5 * 60 * 1000){
+    return scannerSearchSICache.slice();
+  }
+  if(scannerSearchSILoadPromise) return scannerSearchSILoadPromise;
+
+  scannerSearchSILoadPromise = (async()=>{
+    await requireSupabaseAccess();
+    const table = branchTable(branch,"scanresults");
+    const values = new Set();
+    const pageSize = 1000;
+    let offset = 0;
+
+    // Paginate so the suggestions include all stored SI values,
+    // rather than stopping at Supabase's usual first-page limit.
+    while(offset < 50000){
+      const rows = await sbRequest(
+        "/rest/v1/" + table +
+        "?select=%22SI%20NO.%22&limit=" + pageSize + "&offset=" + offset
+      );
+      const page = Array.isArray(rows) ? rows : [];
+      page.forEach(row=>{
+        const value = String(row?.["SI NO."] ?? "").trim();
+        if(value) values.add(value);
+      });
+      if(page.length < pageSize) break;
+      offset += pageSize;
+    }
+
+    scannerSearchSICache = Array.from(values).sort((a,b)=>
+      a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})
+    );
+    scannerSearchSICacheBranch = branch;
+    scannerSearchSICacheAt = Date.now();
+    return scannerSearchSICache.slice();
+  })().finally(()=>{
+    scannerSearchSILoadPromise = null;
+  });
+
+  return scannerSearchSILoadPromise;
+}
+
+async function directScannerSearchSI(query){
+  await requireSupabaseAccess();
+  const value = String(query || "").trim();
+  if(!value) return [];
+
+  const rows = await sbRequest(
+    "/rest/v1/" + branchTable(BRANCH,"scanresults") +
+    "?%22SI%20NO.%22=ilike." + encodeURIComponent("*" + value + "*") +
+    "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS" +
+    "&limit=2000"
+  );
+
+  return (Array.isArray(rows) ? rows : []).map(row=>({
+    source:"sold",
+    branch:String(row.BR || BRANCH),
+    lenstype:String(row.LENSTYPE || ""),
+    description:formatLens(String(row.DESCRIPTION || "")),
+    tag:String(row.NTAGN || ""),
+    siNo:String(row["SI NO."] || ""),
+    date:String(row["DATE AND TIME"] || ""),
+    status:String(row.STATUS || "")
+  }));
+}
+
+async function directScannerSearchTag(query){
+  await requireSupabaseAccess();
+  const value = String(query || "").trim();
+  if(!value) return [];
+
+  const pattern = encodeURIComponent("*" + value + "*");
+  const branch = String(BRANCH || "").trim().toUpperCase();
+
+  const [soldRows, stockRows] = await Promise.all([
+    sbRequest(
+      "/rest/v1/" + branchTable(branch,"scanresults") +
+      "?NTAGN=ilike." + pattern +
+      "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS" +
+      "&limit=500"
+    ),
+    sbRequest(
+      "/rest/v1/" + branchTable(branch,"stocks") +
+      "?NTAGN=ilike." + pattern +
+      "&select=BR,LENSTYPE,DESCRIPTION,NTAGN" +
+      "&limit=500"
+    )
+  ]);
+
+  const sold = (Array.isArray(soldRows) ? soldRows : []).map(row=>({
+    source:"sold",
+    branch:String(row.BR || branch),
+    lenstype:String(row.LENSTYPE || ""),
+    description:formatLens(String(row.DESCRIPTION || "")),
+    tag:String(row.NTAGN || ""),
+    siNo:String(row["SI NO."] || ""),
+    date:String(row["DATE AND TIME"] || ""),
+    status:String(row.STATUS || "")
+  }));
+
+  const available = (Array.isArray(stockRows) ? stockRows : []).map(row=>({
+    source:"stocks",
+    branch:String(row.BR || branch),
+    lenstype:String(row.LENSTYPE || ""),
+    description:formatLens(String(row.DESCRIPTION || "")),
+    tag:String(row.NTAGN || ""),
+    siNo:"",
+    date:"",
+    status:""
+  }));
+
+  return sold.concat(available).sort((a,b)=>
+    a.tag.localeCompare(b.tag,undefined,{numeric:true,sensitivity:"base"}) ||
+    a.source.localeCompare(b.source)
+  );
+}
+
+function scannerSearchItemMarkup(item,index){
+  const status = scannerSearchStatus(item.status,item.source);
+  const sourceLabel = item.source === "stocks" ? "AVAILABLE STOCKS" : "SOLD OUT";
+  return `
+    <div class="scanner-search-item">
+      <div class="scanner-search-item-title">${scannerSearchEscape(item.description || "No description")}</div>
+      <div class="scanner-search-item-meta">
+        <span>🏷 Tag: <b>${scannerSearchEscape(item.tag || "—")}</b></span>
+        ${item.lenstype ? `<span>Lens Type: <b>${scannerSearchEscape(item.lenstype)}</b></span>` : ""}
+        ${item.siNo ? `<span>SI No: <b>${scannerSearchEscape(item.siNo)}</b></span>` : ""}
+        ${item.date ? `<span>Date: <b>${scannerSearchEscape(scannerSearchFormatDate(item.date))}</b></span>` : ""}
+        <span>Source: <b>${sourceLabel}</b></span>
+      </div>
+    </div>
+  `;
+}
+
+async function runScannerSearchSI(){
+  const input = document.getElementById("scannerSearchSIInput");
+  const output = document.getElementById("scannerSearchResults");
+  const button = document.getElementById("scannerSearchRunBtn");
+  if(!input || !output) return;
+
+  const query = String(input.value || "").trim();
+  if(!query){
+    input.focus();
+    output.innerHTML = '<div class="scanner-search-empty">Please enter an SI No. to search.</div>';
+    return;
+  }
+
+  if(button){button.disabled=true;button.textContent="SEARCHING...";}
+  output.innerHTML = '<div class="scanner-search-empty">⏳ Searching Sold Out SI numbers...</div>';
+
+  try{
+    const items = await directScannerSearchSI(query);
+    if(!items.length){
+      output.innerHTML = `<div class="scanner-search-empty">No Sold Out records found matching <b>${scannerSearchEscape(query)}</b> in branch <b>${scannerSearchEscape(BRANCH)}</b>.</div>`;
+      return;
+    }
+
+    const groups = new Map();
+    items.forEach(item=>{
+      const key = item.siNo || "(BLANK SI NO.)";
+      if(!groups.has(key)) groups.set(key,[]);
+      groups.get(key).push(item);
+    });
+
+    const itemCount = items.length;
+    output.innerHTML = `
+      <div class="scanner-search-summary">
+        <div>${itemCount.toLocaleString("en-PH")} matching item(s)<small>Branch: ${scannerSearchEscape(BRANCH)}</small></div>
+        <span>${groups.size.toLocaleString("en-PH")} SI number(s)</span>
+      </div>
+      ${Array.from(groups.entries()).map(([siNo,group])=>{
+        // Scanner's existing SI validation treats an SI as marked when
+        // at least one Sold Out row with that SI has STATUS = MARKED.
+        const marked = group.some(item=>String(item.status).trim().toUpperCase()==="MARKED");
+        const status = scannerSearchStatus(marked ? "MARKED" : "", "sold");
+        return `
+          <section class="scanner-search-group">
+            <div class="scanner-search-group-head">
+              <strong>SI NO. ${scannerSearchEscape(siNo)}</strong>
+              <span class="scanner-search-status ${status.className}">${status.label}</span>
+            </div>
+            ${group.map((item,index)=>scannerSearchItemMarkup(item,index)).join("")}
+          </section>
+        `;
+      }).join("")}
+    `;
+  }catch(error){
+    console.error("Scanner SI search failed:",error);
+    output.innerHTML = `<div class="scanner-search-empty">❌ Search failed: ${scannerSearchEscape(error?.message || error)}</div>`;
+  }finally{
+    const liveButton = document.getElementById("scannerSearchRunBtn");
+    if(liveButton){liveButton.disabled=false;liveButton.textContent="SEARCH";}
+  }
+}
+
+async function runScannerSearchTag(){
+  const input = document.getElementById("scannerSearchTagInput");
+  const output = document.getElementById("scannerSearchResults");
+  if(!input || !output) return;
+
+  const query = String(input.value || "").trim();
+  if(!query){
+    input.focus();
+    output.innerHTML = '<div class="scanner-search-empty">Please enter a Tag Number to search.</div>';
+    return;
+  }
+
+  const button = document.getElementById("scannerSearchRunBtn");
+  if(button){button.disabled=true;button.textContent="SEARCHING...";}
+  output.innerHTML = '<div class="scanner-search-empty">⏳ Searching Sold Out and Available Stocks...</div>';
+
+  try{
+    const items = await directScannerSearchTag(query);
+    if(!items.length){
+      output.innerHTML = `<div class="scanner-search-empty">No Sold Out or Available Stocks records found matching tag <b>${scannerSearchEscape(query)}</b> in branch <b>${scannerSearchEscape(BRANCH)}</b>.</div>`;
+      return;
+    }
+
+    const soldCount = items.filter(item=>item.source==="sold").length;
+    const stockCount = items.filter(item=>item.source==="stocks").length;
+    output.innerHTML = `
+      <div class="scanner-search-summary">
+        <div>${items.length.toLocaleString("en-PH")} matching tag record(s)<small>Branch: ${scannerSearchEscape(BRANCH)}</small></div>
+        <span>${soldCount} Sold Out · ${stockCount} Available</span>
+      </div>
+      ${items.map((item,index)=>{
+        const status = scannerSearchStatus(item.status,item.source);
+        return `
+          <section class="scanner-search-group">
+            <div class="scanner-search-group-head">
+              <strong>${scannerSearchEscape(item.tag || "TAG")} · ${item.source==="stocks" ? "AVAILABLE STOCKS" : "SOLD OUT"}</strong>
+              <span class="scanner-search-status ${status.className}">${status.label}</span>
+            </div>
+            ${scannerSearchItemMarkup(item,index)}
+          </section>
+        `;
+      }).join("")}
+    `;
+  }catch(error){
+    console.error("Scanner Tag search failed:",error);
+    output.innerHTML = `<div class="scanner-search-empty">❌ Search failed: ${scannerSearchEscape(error?.message || error)}</div>`;
+  }finally{
+    const liveButton = document.getElementById("scannerSearchRunBtn");
+    if(liveButton){liveButton.disabled=false;liveButton.textContent="SEARCH";}
+  }
+}
+
+document.addEventListener("keydown",event=>{
+  if(event.key === "Escape"){
+    const overlay = document.getElementById("scannerSearchOverlay");
+    if(overlay && overlay.style.display === "flex") closeScannerSearch();
+  }
+});
+
+/* END ADDITIVE SCANNER SEARCH OPTIONS */
+
 
 /* ================= UTIL ================= */
 
