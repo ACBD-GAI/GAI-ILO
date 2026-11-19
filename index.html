@@ -3630,6 +3630,145 @@ body::before{
   border-color:#60a5fa;
   box-shadow:0 0 0 4px rgba(96,165,250,.13);
 }
+
+/* Dedicated searchable Sold Out SI picker popup */
+.scanner-search-picker-trigger{
+  width:100%;
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 12px;
+  padding:10px 13px;
+  border:1px solid #bfdbfe;
+  border-radius:12px;
+  color:#1d4ed8;
+  background:linear-gradient(135deg,#eff6ff,#fff);
+  text-align:left;
+  box-shadow:0 4px 12px rgba(37,99,235,.06);
+}
+.scanner-search-picker-trigger span{font-size:12px;font-weight:900;}
+.scanner-search-picker-trigger small{color:#64748b;font-size:10px;font-weight:700;}
+#scannerSIPickerOverlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:50030;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  background:rgba(15,23,42,.66);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+#scannerSIPickerOverlay .scanner-si-picker-modal{
+  width:min(560px,100%);
+  max-height:min(86vh,780px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid #dbeafe;
+  border-radius:21px;
+  background:#fff;
+  box-shadow:0 28px 85px rgba(15,23,42,.30);
+}
+.scanner-si-picker-body{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-height:0;
+  padding:16px;
+  overflow:hidden;
+}
+.scanner-si-picker-search{
+  width:100%;
+  min-height:45px;
+  margin:0 0 12px;
+  padding:10px 12px;
+  border:1px solid #cbd5e1;
+  border-radius:11px;
+  color:#172033;
+  background:#fff;
+  font-size:13px;
+}
+.scanner-si-picker-date-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr auto;
+  gap:8px;
+  align-items:end;
+  margin-bottom:12px;
+}
+.scanner-si-picker-date-grid label{display:block;color:#475569;font-size:10px;font-weight:850;}
+.scanner-si-picker-date-grid input{
+  width:100%;
+  min-width:0;
+  min-height:39px;
+  margin:5px 0 0;
+  padding:7px 8px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  color:#172033;
+  background:#fff;
+  font:inherit;
+  font-size:11px;
+}
+.scanner-si-picker-clear-dates{
+  min-height:39px;
+  padding:7px 10px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  color:#475569;
+  background:#f8fafc;
+  font-size:10px;
+  font-weight:850;
+  white-space:nowrap;
+  box-shadow:none;
+}
+.scanner-si-picker-count{
+  flex:0 0 auto;
+  margin:0 0 8px;
+  color:#64748b;
+  font-size:10px;
+  font-weight:800;
+}
+.scanner-si-picker-list{
+  flex:1 1 auto;
+  min-height:130px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  background:#fff;
+}
+.scanner-si-picker-item{
+  width:100%;
+  min-height:54px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 12px;
+  border:0;
+  border-bottom:1px solid #edf2f7;
+  border-radius:0;
+  color:#1e293b;
+  background:#fff;
+  text-align:left;
+  box-shadow:none;
+}
+.scanner-si-picker-item:last-child{border-bottom:0;}
+.scanner-si-picker-item:hover{background:#f4f8ff;transform:none;}
+.scanner-si-picker-item strong{display:block;font-size:12px;font-weight:900;}
+.scanner-si-picker-item small{display:block;margin-top:3px;color:#64748b;font-size:9px;font-weight:650;}
+.scanner-si-picker-empty{padding:24px 14px;color:#64748b;font-size:11px;text-align:center;}
+@media(max-width:520px){
+  #scannerSIPickerOverlay{padding:9px;}
+  #scannerSIPickerOverlay .scanner-si-picker-modal{max-height:92vh;border-radius:17px;}
+  .scanner-si-picker-body{padding:12px;}
+  .scanner-si-picker-date-grid{grid-template-columns:1fr 1fr;}
+  .scanner-si-picker-clear-dates{grid-column:1/-1;width:100%;}
+}
 .scanner-search-mode-modal .scanner-search-results{
   flex:1 1 auto;
   min-height:180px;
@@ -6294,6 +6433,10 @@ async function searchSI() {
      / Add-via-Tag functions.
 ========================================================= */
 
+let scannerSIPickerRecords = [];
+let scannerSIResultDateFrom = "";
+let scannerSIResultDateTo = "";
+
 function scannerSearchEscape(value){
   return String(value ?? "").replace(/[&<>"']/g, ch => ({
     "&":"&amp;",
@@ -6343,7 +6486,16 @@ function scannerSearchOverlay(){
   return overlay;
 }
 
+function closeScannerSIPicker(){
+  const picker = document.getElementById("scannerSIPickerOverlay");
+  if(picker){
+    picker.style.display = "none";
+    picker.innerHTML = "";
+  }
+}
+
 function closeScannerSearch(){
+  closeScannerSIPicker();
   const overlay = document.getElementById("scannerSearchOverlay");
   if(overlay){
     overlay.style.display = "none";
@@ -6401,10 +6553,11 @@ function openScannerSearchMode(mode){
       </div>
       <div class="scanner-search-body">
         ${isSI ? `
-          <label class="scanner-search-input-label" for="scannerSearchSISelect">SOLD OUT SI NUMBERS</label>
-          <select id="scannerSearchSISelect" class="scanner-search-select" onchange="selectScannerSearchSI(this.value)">
-            <option value="">Loading existing SI numbers...</option>
-          </select>
+          <label class="scanner-search-input-label">SOLD OUT SI NUMBER LIST</label>
+          <button type="button" class="scanner-search-picker-trigger" onclick="openScannerSIPicker()">
+            <span>📅 Browse / Select SI Number</span>
+            <small>Search SI No. · Filter by date</small>
+          </button>
         ` : ""}
         <label class="scanner-search-input-label" for="${inputId}">${isSI ? "SI NUMBER (EXACT)" : "TAG NUMBER (EXACT)"}</label>
         <input
@@ -6413,6 +6566,7 @@ function openScannerSearchMode(mode){
           type="search"
           autocomplete="off"
           placeholder="${placeholder}"
+          ${isSI ? 'oninput="scannerClearSISelectedDateFilter()"' : ""}
           onkeydown="if(event.key==='Enter'){event.preventDefault();${runFunction};}"
         >
         <div class="scanner-search-actions">
@@ -6428,14 +6582,8 @@ function openScannerSearchMode(mode){
 
   const input = document.getElementById(inputId);
   if(isSI){
-    loadScannerSoldSIOptions().catch(error=>{
-      console.error("Unable to load Sold Out SI list:",error);
-      const select = document.getElementById("scannerSearchSISelect");
-      if(select){
-        select.innerHTML = '<option value="">Unable to load SI numbers</option>';
-        select.disabled = false;
-      }
-    });
+    scannerSIResultDateFrom = "";
+    scannerSIResultDateTo = "";
   }
   setTimeout(()=>input?.focus(),40);
 }
@@ -6455,37 +6603,198 @@ async function scannerSearchFetchAll(basePath, pageSize=1000){
   return all;
 }
 
+function scannerSIPickerOverlay(){
+  let overlay = document.getElementById("scannerSIPickerOverlay");
+  if(overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "scannerSIPickerOverlay";
+  overlay.addEventListener("click",event=>{
+    if(event.target === overlay) closeScannerSIPicker();
+  });
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function scannerSearchDateKey(value){
+  if(!value) return "";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-US",{
+    timeZone:"Asia/Manila",
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit"
+  }).formatToParts(date);
+  const part = type => parts.find(item=>item.type===type)?.value || "";
+  return part("year") + "-" + part("month") + "-" + part("day");
+}
+
+function scannerSIPickerDateLabel(value){
+  const key = scannerSearchDateKey(value);
+  if(!key) return "Date not recorded";
+  const parts = key.split("-");
+  return parts[1] + "/" + parts[2] + "/" + parts[0];
+}
+
+function openScannerSIPicker(){
+  const overlay = scannerSIPickerOverlay();
+  overlay.innerHTML = `
+    <div class="scanner-si-picker-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSIPickerTitle">
+      <div class="scanner-search-head">
+        <div>
+          <div id="scannerSIPickerTitle" class="scanner-search-head-title">📄 Select Sold Out SI No.</div>
+          <div class="scanner-search-head-sub">Search the SI list or narrow it by Sold Out date.</div>
+        </div>
+        <button type="button" class="scanner-search-close" onclick="closeScannerSIPicker()" aria-label="Close">×</button>
+      </div>
+      <div class="scanner-si-picker-body">
+        <input id="scannerSIPickerSearch" class="scanner-si-picker-search" type="search" autocomplete="off" placeholder="Search SI No..." oninput="renderScannerSIPickerList()">
+        <div class="scanner-si-picker-date-grid">
+          <label>DATE FROM<input id="scannerSIPickerDateFrom" type="date" onchange="renderScannerSIPickerList()"></label>
+          <label>DATE TO<input id="scannerSIPickerDateTo" type="date" onchange="renderScannerSIPickerList()"></label>
+          <button type="button" class="scanner-si-picker-clear-dates" onclick="clearScannerSIPickerDates()">CLEAR DATES</button>
+        </div>
+        <div id="scannerSIPickerCount" class="scanner-si-picker-count">Loading Sold Out SI numbers...</div>
+        <div id="scannerSIPickerList" class="scanner-si-picker-list" aria-live="polite">
+          <div class="scanner-si-picker-empty">Loading SI numbers...</div>
+        </div>
+      </div>
+    </div>
+  `;
+  overlay.style.display = "flex";
+
+  loadScannerSoldSIOptions().catch(error=>{
+    console.error("Unable to load Sold Out SI list:",error);
+    const list = document.getElementById("scannerSIPickerList");
+    const count = document.getElementById("scannerSIPickerCount");
+    if(count) count.textContent = "Unable to load SI numbers";
+    if(list) list.innerHTML = '<div class="scanner-si-picker-empty">Unable to load Sold Out SI numbers. Please try again.</div>';
+  });
+  setTimeout(()=>document.getElementById("scannerSIPickerSearch")?.focus(),50);
+}
+
 async function loadScannerSoldSIOptions(){
-  const select = document.getElementById("scannerSearchSISelect");
-  if(!select) return;
+  const list = document.getElementById("scannerSIPickerList");
+  const count = document.getElementById("scannerSIPickerCount");
+  if(!list) return;
+
   const branch = String(BRANCH || "").trim().toUpperCase();
   if(!branch) throw new Error("No branch selected.");
 
-  // Refresh the dropdown each time Search SI is opened so newly added
-  // Sold Out SI numbers appear without requiring an app reload.
-  select.disabled = true;
-  select.innerHTML = '<option value="">Loading existing SI numbers...</option>';
+  if(count) count.textContent = "Loading Sold Out SI numbers...";
+  list.innerHTML = '<div class="scanner-si-picker-empty">Loading SI numbers...</div>';
+
   await requireSupabaseAccess();
   const rows = await scannerSearchFetchAll(
     "/rest/v1/" + branchTable(branch,"scanresults") +
-    "?select=%22SI%20NO.%22&%22SI%20NO.%22=not.is.null&order=NTAGN.asc.nullslast"
+    "?select=%22SI%20NO.%22,%22DATE%20AND%20TIME%22&%22SI%20NO.%22=not.is.null&order=%22DATE%20AND%20TIME%22.desc.nullslast"
   );
-  const values = [...new Set(rows
-    .map(row=>String(row?.["SI NO."] ?? "").trim())
-    .filter(Boolean)
-  )].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
 
-  select.innerHTML = '<option value="">Select an existing SI No. (' + values.length.toLocaleString("en-PH") + ')</option>' +
-    values.map(value=>'<option value="' + scannerSearchEscape(value) + '">' + scannerSearchEscape(value) + '</option>').join("");
-  select.disabled = false;
+  const grouped = new Map();
+  rows.forEach(row=>{
+    const si = String(row?.["SI NO."] ?? "").trim();
+    if(!si) return;
+    const record = grouped.get(si) || {si,dates:[],count:0};
+    const date = String(row?.["DATE AND TIME"] ?? "").trim();
+    if(date) record.dates.push(date);
+    record.count++;
+    grouped.set(si,record);
+  });
+
+  scannerSIPickerRecords = [...grouped.values()].map(record=>{
+    const uniqueDates = [...new Set(record.dates)].sort((a,b)=>
+      scannerSearchDateKey(a).localeCompare(scannerSearchDateKey(b))
+    );
+    return {...record,dates:uniqueDates,latestDate:uniqueDates[uniqueDates.length-1] || ""};
+  }).sort((a,b)=>a.si.localeCompare(b.si,undefined,{numeric:true,sensitivity:"base"}));
+
+  renderScannerSIPickerList();
 }
 
-function selectScannerSearchSI(value){
+function renderScannerSIPickerList(){
+  const list = document.getElementById("scannerSIPickerList");
+  const count = document.getElementById("scannerSIPickerCount");
+  const search = String(document.getElementById("scannerSIPickerSearch")?.value || "")
+    .trim().toLocaleLowerCase();
+  const from = String(document.getElementById("scannerSIPickerDateFrom")?.value || "");
+  const to = String(document.getElementById("scannerSIPickerDateTo")?.value || "");
+  if(!list) return;
+
+  if(from && to && from > to){
+    if(count) count.textContent = "Invalid date range";
+    list.innerHTML = '<div class="scanner-si-picker-empty">DATE FROM cannot be later than DATE TO.</div>';
+    return;
+  }
+
+  const filtered = scannerSIPickerRecords.filter(record=>{
+    if(search && !record.si.toLocaleLowerCase().includes(search)) return false;
+    if(!from && !to) return true;
+    return record.dates.some(date=>{
+      const key = scannerSearchDateKey(date);
+      if(!key) return false;
+      return (!from || key >= from) && (!to || key <= to);
+    });
+  });
+
+  if(count){
+    count.textContent = filtered.length.toLocaleString("en-PH") +
+      " SI number(s) found" +
+      (from || to ? " within the selected date range" : " in Sold Out");
+  }
+
+  if(!filtered.length){
+    list.innerHTML = '<div class="scanner-si-picker-empty">No SI numbers match your search and date filters.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(record=>{
+    const dateLabel = record.latestDate ? "Latest Sold Out date: " + scannerSIPickerDateLabel(record.latestDate) : "No date recorded";
+    return `
+      <button type="button" class="scanner-si-picker-item" data-si="${scannerSearchEscape(record.si)}" onclick="chooseScannerSIPickerSI(this.dataset.si)">
+        <span><strong>${scannerSearchEscape(record.si)}</strong><small>${scannerSearchEscape(dateLabel)}</small></span>
+        <small>${record.count.toLocaleString("en-PH")} item(s)　›</small>
+      </button>
+    `;
+  }).join("");
+}
+
+function clearScannerSIPickerDates(){
+  const from = document.getElementById("scannerSIPickerDateFrom");
+  const to = document.getElementById("scannerSIPickerDateTo");
+  if(from) from.value = "";
+  if(to) to.value = "";
+  renderScannerSIPickerList();
+}
+
+function chooseScannerSIPickerSI(value){
   const si = String(value || "").trim();
   if(!si) return;
+
   const input = document.getElementById("scannerSearchSIInput");
   if(input) input.value = si;
+  scannerSIResultDateFrom = String(document.getElementById("scannerSIPickerDateFrom")?.value || "");
+  scannerSIResultDateTo = String(document.getElementById("scannerSIPickerDateTo")?.value || "");
+
+  const note = document.getElementById("scannerSearchNote");
+  if(note){
+    note.textContent = (scannerSIResultDateFrom || scannerSIResultDateTo)
+      ? "Exact SI No. selected. Results are also limited to the selected Sold Out date range."
+      : "Exact SI No. selected. Each Sold Out item shows its own Dashboard status.";
+  }
+
+  closeScannerSIPicker();
   runScannerSearchSI();
+}
+
+function scannerClearSISelectedDateFilter(){
+  if(!scannerSIResultDateFrom && !scannerSIResultDateTo) return;
+  scannerSIResultDateFrom = "";
+  scannerSIResultDateTo = "";
+  const note = document.getElementById("scannerSearchNote");
+  if(note){
+    note.textContent = "Type the complete SI No. or choose one from the Sold Out SI popup. Each item shows its own Dashboard status.";
+  }
 }
 
 
@@ -6601,9 +6910,18 @@ async function runScannerSearchSI(){
   output.innerHTML = '<div class="card">🔎 SEARCHING EXACT SOLD OUT SI: <b>' + scannerSearchEscape(query) + '</b>...</div>';
 
   try{
-    const items = await directScannerSearchSI(query);
+    let items = await directScannerSearchSI(query);
+    const hasDateFilter = !!(scannerSIResultDateFrom || scannerSIResultDateTo);
+    if(hasDateFilter){
+      items = items.filter(item=>{
+        const key = scannerSearchDateKey(item.date);
+        if(!key) return false;
+        return (!scannerSIResultDateFrom || key >= scannerSIResultDateFrom) &&
+          (!scannerSIResultDateTo || key <= scannerSIResultDateTo);
+      });
+    }
     if(!items.length){
-      output.innerHTML = `<div class="no-results">❌ No results found<br><br>Exact SI No: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
+      output.innerHTML = `<div class="no-results">❌ No results found<br><br>Exact SI No: <b>${scannerSearchEscape(query)}</b><br>${hasDateFilter ? "No Sold Out items match the selected date range." : ""}<br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
     }
 
@@ -6656,6 +6974,11 @@ async function runScannerSearchTag(){
 
 document.addEventListener("keydown",event=>{
   if(event.key === "Escape"){
+    const picker = document.getElementById("scannerSIPickerOverlay");
+    if(picker && picker.style.display === "flex"){
+      closeScannerSIPicker();
+      return;
+    }
     const overlay = document.getElementById("scannerSearchOverlay");
     if(overlay && overlay.style.display === "flex") closeScannerSearch();
   }
