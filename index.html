@@ -3682,6 +3682,36 @@ body::before{
   padding:25px 16px 16px;
   overflow:hidden;
 }
+.scanner-si-picker-filter-row{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  margin:0 0 9px;
+}
+.scanner-si-picker-filter-label{
+  color:#64748b;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.06em;
+}
+.scanner-si-picker-status-filter{
+  width:100%;
+  min-height:42px;
+  margin:0;
+  padding:9px 12px;
+  border:1px solid #cbd5e1;
+  border-radius:11px;
+  outline:none;
+  color:#172033;
+  background:#fff;
+  font:inherit;
+  font-size:12px;
+  font-weight:800;
+}
+.scanner-si-picker-status-filter:focus{
+  border-color:#60a5fa;
+  box-shadow:0 0 0 3px rgba(96,165,250,.12);
+}
 .scanner-si-picker-search{
   width:100%;
   min-height:45px;
@@ -6491,6 +6521,7 @@ async function searchSI() {
 
 let scannerSIPickerRecords = [];
 let scannerSIPickerPage = 1;
+let scannerSIPickerStatusFilter = "all";
 const scannerSIPickerPageSize = 10;
 
 function scannerSearchEscape(value){
@@ -6692,6 +6723,7 @@ function scannerSIPickerDateLabel(value){
 function openScannerSIPicker(){
   const overlay = scannerSIPickerOverlay();
   scannerSIPickerPage = 1;
+  scannerSIPickerStatusFilter = "all";
   overlay.innerHTML = `
     <div class="scanner-si-picker-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSIPickerTitle">
       <div class="scanner-search-head">
@@ -6702,6 +6734,14 @@ function openScannerSIPicker(){
         <button type="button" class="scanner-search-close" onclick="closeScannerSIPicker()" aria-label="Close">×</button>
       </div>
       <div class="scanner-si-picker-body">
+        <div class="scanner-si-picker-filter-row">
+          <label class="scanner-si-picker-filter-label" for="scannerSIPickerStatusFilter">FILTER BY STATUS</label>
+          <select id="scannerSIPickerStatusFilter" class="scanner-si-picker-status-filter" onchange="scannerSIPickerStatusFilter=this.value;renderScannerSIPickerList(true)">
+            <option value="all" selected>All</option>
+            <option value="waiting">Waiting</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
         <input id="scannerSIPickerSearch" class="scanner-si-picker-search" type="search" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Search SI No..." oninput="renderScannerSIPickerList(true)">
         <div id="scannerSIPickerCount" class="scanner-si-picker-count">Loading Sold Out SI numbers...</div>
         <div id="scannerSIPickerList" class="scanner-si-picker-list" aria-live="polite">
@@ -6781,21 +6821,36 @@ async function loadScannerSoldSIOptions(){
   renderScannerSIPickerList();
 }
 
+function getFilteredScannerSIPickerRecords(){
+  const search = String(document.getElementById("scannerSIPickerSearch")?.value || "")
+    .trim().toLocaleLowerCase();
+  const statusFilter = String(
+    document.getElementById("scannerSIPickerStatusFilter")?.value || scannerSIPickerStatusFilter || "all"
+  ).trim().toLowerCase();
+
+  return scannerSIPickerRecords.filter(record=>{
+    const matchesSearch = !search || record.si.toLocaleLowerCase().includes(search);
+    const matchesStatus = statusFilter === "completed"
+      ? !!record.allMarked
+      : statusFilter === "waiting"
+        ? !record.allMarked
+        : true;
+    return matchesSearch && matchesStatus;
+  });
+}
+
 function renderScannerSIPickerList(resetPage=false){
   const list = document.getElementById("scannerSIPickerList");
   const count = document.getElementById("scannerSIPickerCount");
-  const search = String(document.getElementById("scannerSIPickerSearch")?.value || "")
-    .trim().toLocaleLowerCase();
   if(!list) return;
 
   if(resetPage){
     scannerSIPickerPage = 1;
   }
 
-  // Search the complete SI value list. No date filter is applied.
-  const filtered = scannerSIPickerRecords.filter(record=>
-    !search || record.si.toLocaleLowerCase().includes(search)
-  );
+  // Status is grouped by SI: Completed means every item is completed;
+  // Waiting means at least one item in the SI group is still waiting.
+  const filtered = getFilteredScannerSIPickerRecords();
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / scannerSIPickerPageSize));
@@ -6844,11 +6899,9 @@ function renderScannerSIPickerList(resetPage=false){
 
 function changeScannerSIPickerPage(direction){
   const nextPage = scannerSIPickerPage + Number(direction || 0);
-  const totalPages = Math.max(1, Math.ceil(scannerSIPickerRecords.filter(record=>{
-    const search = String(document.getElementById("scannerSIPickerSearch")?.value || "")
-      .trim().toLocaleLowerCase();
-    return !search || record.si.toLocaleLowerCase().includes(search);
-  }).length / scannerSIPickerPageSize));
+  const totalPages = Math.max(1, Math.ceil(
+    getFilteredScannerSIPickerRecords().length / scannerSIPickerPageSize
+  ));
 
   if(nextPage < 1 || nextPage > totalPages) return;
   scannerSIPickerPage = nextPage;
