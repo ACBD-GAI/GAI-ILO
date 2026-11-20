@@ -4197,7 +4197,7 @@ font-size:16px;
 Scanned : 0
 </div>
 
-    <input id="siNo" class="si-input" placeholder="Enter SI No">
+    <input id="siNo" class="si-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Enter SI No">
 
    <div class="button-grid">
 
@@ -5447,8 +5447,8 @@ async function toggleScan() {
 
       if (marked) {
         showProNotification(
-          "This SI No. is already marked and cannot be used for scanning.",
-          "SI No. Already Marked",
+          "This SI No. is already completed and cannot be used for scanning.",
+          "SI No. Already Completed",
           "🛑"
         );
         return;
@@ -6245,11 +6245,11 @@ try{
   if(marked){
     document.getElementById("result").innerHTML = `
       <div class="card red">
-        🛑 SI NO. ALREADY MARKED
+        🛑 SI NO. ALREADY COMPLETED
         <br><br>
         SI No: <b>${tempSi}</b>
         <br><br>
-        This SI No. cannot be used until it is unmarked in the Dashboard.
+        This SI No. cannot be used until its completion status is removed in the Dashboard.
       </div>
     `;
     tempCode = "";
@@ -6524,7 +6524,7 @@ function scannerSearchStatus(status, source){
   }
   const marked = String(status || "").trim().toUpperCase() === "MARKED";
   return marked
-    ? {label:"✓ MARKED", className:"marked"}
+    ? {label:"✓ COMPLETED", className:"marked"}
     : {label:"WAITING", className:"waiting"};
 }
 
@@ -6574,7 +6574,7 @@ function openScannerSearchOptions(){
         <div class="scanner-search-options">
           <button type="button" class="scanner-search-option" onclick="openScannerSearchMode('si')">
             <strong>📄 SEARCH SI</strong>
-            <small>Find Sold Out items by SI No. and check whether the Dashboard marked them.</small>
+            <small>Find Sold Out items by SI No. and check whether the Dashboard completed them.</small>
           </button>
           <button type="button" class="scanner-search-option" onclick="openScannerSearchMode('tag')">
             <strong>🏷️ SEARCH TAG NUMBER</strong>
@@ -6620,9 +6620,9 @@ function openScannerSearchMode(mode){
           id="${inputId}"
           class="scanner-search-input"
           type="search"
+          ${isSI ? 'inputmode="numeric" pattern="[0-9]*"' : ''}
           autocomplete="off"
           placeholder="${placeholder}"
-
           onkeydown="if(event.key==='Enter'){event.preventDefault();${runFunction};}"
         >
         <div class="scanner-search-actions">
@@ -6702,7 +6702,7 @@ function openScannerSIPicker(){
         <button type="button" class="scanner-search-close" onclick="closeScannerSIPicker()" aria-label="Close">×</button>
       </div>
       <div class="scanner-si-picker-body">
-        <input id="scannerSIPickerSearch" class="scanner-si-picker-search" type="search" autocomplete="off" placeholder="Search SI No..." oninput="renderScannerSIPickerList(true)">
+        <input id="scannerSIPickerSearch" class="scanner-si-picker-search" type="search" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Search SI No..." oninput="renderScannerSIPickerList(true)">
         <div id="scannerSIPickerCount" class="scanner-si-picker-count">Loading Sold Out SI numbers...</div>
         <div id="scannerSIPickerList" class="scanner-si-picker-list" aria-live="polite">
           <div class="scanner-si-picker-empty">Loading SI numbers...</div>
@@ -6820,7 +6820,7 @@ function renderScannerSIPickerList(resetPage=false){
         : "No date recorded";
       const allMarkedClass = record.allMarked ? " all-marked" : "";
       const allMarkedLabel = record.allMarked
-        ? '<span class="scanner-si-picker-marked-label">✓ ALL MARKED</span>'
+        ? '<span class="scanner-si-picker-marked-label">✓ COMPLETED</span>'
         : "";
       return `
         <button type="button" class="scanner-si-picker-item${allMarkedClass}" data-si="${scannerSearchEscape(record.si)}" onclick="chooseScannerSIPickerSI(this.dataset.si)">
@@ -7228,8 +7228,8 @@ try{
 
   if(marked){
     showProNotification(
-      "This SI No. is already marked and cannot be used.",
-      "SI No. Already Marked",
+      "This SI No. is already completed and cannot be used.",
+      "SI No. Already Completed",
       "🛑"
     );
     return;
