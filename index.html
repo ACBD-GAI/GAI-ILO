@@ -3712,6 +3712,26 @@ body::before{
   border-color:#60a5fa;
   box-shadow:0 0 0 3px rgba(96,165,250,.12);
 }
+.scanner-si-picker-refresh-row{
+  display:flex;
+  justify-content:flex-end;
+  margin:0 0 9px;
+}
+.scanner-si-picker-refresh-btn{
+  min-height:33px;
+  padding:6px 11px;
+  border:1px solid #bfdbfe;
+  border-radius:9px;
+  color:#1d4ed8;
+  background:#eff6ff;
+  font-size:9px;
+  font-weight:900;
+  box-shadow:none;
+}
+.scanner-si-picker-refresh-btn:disabled{
+  opacity:.55;
+  cursor:wait;
+}
 .scanner-si-picker-search{
   width:100%;
   min-height:45px;
@@ -6676,7 +6696,8 @@ async function scannerSearchFetchAll(basePath, pageSize=1000){
   let offset = 0;
   while(true){
     const rows = await sbRequest(
-      basePath + "&limit=" + pageSize + "&offset=" + offset
+      basePath + "&limit=" + pageSize + "&offset=" + offset,
+      {cache:"no-store"}
     );
     const page = Array.isArray(rows) ? rows : [];
     all.push(...page);
@@ -6713,11 +6734,39 @@ function scannerSearchDateKey(value){
   return part("year") + "-" + part("month") + "-" + part("day");
 }
 
+function scannerSIPickerTimestamp(value){
+  const text = String(value || "").trim();
+  if(!text) return NaN;
+
+  // directSave() writes Manila-local timestamps in this format.
+  // Convert the Manila wall-clock time (UTC+8) to a comparable UTC epoch.
+  const manilaMatch = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if(manilaMatch){
+    const month = Number(manilaMatch[1]);
+    const day = Number(manilaMatch[2]);
+    const year = Number(manilaMatch[3]);
+    let hour = Number(manilaMatch[4]) % 12;
+    if(manilaMatch[7].toUpperCase() === "PM") hour += 12;
+    const minute = Number(manilaMatch[5]);
+    const second = Number(manilaMatch[6] || 0);
+    return Date.UTC(year,month-1,day,hour-8,minute,second);
+  }
+
+  // Support ISO timestamps and other valid date representations already in the table.
+  const parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
 function scannerSIPickerDateLabel(value){
-  const key = scannerSearchDateKey(value);
-  if(!key) return "Date not recorded";
-  const parts = key.split("-");
-  return parts[1] + "/" + parts[2] + "/" + parts[0];
+  const text = String(value || "").trim();
+  if(!text) return "Date not recorded";
+
+  const manilaMatch = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if(manilaMatch){
+    return `${manilaMatch[1].padStart(2,"0")}/${manilaMatch[2].padStart(2,"0")}/${manilaMatch[3]} ${manilaMatch[4].padStart(2,"0")}:${manilaMatch[5]} ${manilaMatch[7].toUpperCase()}`;
+  }
+
+  return scannerSearchFormatDate(text);
 }
 
 function openScannerSIPicker(){
@@ -6741,6 +6790,9 @@ function openScannerSIPicker(){
             <option value="waiting">Waiting</option>
             <option value="completed">Completed</option>
           </select>
+        </div>
+        <div class="scanner-si-picker-refresh-row">
+          <button type="button" id="scannerSIPickerRefreshBtn" class="scanner-si-picker-refresh-btn" onclick="refreshScannerSIPicker()">↻ REFRESH SI LIST</button>
         </div>
         <input id="scannerSIPickerSearch" class="scanner-si-picker-search" type="search" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Search SI No..." oninput="renderScannerSIPickerList(true)">
         <div id="scannerSIPickerCount" class="scanner-si-picker-count">Loading Sold Out SI numbers...</div>
@@ -6795,9 +6847,20 @@ async function loadScannerSoldSIOptions(){
   ownRows.forEach(row=>{
     const si = String(row?.["SI NO."] ?? "").trim();
     if(!si) return;
-    const record = grouped.get(si) || {si,dates:[],count:0,markedCount:0,allMarked:true};
+    const record = grouped.get(si) || {
+      si,
+      count:0,
+      markedCount:0,
+      allMarked:true,
+      latestDate:"",
+      latestTimestamp:NaN
+    };
     const date = String(row?.["DATE AND TIME"] ?? "").trim();
-    if(date) record.dates.push(date);
+    const timestamp = scannerSIPickerTimestamp(date);
+    if(Number.isFinite(timestamp) && (!Number.isFinite(record.latestTimestamp) || timestamp > record.latestTimestamp)){
+      record.latestTimestamp = timestamp;
+      record.latestDate = date;
+    }
     record.count++;
 
     // SI-level green styling is allowed only when EVERY item in this
@@ -6813,19 +6876,45 @@ async function loadScannerSoldSIOptions(){
     grouped.set(si,record);
   });
 
-  scannerSIPickerRecords = [...grouped.values()].map(record=>{
-    const uniqueDates = [...new Set(record.dates)].sort((a,b)=>
-      scannerSearchDateKey(a).localeCompare(scannerSearchDateKey(b))
-    );
-    return {
-      ...record,
-      dates:uniqueDates,
-      latestDate:uniqueDates[uniqueDates.length-1] || "",
-      allMarked:record.count > 0 && record.allMarked && record.markedCount === record.count
-    };
-  }).sort((a,b)=>a.si.localeCompare(b.si,undefined,{numeric:true,sensitivity:"base"}));
+  scannerSIPickerRecords = [...grouped.values()].map(record=>({
+    ...record,
+    allMarked:record.count > 0 && record.allMarked && record.markedCount === record.count
+  })).sort((a,b)=>{
+    const aValid = Number.isFinite(a.latestTimestamp);
+    const bValid = Number.isFinite(b.latestTimestamp);
+    if(aValid !== bValid) return aValid ? -1 : 1;
+    if(aValid && a.latestTimestamp !== b.latestTimestamp){
+      return b.latestTimestamp - a.latestTimestamp;
+    }
+    return a.si.localeCompare(b.si,undefined,{numeric:true,sensitivity:"base"});
+  });
 
   renderScannerSIPickerList();
+}
+
+async function refreshScannerSIPicker(){
+  const button = document.getElementById("scannerSIPickerRefreshBtn");
+  if(button){
+    button.disabled = true;
+    button.textContent = "REFRESHING...";
+  }
+
+  scannerSIPickerPage = 1;
+  try{
+    await loadScannerSoldSIOptions();
+  }catch(error){
+    console.error("Unable to refresh Sold Out SI list:",error);
+    const list = document.getElementById("scannerSIPickerList");
+    const count = document.getElementById("scannerSIPickerCount");
+    if(count) count.textContent = "Unable to refresh SI numbers";
+    if(list) list.innerHTML = '<div class="scanner-si-picker-empty">Unable to refresh Sold Out SI numbers. Please try again.</div>';
+  }finally{
+    const liveButton = document.getElementById("scannerSIPickerRefreshBtn");
+    if(liveButton){
+      liveButton.disabled = false;
+      liveButton.textContent = "↻ REFRESH SI LIST";
+    }
+  }
 }
 
 function getFilteredScannerSIPickerRecords(){
@@ -6878,8 +6967,8 @@ function renderScannerSIPickerList(resetPage=false){
   }else{
     list.innerHTML = pageRecords.map(record=>{
       const dateLabel = record.latestDate
-        ? "Latest Sold Out date: " + scannerSIPickerDateLabel(record.latestDate)
-        : "No date recorded";
+        ? "Latest entry: " + scannerSIPickerDateLabel(record.latestDate)
+        : "No date/time recorded";
       const allMarkedClass = record.allMarked ? " all-marked" : "";
       const allMarkedLabel = record.allMarked
         ? '<span class="scanner-si-picker-marked-label">✓ COMPLETED</span>'
