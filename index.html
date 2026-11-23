@@ -6522,56 +6522,7 @@ async function searchSI() {
 let scannerSIPickerRecords = [];
 let scannerSIPickerPage = 1;
 let scannerSIPickerStatusFilter = "all";
-let scannerSIPickerUserFilter = "all";
 const scannerSIPickerPageSize = 10;
-let scannerUserNicknameMap = new Map();
-let scannerUserNicknamesLoadedAt = 0;
-let scannerUserNicknamesPromise = null;
-const scannerUserNicknamesCacheMs = 5 * 60 * 1000;
-
-async function scannerLoadUserNicknames(force=false){
-  const now = Date.now();
-  if(!force && scannerUserNicknamesLoadedAt && (now - scannerUserNicknamesLoadedAt) < scannerUserNicknamesCacheMs){
-    return scannerUserNicknameMap;
-  }
-  if(scannerUserNicknamesPromise && !force) return scannerUserNicknamesPromise;
-
-  scannerUserNicknamesPromise = (async ()=>{
-    try{
-      const rows = await sbRequest("/rest/v1/admin_display_names?select=email,display_name");
-      const next = new Map();
-      (Array.isArray(rows) ? rows : []).forEach(row=>{
-        const email = String(row?.email || "").trim().toLowerCase();
-        const nickname = String(row?.display_name || "").trim();
-        if(email && nickname && !nickname.includes("@") && nickname.toLowerCase() !== email){
-          next.set(email,nickname);
-        }
-      });
-      scannerUserNicknameMap = next;
-    }catch(error){
-      // Nicknames are optional. A lookup failure must never block SI search.
-      console.warn("Scanner nickname lookup skipped; user emails will be shown:",error);
-    }
-    scannerUserNicknamesLoadedAt = Date.now();
-    scannerUserNicknamesPromise = null;
-    return scannerUserNicknameMap;
-  })();
-  return scannerUserNicknamesPromise;
-}
-
-function scannerSearchUserLabel(email){
-  const value = String(email || "").trim();
-  if(!value) return "";
-  const normalized = value.toLowerCase();
-  const nickname = String(
-    scannerUserNicknameMap.get(normalized) ||
-    (typeof window.aoAdminDisplayNameFor === "function" ? window.aoAdminDisplayNameFor(value) : "") ||
-    ""
-  ).trim();
-  return nickname && nickname.toLowerCase() !== normalized && !nickname.includes("@")
-    ? nickname
-    : value;
-}
 
 function scannerSearchEscape(value){
   return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -6674,7 +6625,7 @@ function openScannerSearchMode(mode){
   const placeholder = isSI ? "Enter exact SI No." : "Enter exact Tag Number";
   const inputId = isSI ? "scannerSearchSIInput" : "scannerSearchTagInput";
   const note = isSI
-    ? "Choose an SI No. from the Sold Out list above, or type the complete SI No. Each Sold Out item shows its own Dashboard status."
+    ? "Only your own Sold Out entries saved under this logged-in email are shown. Search an exact SI No.; each item keeps its individual Dashboard status."
     : "Searches Sold Out and Available Stocks by the complete Tag Number only. Each Sold Out item shows its own Dashboard status.";
   const runFunction = isSI ? "runScannerSearchSI()" : "runScannerSearchTag()";
 
@@ -6773,23 +6724,16 @@ function openScannerSIPicker(){
   const overlay = scannerSIPickerOverlay();
   scannerSIPickerPage = 1;
   scannerSIPickerStatusFilter = "all";
-  scannerSIPickerUserFilter = "all";
   overlay.innerHTML = `
     <div class="scanner-si-picker-modal" role="dialog" aria-modal="true" aria-labelledby="scannerSIPickerTitle">
       <div class="scanner-search-head">
         <div>
           <div id="scannerSIPickerTitle" class="scanner-search-head-title">📄 Select Sold Out SI No.</div>
-          <div class="scanner-search-head-sub">Search and select an SI number from this branch's Sold Out records.</div>
+          <div class="scanner-search-head-sub">Only SI numbers from Sold Out entries saved under this logged-in email are listed.</div>
         </div>
         <button type="button" class="scanner-search-close" onclick="closeScannerSIPicker()" aria-label="Close">×</button>
       </div>
       <div class="scanner-si-picker-body">
-        <div class="scanner-si-picker-filter-row">
-          <label class="scanner-si-picker-filter-label" for="scannerSIPickerUserFilter">FILTER BY USER</label>
-          <select id="scannerSIPickerUserFilter" class="scanner-si-picker-status-filter" onchange="scannerSIPickerUserFilter=this.value;renderScannerSIPickerList(true)">
-            <option value="all" selected>All Users</option>
-          </select>
-        </div>
         <div class="scanner-si-picker-filter-row">
           <label class="scanner-si-picker-filter-label" for="scannerSIPickerStatusFilter">FILTER BY STATUS</label>
           <select id="scannerSIPickerStatusFilter" class="scanner-si-picker-status-filter" onchange="scannerSIPickerStatusFilter=this.value;renderScannerSIPickerList(true)">
@@ -6834,24 +6778,26 @@ async function loadScannerSoldSIOptions(){
   if(count) count.textContent = "Loading Sold Out SI numbers...";
   list.innerHTML = '<div class="scanner-si-picker-empty">Loading SI numbers...</div>';
 
-  await requireSupabaseAccess();
+  const access = await requireSupabaseAccess();
   const rows = await scannerSearchFetchAll(
     "/rest/v1/" + branchTable(branch,"scanresults") +
     "?select=%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS,%22USER%20EMAIL%22&%22SI%20NO.%22=not.is.null&order=%22DATE%20AND%20TIME%22.desc.nullslast"
   );
 
-  // Load optional nicknames before preparing the user filter and SI labels.
-  await scannerLoadUserNicknames();
+  // The SI picker is personal to the currently authenticated scanner account.
+  // Compare case-insensitively so older records with differently-cased emails
+  // still belong to the correct logged-in user.
+  const ownRows = rows.filter(row=>
+    String(row?.["USER EMAIL"] ?? "").trim().toLowerCase() === access.email
+  );
 
   const grouped = new Map();
-  rows.forEach(row=>{
+  ownRows.forEach(row=>{
     const si = String(row?.["SI NO."] ?? "").trim();
     if(!si) return;
-    const record = grouped.get(si) || {si,dates:[],count:0,markedCount:0,allMarked:true,userEmails:new Set()};
+    const record = grouped.get(si) || {si,dates:[],count:0,markedCount:0,allMarked:true};
     const date = String(row?.["DATE AND TIME"] ?? "").trim();
     if(date) record.dates.push(date);
-    const userEmail = String(row?.["USER EMAIL"] ?? "").trim().toLowerCase();
-    if(userEmail) record.userEmails.add(userEmail);
     record.count++;
 
     // SI-level green styling is allowed only when EVERY item in this
@@ -6875,38 +6821,11 @@ async function loadScannerSoldSIOptions(){
       ...record,
       dates:uniqueDates,
       latestDate:uniqueDates[uniqueDates.length-1] || "",
-      userEmails:[...record.userEmails],
-      userLabels:[...record.userEmails].map(scannerSearchUserLabel),
       allMarked:record.count > 0 && record.allMarked && record.markedCount === record.count
     };
   }).sort((a,b)=>a.si.localeCompare(b.si,undefined,{numeric:true,sensitivity:"base"}));
 
-  renderScannerSIPickerUserFilter();
   renderScannerSIPickerList();
-}
-
-function renderScannerSIPickerUserFilter(){
-  const select = document.getElementById("scannerSIPickerUserFilter");
-  if(!select) return;
-
-  const users = new Map();
-  scannerSIPickerRecords.forEach(record=>{
-    (record.userEmails || []).forEach(email=>{
-      const normalized = String(email || "").trim().toLowerCase();
-      if(normalized && !users.has(normalized)){
-        users.set(normalized,scannerSearchUserLabel(normalized));
-      }
-    });
-  });
-
-  const sortedUsers = [...users.entries()].sort((a,b)=>
-    a[1].localeCompare(b[1],undefined,{numeric:true,sensitivity:"base"})
-  );
-  select.innerHTML = '<option value="all">All Users</option>' + sortedUsers.map(([email,label])=>
-    '<option value="' + scannerSearchEscape(email) + '">' + scannerSearchEscape(label) + '</option>'
-  ).join("");
-  select.value = users.has(scannerSIPickerUserFilter) ? scannerSIPickerUserFilter : "all";
-  scannerSIPickerUserFilter = select.value;
 }
 
 function getFilteredScannerSIPickerRecords(){
@@ -6914,9 +6833,6 @@ function getFilteredScannerSIPickerRecords(){
     .trim().toLocaleLowerCase();
   const statusFilter = String(
     document.getElementById("scannerSIPickerStatusFilter")?.value || scannerSIPickerStatusFilter || "all"
-  ).trim().toLowerCase();
-  const userFilter = String(
-    document.getElementById("scannerSIPickerUserFilter")?.value || scannerSIPickerUserFilter || "all"
   ).trim().toLowerCase();
 
   return scannerSIPickerRecords.filter(record=>{
@@ -6926,8 +6842,7 @@ function getFilteredScannerSIPickerRecords(){
       : statusFilter === "waiting"
         ? !record.allMarked
         : true;
-    const matchesUser = userFilter === "all" || (record.userEmails || []).includes(userFilter);
-    return matchesSearch && matchesStatus && matchesUser;
+    return matchesSearch && matchesStatus;
   });
 }
 
@@ -6969,10 +6884,9 @@ function renderScannerSIPickerList(resetPage=false){
       const allMarkedLabel = record.allMarked
         ? '<span class="scanner-si-picker-marked-label">✓ COMPLETED</span>'
         : "";
-      const userLabel = (record.userLabels || []).filter(Boolean).join(", ");
       return `
         <button type="button" class="scanner-si-picker-item${allMarkedClass}" data-si="${scannerSearchEscape(record.si)}" onclick="chooseScannerSIPickerSI(this.dataset.si)">
-          <span><strong>${scannerSearchEscape(record.si)}</strong><small>${scannerSearchEscape(dateLabel)}</small>${userLabel ? `<small>👤 Added by: ${scannerSearchEscape(userLabel)}</small>` : ""}</span>
+          <span><strong>${scannerSearchEscape(record.si)}</strong><small>${scannerSearchEscape(dateLabel)}</small></span>
           ${allMarkedLabel}
           <small>${record.count.toLocaleString("en-PH")} item(s)　›</small>
         </button>
@@ -7021,11 +6935,12 @@ function chooseScannerSIPickerSI(value){
 
 
 async function directScannerSearchSI(query){
-  await requireSupabaseAccess();
+  const access = await requireSupabaseAccess();
   const value = String(query || "").trim();
   if(!value) return [];
 
-  // Exact equality prevents SI 1234 from also returning SI 12345.
+  // Exact SI equality is retained. The current user's email is then used
+  // to keep other users' Sold Out entries out of this SI search.
   const rows = await scannerSearchFetchAll(
     "/rest/v1/" + branchTable(BRANCH,"scanresults") +
     "?%22SI%20NO.%22=eq." + encodeURIComponent(value) +
@@ -7033,10 +6948,14 @@ async function directScannerSearchSI(query){
     "&order=%22DATE%20AND%20TIME%22.desc.nullslast"
   );
 
+  const ownRows = rows.filter(row=>
+    String(row?.["USER EMAIL"] ?? "").trim().toLowerCase() === access.email
+  );
+
   // Newest Sold Out entry first. Sort by the FULL timestamp
   // (date and time), not just the calendar date. Rows without a
   // usable timestamp stay after dated records.
-  return rows.map(row=>({
+  return ownRows.map(row=>({
     source:"sold",
     branch:String(row.BR || BRANCH),
     lenstype:String(row.LENSTYPE || ""),
@@ -7044,8 +6963,7 @@ async function directScannerSearchSI(query){
     tag:String(row.NTAGN || ""),
     siNo:String(row["SI NO."] || ""),
     date:String(row["DATE AND TIME"] || ""),
-    status:String(row.STATUS || ""),
-    userEmail:String(row["USER EMAIL"] || "")
+    status:String(row.STATUS || "")
   })).sort((a,b)=>{
     const aTime = Date.parse(a.date);
     const bTime = Date.parse(b.date);
@@ -7075,7 +6993,7 @@ async function directScannerSearchTag(query){
     scannerSearchFetchAll(
       "/rest/v1/" + branchTable(branch,"scanresults") +
       "?NTAGN=eq." + encodeURIComponent(value) +
-      "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS,%22USER%20EMAIL%22" +
+      "&select=BR,LENSTYPE,DESCRIPTION,NTAGN,%22SI%20NO.%22,%22DATE%20AND%20TIME%22,STATUS" +
       "&order=NTAGN.asc.nullslast"
     ),
     scannerSearchFetchAll(
@@ -7094,8 +7012,7 @@ async function directScannerSearchTag(query){
     tag:String(row.NTAGN || ""),
     siNo:String(row["SI NO."] || ""),
     date:String(row["DATE AND TIME"] || ""),
-    status:String(row.STATUS || ""),
-    userEmail:String(row["USER EMAIL"] || "")
+    status:String(row.STATUS || "")
   }));
 
   const available = stockRows.map(row=>({
@@ -7106,8 +7023,7 @@ async function directScannerSearchTag(query){
     tag:String(row.NTAGN || ""),
     siNo:"",
     date:"",
-    status:"",
-    userEmail:String(row["USER EMAIL"] || "")
+    status:""
   }));
 
   return sold.concat(available).sort((a,b)=>
@@ -7134,7 +7050,6 @@ function scannerSearchItemMarkup(item,index,highlightMarked=false){
       <small>🏷 Tag: <b>${scannerSearchEscape(item.tag || "—")}</b></small><br>
       ${item.siNo ? `<small>📄 SI No: <b>${scannerSearchEscape(item.siNo)}</b></small><br>` : ""}
       ${item.date ? `<small>📅 ${scannerSearchEscape(scannerSearchFormatDate(item.date))}</small><br>` : ""}
-      ${item.userEmail ? `<small>👤 Added by: <b>${scannerSearchEscape(scannerSearchUserLabel(item.userEmail))}</b></small><br>` : ""}
       ${available ? `<small>📦 <b>AVAILABLE STOCKS</b></small>` : ""}
     </div>
   `;
@@ -7158,7 +7073,6 @@ async function runScannerSearchSI(){
 
   try{
     const items = await directScannerSearchSI(query);
-    await scannerLoadUserNicknames();
     if(!items.length){
       output.innerHTML = `<div class="no-results">❌ No results found<br><br>Exact SI No: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
@@ -7194,7 +7108,6 @@ async function runScannerSearchTag(){
 
   try{
     const items = await directScannerSearchTag(query);
-    await scannerLoadUserNicknames();
     if(!items.length){
       output.innerHTML = `<div class="no-results">❌ No results found<br><br>Exact Tag Number: <b>${scannerSearchEscape(query)}</b><br>Branch: <b>${scannerSearchEscape(BRANCH)}</b></div>`;
       return;
